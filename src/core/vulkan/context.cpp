@@ -1,6 +1,7 @@
 #include "context.hpp"
 #include "../exception.hpp"
 #include "../log.hpp"
+#include <array>
 #include <cstring>
 #include <set>
 
@@ -38,12 +39,15 @@ Context::Context(const Window &window) {
     _pick_physical_device(device_extensions);
     _create_logical_device(device_extensions, validation_layers);
   }
+  _create_swap_chain(window);
+  _create_render_pass();
 
   Log::info("Successfully Constructed Vulkan Context");
 }
 
 Context::~Context() {
   m_swap_chain.reset();
+  m_device.destroyRenderPass(m_render_pass);
   m_device.destroy();
   if constexpr (_enable_validation_layers) {
     m_instance.destroyDebugUtilsMessengerEXT(m_debug_messenger);
@@ -177,6 +181,32 @@ bool Context::_device_has_extension_support(
   }
 
   return true;
+}
+
+vk::Format Context::_find_supported_format(
+    const vk::PhysicalDevice &device, const std::vector<vk::Format> &candidates,
+    vk::ImageTiling tiling, vk::FormatFeatureFlags features) {
+  for (const auto &format : candidates) {
+    const auto props{device.getFormatProperties(format)};
+    if (tiling == vk::ImageTiling::eLinear &&
+        (props.linearTilingFeatures & features) == features) {
+      return format;
+    } else if (tiling == vk::ImageTiling::eOptimal &&
+               (props.optimalTilingFeatures & features) == features) {
+      return format;
+    }
+  }
+
+  throw VulkanKraftException("failed to find supported format");
+}
+
+vk::Format Context::_find_depth_format(const vk::PhysicalDevice &device) {
+  return _find_supported_format(
+      device,
+      {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint,
+       vk::Format::eD24UnormS8Uint},
+      vk::ImageTiling::eOptimal,
+      vk::FormatFeatureFlagBits::eDepthStencilAttachment);
 }
 
 void Context::_create_instance(
@@ -318,6 +348,69 @@ void Context::_create_logical_device(
 void Context::_create_swap_chain(const Window &window) {
   m_swap_chain = std::make_unique<SwapChain>(m_physical_device, m_device,
                                              m_surface, window);
+}
+
+void Context::_create_render_pass() {
+  vk::AttachmentDescription col_at;
+  col_at.format = m_swap_chain->get_image_format();
+  col_at.samples = vk::SampleCountFlagBits::e1;
+  col_at.loadOp = vk::AttachmentLoadOp::eClear;
+  col_at.storeOp = vk::AttachmentStoreOp::eStore;
+  col_at.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+  col_at.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+  col_at.initialLayout = vk::ImageLayout::eUndefined;
+  col_at.finalLayout = vk::ImageLayout::eColorAttachmentOptimal;
+
+  vk::AttachmentDescription depth_at;
+  depth_at.format = _find_depth_format(m_physical_device);
+  depth_at.samples = vk::SampleCountFlagBits::e1;
+  depth_at.loadOp = vk::AttachmentLoadOp::eClear;
+  depth_at.storeOp = vk::AttachmentStoreOp::eDontCare;
+  depth_at.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+  depth_at.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+  depth_at.initialLayout = vk::ImageLayout::eUndefined;
+  depth_at.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+  vk::AttachmentReference col_at_ref;
+  col_at_ref.attachment = 0;
+  col_at_ref.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+  vk::AttachmentReference depth_at_ref;
+  depth_at_ref.attachment = 1;
+  depth_at_ref.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+  vk::SubpassDescription sub;
+  sub.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+  sub.colorAttachmentCount = 1;
+  sub.pColorAttachments = &col_at_ref;
+  sub.pDepthStencilAttachment = &depth_at_ref;
+
+  vk::SubpassDependency dep;
+  dep.srcSubpass = VK_SUBPASS_EXTERNAL;
+  dep.dstSubpass = 0;
+  dep.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput |
+                     vk::PipelineStageFlagBits::eEarlyFragmentTests;
+  dep.srcAccessMask = vk::AccessFlagBits::eNoneKHR;
+  dep.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput |
+                     vk::PipelineStageFlagBits::eEarlyFragmentTests;
+  dep.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite |
+                      vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+
+  const auto ats = std::array{col_at, depth_at};
+  vk::RenderPassCreateInfo ri;
+  ri.attachmentCount = static_cast<uint32_t>(ats.size());
+  ri.pAttachments = ats.data();
+  ri.subpassCount = 1;
+  ri.pSubpasses = &sub;
+  ri.dependencyCount = 1;
+  ri.pDependencies = &dep;
+
+  try {
+    m_render_pass = m_device.createRenderPass(ri);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(std::string("failed to create render pass: ") +
+                               e.what());
+  }
 }
 
 } // namespace vulkan

@@ -69,6 +69,12 @@ private:
       const std::vector<const char *> &extension_names);
 
   // ****** Utilities ***********
+  static vk::Format
+  _find_supported_format(const vk::PhysicalDevice &device,
+                         const std::vector<vk::Format> &candidates,
+                         vk::ImageTiling tiling,
+                         vk::FormatFeatureFlags features);
+  static vk::Format _find_depth_format(const vk::PhysicalDevice &device);
   // ****************************
 
   // ****** Initialisation ******
@@ -81,6 +87,7 @@ private:
   _create_logical_device(const std::vector<const char *> &extensions,
                          const std::vector<const char *> &validation_layers);
   void _create_swap_chain(const Window &window);
+  void _create_render_pass();
   // ****************************
 
   vk::Instance m_instance;
@@ -91,6 +98,7 @@ private:
   vk::Queue m_graphics_queue;
   vk::Queue m_present_queue;
   std::unique_ptr<SwapChain> m_swap_chain;
+  vk::RenderPass m_render_pass;
 };
 } // namespace vulkan
 } // namespace core

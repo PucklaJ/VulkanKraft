@@ -11,6 +11,8 @@ public:
             const vk::SurfaceKHR &surface, const Window &window);
   ~SwapChain();
 
+  inline const vk::Format &get_image_format() const { return m_image_format; }
+
 private:
   static vk::SurfaceFormatKHR
   _choose_surface_format(const std::vector<vk::SurfaceFormatKHR> &formats);

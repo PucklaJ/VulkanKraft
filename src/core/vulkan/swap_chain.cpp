@@ -17,7 +17,7 @@ SwapChain::SwapChain(const vk::PhysicalDevice &physical_device,
   const auto extent{_choose_extent(scs.capabilities, window)};
 
   auto image_count{scs.capabilities.minImageCount + 1};
-  if (scs.capabilities.minImageCount > 0 &&
+  if (scs.capabilities.maxImageCount > 0 &&
       image_count > scs.capabilities.maxImageCount) {
     image_count = scs.capabilities.maxImageCount;
   }
