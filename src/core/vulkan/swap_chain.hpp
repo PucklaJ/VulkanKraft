@@ -14,7 +14,7 @@ public:
 
   inline const vk::Format &get_image_format() const { return m_image_format; }
   inline const vk::Extent2D &get_extent() const { return m_extent; }
-  void create_framebuffers();
+  void create_framebuffers(vk::ImageView &depth_image_view);
 
 private:
   static vk::SurfaceFormatKHR

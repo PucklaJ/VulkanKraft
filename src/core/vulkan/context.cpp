@@ -41,13 +41,22 @@ Context::Context(const Window &window) {
   }
   _create_swap_chain(window);
   _create_render_pass();
-  m_swap_chain->create_framebuffers();
+  _create_command_pool();
+  _create_depth_image();
+  m_swap_chain->create_framebuffers(m_depth_image_view);
 
   Log::info("Successfully Constructed Vulkan Context");
 }
 
 Context::~Context() {
   m_swap_chain.reset();
+
+  m_device.destroyImageView(m_depth_image_view);
+  m_device.destroyImage(m_depth_image);
+  m_device.freeMemory(m_depth_image_memory);
+
+  m_device.destroyCommandPool(m_graphic_command_pool);
+
   m_device.destroyRenderPass(m_render_pass);
   m_device.destroy();
   if constexpr (_enable_validation_layers) {
@@ -208,6 +217,126 @@ vk::Format Context::_find_depth_format(const vk::PhysicalDevice &device) {
        vk::Format::eD24UnormS8Uint},
       vk::ImageTiling::eOptimal,
       vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+}
+
+uint32_t Context::_find_memory_type(const vk::PhysicalDevice &device,
+                                    uint32_t type_filter,
+                                    vk::MemoryPropertyFlags props) {
+  const auto mem_props(device.getMemoryProperties());
+  for (uint32_t i = 0; i < mem_props.memoryTypeCount; i++) {
+    if (type_filter & (1 << i) &&
+        (mem_props.memoryTypes[i].propertyFlags & props) == props) {
+      return i;
+    }
+  }
+
+  throw VulkanKraftException("failed to find suitable memory type");
+}
+
+vk::CommandBuffer
+Context::_begin_single_time_commands(const vk::Device &device,
+                                     const vk::CommandPool &command_pool) {
+  vk::CommandBufferAllocateInfo ai;
+  ai.level = vk::CommandBufferLevel::ePrimary;
+  ai.commandPool = command_pool;
+  ai.commandBufferCount = 1;
+
+  vk::CommandBuffer cb;
+  try {
+    auto cbs = device.allocateCommandBuffers(ai);
+    cb = cbs[0];
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string(
+            "failed to allocate command buffer for single time commands: ") +
+        e.what());
+  }
+
+  vk::CommandBufferBeginInfo cbi;
+  cbi.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+
+  cb.begin(cbi);
+
+  return cb;
+}
+
+void Context::_end_single_time_commands(const vk::Device &device,
+                                        const vk::CommandPool &command_pool,
+                                        const vk::Queue &queue,
+                                        vk::CommandBuffer command_buffer) {
+  command_buffer.end();
+
+  vk::SubmitInfo si;
+  si.commandBufferCount = 1;
+  si.pCommandBuffers = &command_buffer;
+
+  queue.submit(si);
+  queue.waitIdle();
+
+  device.freeCommandBuffers(command_pool, command_buffer);
+}
+
+void Context::_transition_image_layout(
+    const vk::Device &device, const vk::CommandPool &command_pool,
+    const vk::Queue &queue, const vk::Image &image, vk::Format format,
+    vk::ImageLayout old_layout, vk::ImageLayout new_layout,
+    uint32_t mip_levels) {
+  auto com_buf(_begin_single_time_commands(device, command_pool));
+
+  vk::ImageMemoryBarrier bar;
+  bar.oldLayout = old_layout;
+  bar.newLayout = new_layout;
+  bar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  bar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  bar.image = image;
+  if (new_layout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
+    bar.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+
+    if (_has_stencil_component(format)) {
+      bar.subresourceRange.aspectMask |= vk::ImageAspectFlagBits::eStencil;
+    }
+  } else {
+    bar.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+  }
+  bar.subresourceRange.baseMipLevel = 0;
+  bar.subresourceRange.levelCount = mip_levels;
+  bar.subresourceRange.baseArrayLayer = 0;
+  bar.subresourceRange.layerCount = 1;
+  bar.srcAccessMask = vk::AccessFlagBits::eNoneKHR;
+  bar.dstAccessMask = vk::AccessFlagBits::eNoneKHR;
+
+  vk::PipelineStageFlags src_stage, dst_stage;
+  if (old_layout == vk::ImageLayout::eUndefined &&
+      new_layout == vk::ImageLayout::eTransferDstOptimal) {
+    bar.srcAccessMask = vk::AccessFlagBits::eNoneKHR;
+    bar.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+
+    src_stage = vk::PipelineStageFlagBits::eTopOfPipe;
+    dst_stage = vk::PipelineStageFlagBits::eTransfer;
+  } else if (old_layout == vk::ImageLayout::eTransferDstOptimal &&
+             new_layout == vk::ImageLayout::eShaderReadOnlyOptimal) {
+    bar.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+    bar.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+    src_stage = vk::PipelineStageFlagBits::eTransfer;
+    dst_stage = vk::PipelineStageFlagBits::eFragmentShader;
+  } else if (old_layout == vk::ImageLayout::eUndefined &&
+             new_layout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
+    bar.srcAccessMask = vk::AccessFlagBits::eNoneKHR;
+    bar.dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead |
+                        vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+
+    src_stage = vk::PipelineStageFlagBits::eTopOfPipe;
+    dst_stage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+  } else {
+    throw VulkanKraftException("unsupported layout transistion");
+  }
+
+  com_buf.pipelineBarrier(src_stage, dst_stage,
+                          static_cast<vk::DependencyFlagBits>(0), nullptr,
+                          nullptr, bar);
+
+  _end_single_time_commands(device, command_pool, queue, std::move(com_buf));
 }
 
 void Context::_create_instance(
@@ -412,6 +541,87 @@ void Context::_create_render_pass() {
     throw VulkanKraftException(std::string("failed to create render pass: ") +
                                e.what());
   }
+}
+
+void Context::_create_command_pool() {
+  const QueueFamilyIndices indices(m_physical_device, m_surface);
+
+  vk::CommandPoolCreateInfo ci;
+  ci.queueFamilyIndex = indices.graphics_family.value();
+
+  try {
+    m_graphic_command_pool = m_device.createCommandPool(ci);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string("failed to create graphics command pool: ") + e.what());
+  }
+}
+
+void Context::_create_depth_image() {
+  const auto format{_find_depth_format(m_physical_device)};
+
+  // Create image
+  vk::ImageCreateInfo ii{};
+  ii.imageType = vk::ImageType::e2D;
+  ii.extent.width = m_swap_chain->get_extent().width;
+  ii.extent.height = m_swap_chain->get_extent().height;
+  ii.extent.depth = 1;
+  ii.mipLevels = 1;
+  ii.arrayLayers = 1;
+  ii.format = format;
+  ii.tiling = vk::ImageTiling::eOptimal;
+  ii.initialLayout = vk::ImageLayout::eUndefined;
+  ii.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+  ii.samples = vk::SampleCountFlagBits::e1;
+  ii.sharingMode = vk::SharingMode::eExclusive;
+
+  try {
+    m_depth_image = m_device.createImage(ii);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(std::string("failed to create depth image: ") +
+                               e.what());
+  }
+
+  // Allocate memory
+  const auto mem_req{m_device.getImageMemoryRequirements(m_depth_image)};
+
+  vk::MemoryAllocateInfo ai;
+  ai.allocationSize = mem_req.size;
+  ai.memoryTypeIndex =
+      _find_memory_type(m_physical_device, mem_req.memoryTypeBits,
+                        vk::MemoryPropertyFlagBits::eDeviceLocal);
+
+  try {
+    m_depth_image_memory = m_device.allocateMemory(ai);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string("failed to allocate depth image memory: ") + e.what());
+  }
+
+  m_device.bindImageMemory(m_depth_image, m_depth_image_memory, 0);
+
+  // Create image view
+  vk::ImageViewCreateInfo vi{};
+  vi.image = m_depth_image;
+  vi.viewType = vk::ImageViewType::e2D;
+  vi.format = format;
+  vi.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+  vi.subresourceRange.baseMipLevel = 0;
+  vi.subresourceRange.levelCount = 1;
+  vi.subresourceRange.baseArrayLayer = 0;
+  vi.subresourceRange.layerCount = 1;
+
+  VkImageView imageView;
+  try {
+    m_depth_image_view = m_device.createImageView(vi);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string("failed to create depth image view: ") + e.what());
+  }
+
+  _transition_image_layout(m_device, m_graphic_command_pool, m_graphics_queue,
+                           m_depth_image, format, vk::ImageLayout::eUndefined,
+                           vk::ImageLayout::eDepthStencilAttachmentOptimal, 1);
 }
 
 } // namespace vulkan

@@ -76,6 +76,26 @@ private:
                          vk::ImageTiling tiling,
                          vk::FormatFeatureFlags features);
   static vk::Format _find_depth_format(const vk::PhysicalDevice &device);
+  static uint32_t _find_memory_type(const vk::PhysicalDevice &device,
+                                    uint32_t type_filter,
+                                    vk::MemoryPropertyFlags props);
+  static vk::CommandBuffer
+  _begin_single_time_commands(const vk::Device &device,
+                              const vk::CommandPool &command_pool);
+  static void _end_single_time_commands(const vk::Device &device,
+                                        const vk::CommandPool &command_pool,
+                                        const vk::Queue &queue,
+                                        vk::CommandBuffer command_buffer);
+  static void
+  _transition_image_layout(const vk::Device &device,
+                           const vk::CommandPool &command_pool,
+                           const vk::Queue &queue, const vk::Image &image,
+                           vk::Format format, vk::ImageLayout old_layout,
+                           vk::ImageLayout new_layout, uint32_t mip_levels);
+  static inline bool _has_stencil_component(vk::Format format) {
+    return format == vk::Format::eD32SfloatS8Uint ||
+           format == vk::Format::eD24UnormS8Uint;
+  }
   // ****************************
 
   // ****** Initialisation ******
@@ -89,6 +109,8 @@ private:
                          const std::vector<const char *> &validation_layers);
   void _create_swap_chain(const Window &window);
   void _create_render_pass();
+  void _create_command_pool();
+  void _create_depth_image();
   // ****************************
 
   vk::Instance m_instance;
@@ -100,6 +122,10 @@ private:
   vk::Queue m_present_queue;
   std::unique_ptr<SwapChain> m_swap_chain;
   vk::RenderPass m_render_pass;
+  vk::CommandPool m_graphic_command_pool;
+  vk::Image m_depth_image;
+  vk::DeviceMemory m_depth_image_memory;
+  vk::ImageView m_depth_image_view;
 };
 } // namespace vulkan
 } // namespace core

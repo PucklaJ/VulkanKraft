@@ -64,13 +64,15 @@ SwapChain::SwapChain(const vk::PhysicalDevice &physical_device,
 
 SwapChain::~SwapChain() { _destroy(); }
 
-void SwapChain::create_framebuffers() {
+void SwapChain::create_framebuffers(vk::ImageView &depth_image_view) {
   m_framebuffers.reserve(m_image_views.size());
   for (const auto &iv : m_image_views) {
+    const auto ats = std::array{iv, depth_image_view};
+
     vk::FramebufferCreateInfo fb_i;
     fb_i.renderPass = m_render_pass;
-    fb_i.attachmentCount = 1;
-    fb_i.pAttachments = &iv;
+    fb_i.attachmentCount = static_cast<uint32_t>(ats.size());
+    fb_i.pAttachments = ats.data();
     fb_i.width = m_extent.width;
     fb_i.height = m_extent.height;
     fb_i.layers = 1;
