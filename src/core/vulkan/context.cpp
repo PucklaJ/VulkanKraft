@@ -3,11 +3,39 @@
 #include "../log.hpp"
 #include <cstring>
 
+PFN_vkCreateDebugUtilsMessengerEXT
+    core::vulkan::Context::pfnVkCreateDebugUtilsMessengerEXT;
+PFN_vkDestroyDebugUtilsMessengerEXT
+    core::vulkan::Context::pfnVkDestroyDebugUtilsMessengerEXT;
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(
+    VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
+    const VkAllocationCallbacks *pAllocator,
+    VkDebugUtilsMessengerEXT *pMessenger) {
+  return core::vulkan::Context::pfnVkCreateDebugUtilsMessengerEXT(
+      instance, pCreateInfo, pAllocator, pMessenger);
+}
+
+VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(
+    VkInstance instance, VkDebugUtilsMessengerEXT messenger,
+    VkAllocationCallbacks const *pAllocator) {
+  return core::vulkan::Context::pfnVkDestroyDebugUtilsMessengerEXT(
+      instance, messenger, pAllocator);
+}
+
 namespace core {
 namespace vulkan {
-Context::Context(const Window &window) { _create_instance(window); }
+Context::Context(const Window &window) {
+  _create_instance(window);
+  _setup_debug_messenger();
+}
 
-Context::~Context() { m_instance.destroy(); }
+Context::~Context() {
+  if constexpr (_enable_validation_layers) {
+    m_instance.destroyDebugUtilsMessengerEXT(m_debug_messenger);
+  }
+  m_instance.destroy();
+}
 
 bool Context::_has_validation_layer_support(
     const std::vector<const char *> &layer_names) noexcept {
@@ -105,5 +133,36 @@ void Context::_create_instance(const Window &window) {
                                e.what());
   }
 }
+
+void Context::_setup_debug_messenger() {
+  pfnVkCreateDebugUtilsMessengerEXT =
+      reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+          m_instance.getProcAddr("vkCreateDebugUtilsMessengerEXT"));
+  if (!pfnVkCreateDebugUtilsMessengerEXT) {
+    throw VulkanKraftException("GetInstanceProcAddr: Unable to find "
+                               "pfnVkCreateDebugUtilsMessengerEXT function.");
+  }
+
+  pfnVkDestroyDebugUtilsMessengerEXT =
+      reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+          m_instance.getProcAddr("vkDestroyDebugUtilsMessengerEXT"));
+  if (!pfnVkDestroyDebugUtilsMessengerEXT) {
+    throw VulkanKraftException("GetInstanceProcAddr: Unable to find "
+                               "pfnVkDestroyDebugUtilsMessengerEXT function.");
+  }
+
+  if constexpr (_enable_validation_layers) {
+    vk::DebugUtilsMessengerCreateInfoEXT di;
+    _populate_debug_messenger_create_info(di);
+
+    try {
+      m_debug_messenger = m_instance.createDebugUtilsMessengerEXT(di);
+    } catch (const std::runtime_error &e) {
+      throw VulkanKraftException(
+          std::string("failed to set up debug messenger: ") + e.what());
+    }
+  }
+}
+
 } // namespace vulkan
 } // namespace core

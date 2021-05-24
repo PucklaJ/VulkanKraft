@@ -7,6 +7,9 @@ namespace core {
 namespace vulkan {
 class Context {
 public:
+  static PFN_vkCreateDebugUtilsMessengerEXT pfnVkCreateDebugUtilsMessengerEXT;
+  static PFN_vkDestroyDebugUtilsMessengerEXT pfnVkDestroyDebugUtilsMessengerEXT;
+
   Context(const Window &window);
   ~Context();
 
@@ -21,6 +24,7 @@ private:
 #else
   static constexpr bool _enable_validation_layers = true;
 #endif
+
   static bool _has_validation_layer_support(
       const std::vector<const char *> &layer_names) noexcept;
   static void _populate_debug_messenger_create_info(
@@ -32,8 +36,10 @@ private:
                   void *pUserData);
 
   void _create_instance(const Window &window);
+  void _setup_debug_messenger();
 
   vk::Instance m_instance;
+  vk::DebugUtilsMessengerEXT m_debug_messenger;
 };
 } // namespace vulkan
 } // namespace core
