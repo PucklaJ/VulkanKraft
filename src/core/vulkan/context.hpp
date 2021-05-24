@@ -11,6 +11,7 @@ namespace vulkan {
 class Context {
 public:
   friend class SwapChain;
+  friend class GraphicsPipeline;
 
   static PFN_vkCreateDebugUtilsMessengerEXT pfnVkCreateDebugUtilsMessengerEXT;
   static PFN_vkDestroyDebugUtilsMessengerEXT pfnVkDestroyDebugUtilsMessengerEXT;

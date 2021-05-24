@@ -12,6 +12,7 @@ public:
   ~SwapChain();
 
   inline const vk::Format &get_image_format() const { return m_image_format; }
+  inline const vk::Extent2D &get_extent() const { return m_extent; }
 
 private:
   static vk::SurfaceFormatKHR
