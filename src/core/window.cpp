@@ -32,4 +32,14 @@ std::vector<const char *> Window::get_required_vulkan_extensions() const {
 
   return std::vector(glfw_ext, glfw_ext + glfw_count);
 }
+
+vk::SurfaceKHR Window::create_vulkan_surface(vk::Instance &instance) const {
+  VkSurfaceKHR surface;
+  if (glfwCreateWindowSurface(instance.operator VkInstance(), m_window, nullptr,
+                              &surface) != VK_SUCCESS) {
+    throw VulkanKraftException("failed to create surface");
+  }
+
+  return surface;
+}
 } // namespace core

@@ -37,9 +37,11 @@ private:
 
   void _create_instance(const Window &window);
   void _setup_debug_messenger();
+  void _create_surface(const Window &window);
 
   vk::Instance m_instance;
   vk::DebugUtilsMessengerEXT m_debug_messenger;
+  vk::SurfaceKHR m_surface;
 };
 } // namespace vulkan
 } // namespace core

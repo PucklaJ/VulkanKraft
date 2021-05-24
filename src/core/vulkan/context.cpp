@@ -28,12 +28,16 @@ namespace vulkan {
 Context::Context(const Window &window) {
   _create_instance(window);
   _setup_debug_messenger();
+  _create_surface(window);
+
+  Log::info("Successfully Constructed Vulkan Context");
 }
 
 Context::~Context() {
   if constexpr (_enable_validation_layers) {
     m_instance.destroyDebugUtilsMessengerEXT(m_debug_messenger);
   }
+  m_instance.destroySurfaceKHR(m_surface);
   m_instance.destroy();
 }
 
@@ -162,6 +166,10 @@ void Context::_setup_debug_messenger() {
           std::string("failed to set up debug messenger: ") + e.what());
     }
   }
+}
+
+void Context::_create_surface(const Window &window) {
+  m_surface = window.create_vulkan_surface(m_instance);
 }
 
 } // namespace vulkan
