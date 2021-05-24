@@ -1,0 +1,9 @@
+.*
+!.gitignore
+
+# xmake
+build
+compile_commands.json
+
+# vulkan
+*.spv
