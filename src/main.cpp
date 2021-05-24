@@ -1,4 +1,5 @@
 #include "core/exception.hpp"
+#include "core/log.hpp"
 #include "core/window.hpp"
 #include <chrono>
 #include <iostream>
@@ -19,7 +20,7 @@ int main(int args, char *argv[]) {
       std::this_thread::sleep_for(10ms);
     }
   } catch (const core::VulkanKraftException &e) {
-    std::cerr << "Error: " << e.what() << std::endl;
+    core::Log::error(e.what());
     return 1;
   }
 
