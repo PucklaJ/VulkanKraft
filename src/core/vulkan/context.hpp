@@ -64,15 +64,24 @@ private:
       const vk::PhysicalDevice &device,
       const std::vector<const char *> &extension_names);
 
-  void _create_instance(const Window &window);
+  // ****** Initialisation ******
+  void _create_instance(const Window &window,
+                        const std::vector<const char *> &validation_layers);
   void _setup_debug_messenger();
   void _create_surface(const Window &window);
-  void _pick_physical_device();
+  void _pick_physical_device(const std::vector<const char *> &extensions);
+  void
+  _create_logical_device(const std::vector<const char *> &extensions,
+                         const std::vector<const char *> &validation_layers);
+  // ****************************
 
   vk::Instance m_instance;
   vk::DebugUtilsMessengerEXT m_debug_messenger;
   vk::SurfaceKHR m_surface;
   vk::PhysicalDevice m_physical_device;
+  vk::Device m_device;
+  vk::Queue m_graphics_queue;
+  vk::Queue m_present_queue;
 };
 } // namespace vulkan
 } // namespace core

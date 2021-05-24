@@ -2,6 +2,7 @@
 #include "../exception.hpp"
 #include "../log.hpp"
 #include <cstring>
+#include <set>
 
 PFN_vkCreateDebugUtilsMessengerEXT
     core::vulkan::Context::pfnVkCreateDebugUtilsMessengerEXT;
@@ -26,15 +27,23 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(
 namespace core {
 namespace vulkan {
 Context::Context(const Window &window) {
-  _create_instance(window);
+  const std::vector<const char *> validation_layers = {
+      "VK_LAYER_KHRONOS_validation"};
+  _create_instance(window, validation_layers);
   _setup_debug_messenger();
   _create_surface(window);
-  _pick_physical_device();
+  {
+    const std::vector<const char *> device_extensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    _pick_physical_device(device_extensions);
+    _create_logical_device(device_extensions, validation_layers);
+  }
 
   Log::info("Successfully Constructed Vulkan Context");
 }
 
 Context::~Context() {
+  m_device.destroy();
   if constexpr (_enable_validation_layers) {
     m_instance.destroyDebugUtilsMessengerEXT(m_debug_messenger);
   }
@@ -169,9 +178,8 @@ bool Context::_device_has_extension_support(
   return true;
 }
 
-void Context::_create_instance(const Window &window) {
-  const std::vector<const char *> validation_layers = {
-      "VK_LAYER_KHRONOS_validation"};
+void Context::_create_instance(
+    const Window &window, const std::vector<const char *> &validation_layers) {
 
   if (_enable_validation_layers &&
       !_has_validation_layer_support(validation_layers)) {
@@ -245,14 +253,12 @@ void Context::_create_surface(const Window &window) {
   m_surface = window.create_vulkan_surface(m_instance);
 }
 
-void Context::_pick_physical_device() {
+void Context::_pick_physical_device(
+    const std::vector<const char *> &extensions) {
   const auto devices(m_instance.enumeratePhysicalDevices());
   if (devices.empty()) {
     throw VulkanKraftException("no GPUs with vulkan support found");
   }
-
-  const std::vector<const char *> extensions = {
-      VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
   for (const auto &d : devices) {
     if (_is_device_suitable(d, m_surface, extensions)) {
@@ -263,6 +269,49 @@ void Context::_pick_physical_device() {
   if (!m_physical_device) {
     throw VulkanKraftException("failed to find a suitable GPU");
   }
+}
+
+void Context::_create_logical_device(
+    const std::vector<const char *> &extensions,
+    const std::vector<const char *> &validation_layers) {
+  const QueueFamilyIndices indices(m_physical_device, m_surface);
+  std::vector<vk::DeviceQueueCreateInfo> qis;
+  std::set<uint32_t> unique_queue_families = {indices.graphics_family.value(),
+                                              indices.present_family.value()};
+
+  const float queue_priority = 1.0f;
+  for (const auto &qf : unique_queue_families) {
+    vk::DeviceQueueCreateInfo qi;
+    qi.queueFamilyIndex = qf;
+    qi.queueCount = 1;
+    qi.pQueuePriorities = &queue_priority;
+    qis.emplace_back(std::move(qi));
+  }
+
+  vk::PhysicalDeviceFeatures features;
+  features.samplerAnisotropy = VK_FALSE;
+  features.sampleRateShading = VK_FALSE;
+
+  vk::DeviceCreateInfo di;
+  di.queueCreateInfoCount = static_cast<uint32_t>(qis.size());
+  di.pQueueCreateInfos = qis.data();
+  di.pEnabledFeatures = &features;
+  di.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+  di.ppEnabledExtensionNames = extensions.data();
+  if constexpr (_enable_validation_layers) {
+    di.enabledLayerCount = static_cast<uint32_t>(validation_layers.size());
+    di.ppEnabledLayerNames = validation_layers.data();
+  }
+
+  try {
+    m_device = m_physical_device.createDevice(di);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string("failed to create logical device: ") + e.what());
+  }
+
+  m_graphics_queue = m_device.getQueue(indices.graphics_family.value(), 0);
+  m_present_queue = m_device.getQueue(indices.present_family.value(), 0);
 }
 
 } // namespace vulkan
