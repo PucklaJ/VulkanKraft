@@ -9,8 +9,8 @@ namespace core {
 namespace vulkan {
 SwapChain::SwapChain(const vk::PhysicalDevice &physical_device,
                      const vk::Device &device, const vk::SurfaceKHR &surface,
-                     const Window &window)
-    : m_device(device) {
+                     const vk::RenderPass &render_pass, const Window &window)
+    : m_device(device), m_render_pass(render_pass) {
   const Context::SwapChainSupportDetails scs(physical_device, surface);
   const auto format{_choose_surface_format(scs.formats)};
   const auto present_mode{_choose_present_mode(scs.present_modes)};
@@ -63,6 +63,27 @@ SwapChain::SwapChain(const vk::PhysicalDevice &physical_device,
 }
 
 SwapChain::~SwapChain() { _destroy(); }
+
+void SwapChain::create_framebuffers() {
+  m_framebuffers.reserve(m_image_views.size());
+  for (const auto &iv : m_image_views) {
+    vk::FramebufferCreateInfo fb_i;
+    fb_i.renderPass = m_render_pass;
+    fb_i.attachmentCount = 1;
+    fb_i.pAttachments = &iv;
+    fb_i.width = m_extent.width;
+    fb_i.height = m_extent.height;
+    fb_i.layers = 1;
+
+    try {
+      m_framebuffers.emplace_back(m_device.createFramebuffer(fb_i));
+    } catch (const std::runtime_error &e) {
+      throw VulkanKraftException("failed to create swap chain framebuffer " +
+                                 std::to_string(m_framebuffers.size()) + ": " +
+                                 e.what());
+    }
+  }
+}
 
 vk::SurfaceFormatKHR SwapChain::_choose_surface_format(
     const std::vector<vk::SurfaceFormatKHR> &formats) {
@@ -123,6 +144,9 @@ void SwapChain::_create_image_views() {
 }
 
 void SwapChain::_destroy() {
+  for (auto &fb : m_framebuffers) {
+    m_device.destroyFramebuffer(fb);
+  }
   for (auto &iv : m_image_views) {
     m_device.destroyImageView(iv);
   }

@@ -41,6 +41,7 @@ Context::Context(const Window &window) {
   }
   _create_swap_chain(window);
   _create_render_pass();
+  m_swap_chain->create_framebuffers();
 
   Log::info("Successfully Constructed Vulkan Context");
 }
@@ -347,7 +348,7 @@ void Context::_create_logical_device(
 
 void Context::_create_swap_chain(const Window &window) {
   m_swap_chain = std::make_unique<SwapChain>(m_physical_device, m_device,
-                                             m_surface, window);
+                                             m_surface, m_render_pass, window);
 }
 
 void Context::_create_render_pass() {
