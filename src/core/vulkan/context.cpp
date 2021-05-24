@@ -3,6 +3,7 @@
 #include "../log.hpp"
 #include <array>
 #include <cstring>
+#include <limits>
 #include <set>
 
 PFN_vkCreateDebugUtilsMessengerEXT
@@ -27,7 +28,8 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(
 
 namespace core {
 namespace vulkan {
-Context::Context(const Window &window) {
+Context::Context(const Window &window)
+    : m_current_frame(0), m_command_buffer_created(false) {
   const std::vector<const char *> validation_layers = {
       "VK_LAYER_KHRONOS_validation"};
   _create_instance(window, validation_layers);
@@ -44,16 +46,29 @@ Context::Context(const Window &window) {
   _create_command_pool();
   _create_depth_image();
   m_swap_chain->create_framebuffers(m_depth_image_view);
+  _create_sync_objects();
 
   Log::info("Successfully Constructed Vulkan Context");
 }
 
 Context::~Context() {
+  m_device.waitIdle();
+
   m_swap_chain.reset();
 
   m_device.destroyImageView(m_depth_image_view);
   m_device.destroyImage(m_depth_image);
   m_device.freeMemory(m_depth_image_memory);
+
+  for (auto &s : m_image_available_semaphores) {
+    m_device.destroySemaphore(s);
+  }
+  for (auto &f : m_images_in_flight) {
+    m_device.destroyFence(f);
+  }
+  for (auto &f : m_in_flight_fences) {
+    m_device.destroyFence(f);
+  }
 
   m_device.destroyCommandPool(m_graphic_command_pool);
 
@@ -64,6 +79,103 @@ Context::~Context() {
   }
   m_instance.destroySurfaceKHR(m_surface);
   m_instance.destroy();
+}
+
+void Context::render_begin() {
+  m_device.waitForFences(m_in_flight_fences[m_current_frame], VK_TRUE,
+                         std::numeric_limits<uint64_t>::max());
+
+  auto acquired_image = m_swap_chain->acquire_next_image(
+      m_device, m_image_available_semaphores[m_current_frame]);
+  if (!acquired_image) {
+    return;
+  }
+
+  auto [image_index, framebuffer] = acquired_image.value();
+
+  if (m_images_in_flight[image_index]) {
+    m_device.waitForFences(m_images_in_flight[image_index], VK_TRUE,
+                           std::numeric_limits<uint64_t>::max());
+  }
+  m_images_in_flight[image_index] = m_in_flight_fences[m_current_frame];
+
+  if (!m_command_buffer_created) {
+    m_graphic_command_buffer.begin(vk::CommandBufferBeginInfo());
+
+    vk::RenderPassBeginInfo rbi;
+    rbi.renderPass = m_render_pass;
+    rbi.framebuffer = framebuffer;
+    rbi.renderArea.extent = m_swap_chain->get_extent();
+
+    std::array<vk::ClearValue, 2> clear_values;
+    clear_values[0].color = std::array{
+        0.0f,
+        0.0f,
+        0.0f,
+        1.0f,
+    };
+    clear_values[1].depthStencil.depth = 1.0f;
+    rbi.clearValueCount = static_cast<uint32_t>(clear_values.size());
+    rbi.pClearValues = clear_values.data();
+
+    m_graphic_command_buffer.beginRenderPass(rbi, vk::SubpassContents::eInline);
+  }
+}
+
+void Context::render_end() {
+  if (!m_command_buffer_created) {
+    m_graphic_command_buffer.endRenderPass();
+    m_graphic_command_buffer.end();
+    m_command_buffer_created = true;
+  }
+  if (!m_swap_chain->get_current_image()) {
+    return;
+  }
+
+  vk::SubmitInfo si;
+
+  const auto wait_sems =
+      std::array{m_image_available_semaphores[m_current_frame]};
+  const auto wait_stages = std::array<vk::PipelineStageFlags, wait_sems.size()>{
+      vk::PipelineStageFlagBits::eColorAttachmentOutput};
+  si.waitSemaphoreCount = static_cast<uint32_t>(wait_sems.size());
+  si.pWaitSemaphores = wait_sems.data();
+  si.pWaitDstStageMask = wait_stages.data();
+  si.commandBufferCount = 1;
+  si.pCommandBuffers = &m_graphic_command_buffer;
+
+  const auto sig_sems =
+      std::array{m_render_finished_semaphores[m_current_frame]};
+  si.signalSemaphoreCount = static_cast<uint32_t>(sig_sems.size());
+  si.pSignalSemaphores = sig_sems.data();
+
+  m_device.resetFences(m_in_flight_fences[m_current_frame]);
+
+  m_graphics_queue.submit(si, m_in_flight_fences[m_current_frame]);
+
+  vk::PresentInfoKHR pi;
+  pi.waitSemaphoreCount = static_cast<uint32_t>(sig_sems.size());
+  pi.pWaitSemaphores = sig_sems.data();
+
+  const auto swap_chains = std::array{m_swap_chain->get_handle()};
+  pi.swapchainCount = static_cast<uint32_t>(swap_chains.size());
+  pi.pSwapchains = swap_chains.data();
+  const auto image_index = m_swap_chain->get_current_image().value();
+  pi.pImageIndices = &image_index;
+
+  if (const auto r = m_present_queue.presentKHR(pi);
+      r == vk::Result::eErrorOutOfDateKHR || r == vk::Result::eSuboptimalKHR) {
+    // TODO: recreate swap chain
+  }
+
+  m_current_frame = (m_current_frame + 1) % _max_images_in_flight;
+}
+
+void Context::render_vertices(const uint32_t num_vertices,
+                              const uint32_t first_vertex) {
+  if (!m_command_buffer_created) {
+    m_graphic_command_buffer.draw(num_vertices, 1, first_vertex, 0);
+  }
 }
 
 Context::QueueFamilyIndices::QueueFamilyIndices(
@@ -555,6 +667,20 @@ void Context::_create_command_pool() {
     throw VulkanKraftException(
         std::string("failed to create graphics command pool: ") + e.what());
   }
+
+  // Create command buffer for graphics commands
+  vk::CommandBufferAllocateInfo ai;
+  ai.commandPool = m_graphic_command_pool;
+  ai.level = vk::CommandBufferLevel::ePrimary;
+  ai.commandBufferCount = 1;
+
+  try {
+    auto cbs = m_device.allocateCommandBuffers(ai);
+    m_graphic_command_buffer = cbs[0];
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string("failed to create graphic command buffer: ") + e.what());
+  }
 }
 
 void Context::_create_depth_image() {
@@ -622,6 +748,30 @@ void Context::_create_depth_image() {
   _transition_image_layout(m_device, m_graphic_command_pool, m_graphics_queue,
                            m_depth_image, format, vk::ImageLayout::eUndefined,
                            vk::ImageLayout::eDepthStencilAttachmentOptimal, 1);
+}
+
+void Context::_create_sync_objects() {
+  m_image_available_semaphores.resize(_max_images_in_flight);
+  m_render_finished_semaphores.resize(_max_images_in_flight);
+  m_in_flight_fences.resize(_max_images_in_flight);
+  m_images_in_flight.resize(m_swap_chain->get_image_count(), VK_NULL_HANDLE);
+
+  vk::SemaphoreCreateInfo si;
+
+  vk::FenceCreateInfo fi;
+  fi.flags = vk::FenceCreateFlagBits::eSignaled;
+
+  for (size_t i = 0; i < _max_images_in_flight; i++) {
+    try {
+      m_image_available_semaphores[i] = m_device.createSemaphore(si);
+      m_render_finished_semaphores[i] = m_device.createSemaphore(si);
+      m_in_flight_fences[i] = m_device.createFence(fi);
+    } catch (const std::runtime_error &e) {
+      throw VulkanKraftException(
+          "failed to create synchronisation objects for frame " +
+          std::to_string(i) + ": " + e.what());
+    }
+  }
 }
 
 } // namespace vulkan

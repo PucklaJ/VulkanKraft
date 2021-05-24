@@ -42,6 +42,12 @@ int main(int args, char *argv[]) {
 
     while (!window.should_close()) {
       window.poll_events();
+
+      context.render_begin();
+      gp.bind(context);
+      context.render_vertices(3);
+      context.render_end();
+
       std::this_thread::sleep_for(10ms);
     }
   } catch (const core::VulkanKraftException &e) {

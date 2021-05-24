@@ -87,6 +87,32 @@ void SwapChain::create_framebuffers(vk::ImageView &depth_image_view) {
   }
 }
 
+std::optional<std::tuple<uint32_t, vk::Framebuffer>>
+SwapChain::acquire_next_image(const vk::Device &device,
+                              const vk::Semaphore &semaphore) {
+  try {
+    const auto r = device.acquireNextImageKHR(
+        m_handle, std::numeric_limits<uint64_t>::max(), semaphore,
+        VK_NULL_HANDLE);
+    switch (r.result) {
+    case vk::Result::eSuccess:
+    case vk::Result::eSuboptimalKHR:
+      m_current_image = r.value;
+      return std::make_tuple(r.value, m_framebuffers[r.value]);
+    case vk::Result::eErrorOutOfDateKHR:
+      // TODO: recreate swap chain
+      m_current_image = std::nullopt;
+      return std::nullopt;
+    default:
+      throw std::runtime_error(std::to_string(static_cast<int>(r.result)));
+    }
+  } catch (const std::runtime_error &e) {
+    m_current_image = std::nullopt;
+    throw VulkanKraftException(
+        std::string("failed to acquire next swap chain image: ") + e.what());
+  }
+}
+
 vk::SurfaceFormatKHR SwapChain::_choose_surface_format(
     const std::vector<vk::SurfaceFormatKHR> &formats) {
   for (const auto &f : formats) {

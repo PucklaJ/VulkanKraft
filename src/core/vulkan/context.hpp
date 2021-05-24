@@ -19,6 +19,11 @@ public:
   Context(const Window &window);
   ~Context();
 
+  void render_begin();
+  void render_end();
+  void render_vertices(const uint32_t num_vertices,
+                       const uint32_t first_vertex = 0);
+
 private:
   class QueueFamilyIndices {
   public:
@@ -51,6 +56,7 @@ private:
 #else
   static constexpr bool _enable_validation_layers = true;
 #endif
+  static constexpr size_t _max_images_in_flight = 2;
 
   static bool _has_validation_layer_support(
       const std::vector<const char *> &layer_names) noexcept;
@@ -111,6 +117,7 @@ private:
   void _create_render_pass();
   void _create_command_pool();
   void _create_depth_image();
+  void _create_sync_objects();
   // ****************************
 
   vk::Instance m_instance;
@@ -123,9 +130,17 @@ private:
   std::unique_ptr<SwapChain> m_swap_chain;
   vk::RenderPass m_render_pass;
   vk::CommandPool m_graphic_command_pool;
+  vk::CommandBuffer m_graphic_command_buffer;
   vk::Image m_depth_image;
   vk::DeviceMemory m_depth_image_memory;
   vk::ImageView m_depth_image_view;
+  std::vector<vk::Semaphore> m_image_available_semaphores;
+  std::vector<vk::Semaphore> m_render_finished_semaphores;
+  std::vector<vk::Fence> m_in_flight_fences;
+  std::vector<vk::Fence> m_images_in_flight;
+
+  size_t m_current_frame;
+  bool m_command_buffer_created;
 };
 } // namespace vulkan
 } // namespace core

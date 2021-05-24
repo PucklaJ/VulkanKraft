@@ -1,5 +1,7 @@
 #pragma once
 #include "../window.hpp"
+#include <optional>
+#include <tuple>
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
@@ -14,7 +16,14 @@ public:
 
   inline const vk::Format &get_image_format() const { return m_image_format; }
   inline const vk::Extent2D &get_extent() const { return m_extent; }
+  inline size_t get_image_count() const { return m_images.size(); }
+  inline vk::SwapchainKHR &get_handle() { return m_handle; }
+  inline const std::optional<uint32_t> &get_current_image() const {
+    return m_current_image;
+  }
   void create_framebuffers(vk::ImageView &depth_image_view);
+  std::optional<std::tuple<uint32_t, vk::Framebuffer>>
+  acquire_next_image(const vk::Device &device, const vk::Semaphore &semaphore);
 
 private:
   static vk::SurfaceFormatKHR
@@ -33,6 +42,7 @@ private:
   std::vector<vk::Image> m_images;
   std::vector<vk::ImageView> m_image_views;
   std::vector<vk::Framebuffer> m_framebuffers;
+  std::optional<uint32_t> m_current_image;
 
   const vk::Device &m_device;
   const vk::RenderPass &m_render_pass;

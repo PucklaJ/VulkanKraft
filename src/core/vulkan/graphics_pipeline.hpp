@@ -10,6 +10,8 @@ public:
                    std::vector<char> fragment_code);
   ~GraphicsPipeline();
 
+  void bind(const Context &context);
+
 private:
   static constexpr char _shader_function_name[] = "main";
 

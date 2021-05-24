@@ -140,6 +140,11 @@ GraphicsPipeline::~GraphicsPipeline() {
   m_context.m_device.destroyShaderModule(m_fragment_module);
 }
 
+void GraphicsPipeline::bind(const Context &context) {
+  context.m_graphic_command_buffer.bindPipeline(
+      vk::PipelineBindPoint::eGraphics, m_handle);
+}
+
 vk::ShaderModule
 GraphicsPipeline::_create_shader_module(const vk::Device &device,
                                         std::vector<char> shader_code) {
