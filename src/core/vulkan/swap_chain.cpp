@@ -58,9 +58,11 @@ SwapChain::SwapChain(const vk::PhysicalDevice &physical_device,
   m_images = device.getSwapchainImagesKHR(m_handle);
   m_image_format = format.format;
   m_extent = extent;
+
+  _create_image_views();
 }
 
-SwapChain::~SwapChain() {}
+SwapChain::~SwapChain() { _destroy(); }
 
 vk::SurfaceFormatKHR SwapChain::_choose_surface_format(
     const std::vector<vk::SurfaceFormatKHR> &formats) {
@@ -97,7 +99,36 @@ vk::Extent2D SwapChain::_choose_extent(const vk::SurfaceCapabilitiesKHR &caps,
                                std::min(caps.maxImageExtent.height, height)));
 }
 
-void SwapChain::_destroy() { m_device.destroySwapchainKHR(m_handle); }
+void SwapChain::_create_image_views() {
+  vk::ImageViewCreateInfo vi;
+  vi.viewType = vk::ImageViewType::e2D;
+  vi.format = m_image_format;
+  vi.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+  vi.subresourceRange.baseMipLevel = 0;
+  vi.subresourceRange.levelCount = 1;
+  vi.subresourceRange.baseArrayLayer = 0;
+  vi.subresourceRange.layerCount = 1;
+
+  m_image_views.reserve(m_images.size());
+  for (const auto &i : m_images) {
+    vi.image = i;
+    try {
+      m_image_views.emplace_back(m_device.createImageView(vi));
+    } catch (const std::runtime_error &e) {
+      throw VulkanKraftException(std::string("failed to create image view ") +
+                                 std::to_string(m_image_views.size()) + ": " +
+                                 e.what());
+    }
+  }
+}
+
+void SwapChain::_destroy() {
+  for (auto &iv : m_image_views) {
+    m_device.destroyImageView(iv);
+  }
+  m_image_views.clear();
+  m_device.destroySwapchainKHR(m_handle);
+}
 
 } // namespace vulkan
 } // namespace core

@@ -68,6 +68,9 @@ private:
       const vk::PhysicalDevice &device,
       const std::vector<const char *> &extension_names);
 
+  // ****** Utilities ***********
+  // ****************************
+
   // ****** Initialisation ******
   void _create_instance(const Window &window,
                         const std::vector<const char *> &validation_layers);
