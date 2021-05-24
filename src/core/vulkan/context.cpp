@@ -28,8 +28,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(
 
 namespace core {
 namespace vulkan {
-Context::Context(const Window &window)
-    : m_current_frame(0), m_command_buffer_created(false) {
+Context::Context(const Window &window) : m_current_frame(0) {
   const std::vector<const char *> validation_layers = {
       "VK_LAYER_KHRONOS_validation"};
   _create_instance(window, validation_layers);
@@ -60,14 +59,10 @@ Context::~Context() {
   m_device.destroyImage(m_depth_image);
   m_device.freeMemory(m_depth_image_memory);
 
-  for (auto &s : m_image_available_semaphores) {
-    m_device.destroySemaphore(s);
-  }
-  for (auto &f : m_images_in_flight) {
-    m_device.destroyFence(f);
-  }
-  for (auto &f : m_in_flight_fences) {
-    m_device.destroyFence(f);
+  for (size_t i = 0; i < _max_images_in_flight; i++) {
+    m_device.destroySemaphore(m_render_finished_semaphores[i]);
+    m_device.destroySemaphore(m_image_available_semaphores[i]);
+    m_device.destroyFence(m_in_flight_fences[i]);
   }
 
   m_device.destroyCommandPool(m_graphic_command_pool);
@@ -99,8 +94,8 @@ void Context::render_begin() {
   }
   m_images_in_flight[image_index] = m_in_flight_fences[m_current_frame];
 
-  if (!m_command_buffer_created) {
-    m_graphic_command_buffer.begin(vk::CommandBufferBeginInfo());
+  if (!m_command_buffer_created[image_index]) {
+    m_graphic_command_buffers[image_index].begin(vk::CommandBufferBeginInfo());
 
     vk::RenderPassBeginInfo rbi;
     rbi.renderPass = m_render_pass;
@@ -118,18 +113,20 @@ void Context::render_begin() {
     rbi.clearValueCount = static_cast<uint32_t>(clear_values.size());
     rbi.pClearValues = clear_values.data();
 
-    m_graphic_command_buffer.beginRenderPass(rbi, vk::SubpassContents::eInline);
+    m_graphic_command_buffers[image_index].beginRenderPass(
+        rbi, vk::SubpassContents::eInline);
   }
 }
 
 void Context::render_end() {
-  if (!m_command_buffer_created) {
-    m_graphic_command_buffer.endRenderPass();
-    m_graphic_command_buffer.end();
-    m_command_buffer_created = true;
-  }
   if (!m_swap_chain->get_current_image()) {
     return;
+  }
+  const auto image_index = m_swap_chain->get_current_image().value();
+  if (!m_command_buffer_created[image_index]) {
+    m_graphic_command_buffers[image_index].endRenderPass();
+    m_graphic_command_buffers[image_index].end();
+    m_command_buffer_created[image_index] = true;
   }
 
   vk::SubmitInfo si;
@@ -142,7 +139,7 @@ void Context::render_end() {
   si.pWaitSemaphores = wait_sems.data();
   si.pWaitDstStageMask = wait_stages.data();
   si.commandBufferCount = 1;
-  si.pCommandBuffers = &m_graphic_command_buffer;
+  si.pCommandBuffers = &m_graphic_command_buffers[image_index];
 
   const auto sig_sems =
       std::array{m_render_finished_semaphores[m_current_frame]};
@@ -160,7 +157,6 @@ void Context::render_end() {
   const auto swap_chains = std::array{m_swap_chain->get_handle()};
   pi.swapchainCount = static_cast<uint32_t>(swap_chains.size());
   pi.pSwapchains = swap_chains.data();
-  const auto image_index = m_swap_chain->get_current_image().value();
   pi.pImageIndices = &image_index;
 
   if (const auto r = m_present_queue.presentKHR(pi);
@@ -173,8 +169,12 @@ void Context::render_end() {
 
 void Context::render_vertices(const uint32_t num_vertices,
                               const uint32_t first_vertex) {
-  if (!m_command_buffer_created) {
-    m_graphic_command_buffer.draw(num_vertices, 1, first_vertex, 0);
+  if (!m_swap_chain->get_current_image()) {
+    return;
+  }
+  if (!m_command_buffer_created[m_swap_chain->get_current_image().value()]) {
+    m_graphic_command_buffers[m_swap_chain->get_current_image().value()].draw(
+        num_vertices, 1, first_vertex, 0);
   }
 }
 
@@ -601,7 +601,7 @@ void Context::_create_render_pass() {
   col_at.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
   col_at.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
   col_at.initialLayout = vk::ImageLayout::eUndefined;
-  col_at.finalLayout = vk::ImageLayout::eColorAttachmentOptimal;
+  col_at.finalLayout = vk::ImageLayout::ePresentSrcKHR;
 
   vk::AttachmentDescription depth_at;
   depth_at.format = _find_depth_format(m_physical_device);
@@ -672,15 +672,17 @@ void Context::_create_command_pool() {
   vk::CommandBufferAllocateInfo ai;
   ai.commandPool = m_graphic_command_pool;
   ai.level = vk::CommandBufferLevel::ePrimary;
-  ai.commandBufferCount = 1;
+  ai.commandBufferCount =
+      static_cast<uint32_t>(m_swap_chain->get_image_count());
 
   try {
-    auto cbs = m_device.allocateCommandBuffers(ai);
-    m_graphic_command_buffer = cbs[0];
+    m_graphic_command_buffers = m_device.allocateCommandBuffers(ai);
   } catch (const std::runtime_error &e) {
     throw VulkanKraftException(
         std::string("failed to create graphic command buffer: ") + e.what());
   }
+
+  m_command_buffer_created.resize(m_graphic_command_buffers.size(), false);
 }
 
 void Context::_create_depth_image() {

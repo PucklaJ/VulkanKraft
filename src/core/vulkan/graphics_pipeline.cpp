@@ -134,6 +134,8 @@ GraphicsPipeline::GraphicsPipeline(const Context &context,
 }
 
 GraphicsPipeline::~GraphicsPipeline() {
+  m_context.m_device.waitIdle();
+
   m_context.m_device.destroyPipeline(m_handle);
   m_context.m_device.destroyPipelineLayout(m_layout);
   m_context.m_device.destroyShaderModule(m_vertex_module);
@@ -141,8 +143,15 @@ GraphicsPipeline::~GraphicsPipeline() {
 }
 
 void GraphicsPipeline::bind(const Context &context) {
-  context.m_graphic_command_buffer.bindPipeline(
-      vk::PipelineBindPoint::eGraphics, m_handle);
+  if (!m_context.m_swap_chain->get_current_image() ||
+      m_context.m_command_buffer_created
+          [m_context.m_swap_chain->get_current_image().value()]) {
+    return;
+  }
+  context
+      .m_graphic_command_buffers[m_context.m_swap_chain->get_current_image()
+                                     .value()]
+      .bindPipeline(vk::PipelineBindPoint::eGraphics, m_handle);
 }
 
 vk::ShaderModule

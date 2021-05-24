@@ -130,7 +130,7 @@ private:
   std::unique_ptr<SwapChain> m_swap_chain;
   vk::RenderPass m_render_pass;
   vk::CommandPool m_graphic_command_pool;
-  vk::CommandBuffer m_graphic_command_buffer;
+  std::vector<vk::CommandBuffer> m_graphic_command_buffers;
   vk::Image m_depth_image;
   vk::DeviceMemory m_depth_image_memory;
   vk::ImageView m_depth_image_view;
@@ -140,7 +140,7 @@ private:
   std::vector<vk::Fence> m_images_in_flight;
 
   size_t m_current_frame;
-  bool m_command_buffer_created;
+  std::vector<bool> m_command_buffer_created;
 };
 } // namespace vulkan
 } // namespace core
