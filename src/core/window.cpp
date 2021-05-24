@@ -21,4 +21,15 @@ Window::~Window() {
   glfwDestroyWindow(m_window);
   glfwTerminate();
 }
+
+std::vector<const char *> Window::get_required_vulkan_extensions() const {
+  uint32_t glfw_count;
+  const auto **glfw_ext = glfwGetRequiredInstanceExtensions(&glfw_count);
+  if (glfw_count == 0 || !glfw_ext) {
+    throw VulkanKraftException(
+        "failed to get required vulkan extensions from GLFW");
+  }
+
+  return std::vector(glfw_ext, glfw_ext + glfw_count);
+}
 } // namespace core

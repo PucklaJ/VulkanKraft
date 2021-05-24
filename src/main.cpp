@@ -1,5 +1,6 @@
 #include "core/exception.hpp"
 #include "core/log.hpp"
+#include "core/vulkan/context.hpp"
 #include "core/window.hpp"
 #include <chrono>
 #include <iostream>
@@ -14,6 +15,7 @@ constexpr char window_title[] = "VulkanKraft";
 int main(int args, char *argv[]) {
   try {
     core::Window window(window_width, window_height, window_title);
+    core::vulkan::Context context(window);
 
     while (!window.should_close()) {
       window.poll_events();
