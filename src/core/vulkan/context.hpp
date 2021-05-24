@@ -1,5 +1,7 @@
 #pragma once
 #include "../window.hpp"
+#include "swap_chain.hpp"
+#include <memory>
 #include <optional>
 #include <vector>
 #include <vulkan/vulkan.hpp>
@@ -8,6 +10,8 @@ namespace core {
 namespace vulkan {
 class Context {
 public:
+  friend class SwapChain;
+
   static PFN_vkCreateDebugUtilsMessengerEXT pfnVkCreateDebugUtilsMessengerEXT;
   static PFN_vkDestroyDebugUtilsMessengerEXT pfnVkDestroyDebugUtilsMessengerEXT;
 
@@ -73,6 +77,7 @@ private:
   void
   _create_logical_device(const std::vector<const char *> &extensions,
                          const std::vector<const char *> &validation_layers);
+  void _create_swap_chain(const Window &window);
   // ****************************
 
   vk::Instance m_instance;
@@ -82,6 +87,7 @@ private:
   vk::Device m_device;
   vk::Queue m_graphics_queue;
   vk::Queue m_present_queue;
+  std::unique_ptr<SwapChain> m_swap_chain;
 };
 } // namespace vulkan
 } // namespace core

@@ -43,6 +43,7 @@ Context::Context(const Window &window) {
 }
 
 Context::~Context() {
+  m_swap_chain.reset();
   m_device.destroy();
   if constexpr (_enable_validation_layers) {
     m_instance.destroyDebugUtilsMessengerEXT(m_debug_messenger);
@@ -312,6 +313,11 @@ void Context::_create_logical_device(
 
   m_graphics_queue = m_device.getQueue(indices.graphics_family.value(), 0);
   m_present_queue = m_device.getQueue(indices.present_family.value(), 0);
+}
+
+void Context::_create_swap_chain(const Window &window) {
+  m_swap_chain = std::make_unique<SwapChain>(m_physical_device, m_device,
+                                             m_surface, window);
 }
 
 } // namespace vulkan

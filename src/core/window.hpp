@@ -16,6 +16,12 @@ public:
   inline void poll_events() const { glfwPollEvents(); }
   std::vector<const char *> get_required_vulkan_extensions() const;
   vk::SurfaceKHR create_vulkan_surface(vk::Instance &instance) const;
+  inline std::pair<uint32_t, uint32_t> get_framebuffer_size() const {
+    int width, height;
+    glfwGetFramebufferSize(m_window, &width, &height);
+    return std::make_pair(static_cast<uint32_t>(width),
+                          static_cast<uint32_t>(height));
+  }
 
 private:
   GLFWwindow *m_window;
