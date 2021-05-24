@@ -29,6 +29,7 @@ Context::Context(const Window &window) {
   _create_instance(window);
   _setup_debug_messenger();
   _create_surface(window);
+  _pick_physical_device();
 
   Log::info("Successfully Constructed Vulkan Context");
 }
@@ -40,6 +41,39 @@ Context::~Context() {
   m_instance.destroySurfaceKHR(m_surface);
   m_instance.destroy();
 }
+
+Context::QueueFamilyIndices::QueueFamilyIndices(
+    const vk::PhysicalDevice &device, const vk::SurfaceKHR &surface) {
+  const auto queue_families(device.getQueueFamilyProperties());
+
+  int i = 0;
+  for (const auto &qf : queue_families) {
+    if (qf.queueFlags & vk::QueueFlagBits::eGraphics) {
+      graphics_family = i;
+    }
+
+    const auto present_support = device.getSurfaceSupportKHR(i, surface);
+    if (present_support) {
+      present_family = i;
+    }
+
+    if (is_complete()) {
+      break;
+    }
+
+    i++;
+  }
+}
+
+bool Context::QueueFamilyIndices::is_complete() const {
+  return graphics_family.has_value() && present_family.has_value();
+}
+
+Context::SwapChainSupportDetails::SwapChainSupportDetails(
+    const vk::PhysicalDevice &device, const vk::SurfaceKHR &surface)
+    : capabilities(device.getSurfaceCapabilitiesKHR(surface)),
+      formats(device.getSurfaceFormatsKHR(surface)),
+      present_modes(device.getSurfacePresentModesKHR(surface)) {}
 
 bool Context::_has_validation_layer_support(
     const std::vector<const char *> &layer_names) noexcept {
@@ -94,6 +128,45 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Context::_debug_callback(
   }
 
   return VK_FALSE;
+}
+
+bool Context::_is_device_suitable(
+    const vk::PhysicalDevice &device, const vk::SurfaceKHR &surface,
+    const std::vector<const char *> &extension_names) {
+  const QueueFamilyIndices indices(device, surface);
+
+  const auto extensions_supported =
+      _device_has_extension_support(device, extension_names);
+  bool swap_chain_adequate = false;
+  if (extensions_supported) {
+    const SwapChainSupportDetails swap_chain_support(device, surface);
+    swap_chain_adequate = !swap_chain_support.formats.empty() &&
+                          !swap_chain_support.present_modes.empty();
+  }
+
+  const auto features = device.getFeatures();
+
+  return indices.is_complete() && extensions_supported && swap_chain_adequate &&
+         features.samplerAnisotropy;
+}
+
+bool Context::_device_has_extension_support(
+    const vk::PhysicalDevice &device,
+    const std::vector<const char *> &extension_names) {
+  const auto extensions(device.enumerateDeviceExtensionProperties());
+
+  for (const auto *en : extension_names) {
+    bool found = false;
+    for (const auto &e : extensions) {
+      if (strcmp(e.extensionName.data(), en) == 0) {
+        found = true;
+      }
+    }
+    if (!found)
+      return false;
+  }
+
+  return true;
 }
 
 void Context::_create_instance(const Window &window) {
@@ -170,6 +243,26 @@ void Context::_setup_debug_messenger() {
 
 void Context::_create_surface(const Window &window) {
   m_surface = window.create_vulkan_surface(m_instance);
+}
+
+void Context::_pick_physical_device() {
+  const auto devices(m_instance.enumeratePhysicalDevices());
+  if (devices.empty()) {
+    throw VulkanKraftException("no GPUs with vulkan support found");
+  }
+
+  const std::vector<const char *> extensions = {
+      VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+  for (const auto &d : devices) {
+    if (_is_device_suitable(d, m_surface, extensions)) {
+      m_physical_device = d;
+    }
+  }
+
+  if (!m_physical_device) {
+    throw VulkanKraftException("failed to find a suitable GPU");
+  }
 }
 
 } // namespace vulkan

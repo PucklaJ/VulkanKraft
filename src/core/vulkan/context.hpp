@@ -1,5 +1,6 @@
 #pragma once
 #include "../window.hpp"
+#include <optional>
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
@@ -14,6 +15,27 @@ public:
   ~Context();
 
 private:
+  class QueueFamilyIndices {
+  public:
+    QueueFamilyIndices(const vk::PhysicalDevice &device,
+                       const vk::SurfaceKHR &surface);
+
+    bool is_complete() const;
+
+    std::optional<uint32_t> graphics_family;
+    std::optional<uint32_t> present_family;
+  };
+
+  class SwapChainSupportDetails {
+  public:
+    SwapChainSupportDetails(const vk::PhysicalDevice &device,
+                            const vk::SurfaceKHR &surface);
+
+    vk::SurfaceCapabilitiesKHR capabilities;
+    std::vector<vk::SurfaceFormatKHR> formats;
+    std::vector<vk::PresentModeKHR> present_modes;
+  };
+
   static constexpr char _application_name[] = "VulkanKraft";
   static constexpr uint32_t _application_version =
       VK_MAKE_API_VERSION(0, 0, 0, 0);
@@ -34,14 +56,23 @@ private:
                   VkDebugUtilsMessageTypeFlagsEXT messageType,
                   const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
                   void *pUserData);
+  static bool
+  _is_device_suitable(const vk::PhysicalDevice &device,
+                      const vk::SurfaceKHR &surface,
+                      const std::vector<const char *> &extension_names);
+  static bool _device_has_extension_support(
+      const vk::PhysicalDevice &device,
+      const std::vector<const char *> &extension_names);
 
   void _create_instance(const Window &window);
   void _setup_debug_messenger();
   void _create_surface(const Window &window);
+  void _pick_physical_device();
 
   vk::Instance m_instance;
   vk::DebugUtilsMessengerEXT m_debug_messenger;
   vk::SurfaceKHR m_surface;
+  vk::PhysicalDevice m_physical_device;
 };
 } // namespace vulkan
 } // namespace core
