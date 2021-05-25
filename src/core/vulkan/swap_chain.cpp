@@ -32,12 +32,14 @@ SwapChain::acquire_next_image(const vk::Device &m_device,
       m_current_image = r.value;
       return std::make_tuple(r.value, m_framebuffers[r.value]);
     case vk::Result::eErrorOutOfDateKHR:
-      // TODO: recreate swap chain
       m_current_image = std::nullopt;
       return std::nullopt;
     default:
       throw std::runtime_error(std::to_string(static_cast<int>(r.result)));
     }
+  } catch (const vk::OutOfDateKHRError &e) {
+    m_current_image = std::nullopt;
+    return std::nullopt;
   } catch (const std::runtime_error &e) {
     m_current_image = std::nullopt;
     throw VulkanKraftException(
@@ -330,6 +332,7 @@ void SwapChain::_destroy() {
   for (auto &fb : m_framebuffers) {
     m_context->m_device.destroyFramebuffer(fb);
   }
+  m_framebuffers.clear();
   m_context->m_device.destroyRenderPass(m_render_pass);
   for (auto &iv : m_image_views) {
     m_context->m_device.destroyImageView(iv);

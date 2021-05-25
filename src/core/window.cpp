@@ -2,19 +2,28 @@
 #include "exception.hpp"
 
 namespace core {
+void Window::on_framebuffer_resize(GLFWwindow *window, int width, int height) {
+  auto *win = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+  win->m_fb_resize_cb(static_cast<uint32_t>(width),
+                      static_cast<uint32_t>(height));
+}
+
 Window::Window(const uint32_t width, const uint32_t height, std::string title) {
   if (glfwInit() == GLFW_FALSE) {
     throw VulkanKraftException("failed to initialise GLFW");
   }
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+  glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
   if (m_window =
           glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
       !m_window) {
     throw VulkanKraftException("failed to create window");
   }
+
+  glfwSetWindowUserPointer(m_window, this);
+  glfwSetFramebufferSizeCallback(m_window, on_framebuffer_resize);
 }
 
 Window::~Window() {

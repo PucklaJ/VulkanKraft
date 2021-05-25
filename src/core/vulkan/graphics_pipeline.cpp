@@ -4,27 +4,38 @@
 
 namespace core {
 namespace vulkan {
-GraphicsPipeline::GraphicsPipeline(const Context &context,
+GraphicsPipeline::GraphicsPipeline(Context &context,
                                    std::vector<char> vertex_code,
                                    std::vector<char> fragment_code)
     : m_context(context) {
   _create_handle(std::move(vertex_code), std::move(fragment_code));
+  m_context.m_created_graphics_pipelines.push_back(this);
 }
 
-GraphicsPipeline::~GraphicsPipeline() { _destroy(); }
+GraphicsPipeline::~GraphicsPipeline() {
+  _destroy();
+  for (size_t i = 0; i < m_context.m_created_graphics_pipelines.size(); i++) {
+    if (m_context.m_created_graphics_pipelines[i] == this) {
+      m_context.m_created_graphics_pipelines[i] =
+          m_context.m_created_graphics_pipelines.back();
+      m_context.m_created_graphics_pipelines.pop_back();
+      break;
+    }
+  }
+}
 
-void GraphicsPipeline::bind(const Context &context) {
+void GraphicsPipeline::bind() {
   if (!m_context.m_swap_chain->get_current_image()) {
     return;
   }
-  context
+  m_context
       .m_graphic_command_buffers[m_context.m_swap_chain->get_current_image()
                                      .value()]
       .bindPipeline(vk::PipelineBindPoint::eGraphics, m_handle);
 }
 
 void GraphicsPipeline::recreate() {
-  _destroy();
+  _destroy(false);
   _create_handle();
 }
 
@@ -176,13 +187,15 @@ void GraphicsPipeline::_create_handle(std::vector<char> vertex_code,
   }
 }
 
-void GraphicsPipeline::_destroy() {
+void GraphicsPipeline::_destroy(const bool everything) {
   m_context.m_device.waitIdle();
 
   m_context.m_device.destroyPipeline(m_handle);
-  m_context.m_device.destroyPipelineLayout(m_layout.value());
-  m_context.m_device.destroyShaderModule(m_vertex_module.value());
-  m_context.m_device.destroyShaderModule(m_fragment_module.value());
+  if (everything) {
+    m_context.m_device.destroyPipelineLayout(m_layout.value());
+    m_context.m_device.destroyShaderModule(m_vertex_module.value());
+    m_context.m_device.destroyShaderModule(m_fragment_module.value());
+  }
 }
 
 } // namespace vulkan

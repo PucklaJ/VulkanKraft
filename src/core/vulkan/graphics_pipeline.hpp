@@ -7,11 +7,11 @@ namespace core {
 namespace vulkan {
 class GraphicsPipeline {
 public:
-  GraphicsPipeline(const Context &context, std::vector<char> vertex_code,
+  GraphicsPipeline(Context &context, std::vector<char> vertex_code,
                    std::vector<char> fragment_code);
   ~GraphicsPipeline();
 
-  void bind(const Context &context);
+  void bind();
   void recreate();
 
 private:
@@ -22,14 +22,14 @@ private:
 
   void _create_handle(std::vector<char> vertex_code = {},
                       std::vector<char> fragment_code = {});
-  void _destroy();
+  void _destroy(const bool everything = true);
 
   vk::Pipeline m_handle;
   std::optional<vk::PipelineLayout> m_layout;
   std::optional<vk::ShaderModule> m_vertex_module;
   std::optional<vk::ShaderModule> m_fragment_module;
 
-  const Context &m_context;
+  Context &m_context;
 };
 } // namespace vulkan
 } // namespace core

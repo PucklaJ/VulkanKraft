@@ -44,7 +44,7 @@ int main(int args, char *argv[]) {
       window.poll_events();
 
       context.render_begin();
-      gp.bind(context);
+      gp.bind();
       context.render_vertices(3);
       context.render_end();
 

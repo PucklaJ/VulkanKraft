@@ -8,6 +8,8 @@
 
 namespace core {
 namespace vulkan {
+class GraphicsPipeline;
+
 class Context {
 public:
   friend class SwapChain;
@@ -16,7 +18,7 @@ public:
   static PFN_vkCreateDebugUtilsMessengerEXT pfnVkCreateDebugUtilsMessengerEXT;
   static PFN_vkDestroyDebugUtilsMessengerEXT pfnVkDestroyDebugUtilsMessengerEXT;
 
-  Context(const Window &window);
+  Context(Window &window);
   ~Context();
 
   void render_begin();
@@ -117,6 +119,8 @@ private:
   void _create_sync_objects();
   // ****************************
 
+  void _handle_framebuffer_resize();
+
   vk::Instance m_instance;
   vk::DebugUtilsMessengerEXT m_debug_messenger;
   vk::SurfaceKHR m_surface;
@@ -133,7 +137,10 @@ private:
   std::vector<vk::Fence> m_in_flight_fences;
   std::vector<vk::Fence> m_images_in_flight;
 
+  std::vector<GraphicsPipeline *> m_created_graphics_pipelines;
+
   size_t m_current_frame;
+  bool m_framebuffer_resized;
 };
 } // namespace vulkan
 } // namespace core

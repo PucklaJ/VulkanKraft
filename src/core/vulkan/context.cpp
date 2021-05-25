@@ -1,6 +1,7 @@
 #include "context.hpp"
 #include "../exception.hpp"
 #include "../log.hpp"
+#include "graphics_pipeline.hpp"
 #include <array>
 #include <cstring>
 #include <limits>
@@ -28,7 +29,8 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(
 
 namespace core {
 namespace vulkan {
-Context::Context(const Window &window) : m_current_frame(0) {
+Context::Context(Window &window)
+    : m_current_frame(0), m_framebuffer_resized(false) {
   const std::vector<const char *> validation_layers = {
       "VK_LAYER_KHRONOS_validation"};
   _create_instance(window, validation_layers);
@@ -44,6 +46,9 @@ Context::Context(const Window &window) : m_current_frame(0) {
   _create_swap_chain(window);
   _allocate_command_buffers();
   _create_sync_objects();
+
+  // Handle framebuffer resize
+  window.set_on_resize([&](auto, auto) { m_framebuffer_resized = true; });
 
   Log::info("Successfully Constructed Vulkan Context");
 }
@@ -79,6 +84,7 @@ void Context::render_begin() {
   auto acquired_image = m_swap_chain->acquire_next_image(
       m_device, m_image_available_semaphores[m_current_frame]);
   if (!acquired_image) {
+    _handle_framebuffer_resize();
     return;
   }
 
@@ -154,8 +160,10 @@ void Context::render_end() {
   pi.pImageIndices = &image_index;
 
   if (const auto r = m_present_queue.presentKHR(pi);
-      r == vk::Result::eErrorOutOfDateKHR || r == vk::Result::eSuboptimalKHR) {
-    // TODO: recreate swap chain
+      r == vk::Result::eErrorOutOfDateKHR || r == vk::Result::eSuboptimalKHR ||
+      m_framebuffer_resized) {
+    _handle_framebuffer_resize();
+    m_framebuffer_resized = false;
   }
 
   m_current_frame = (m_current_frame + 1) % _max_images_in_flight;
@@ -636,6 +644,15 @@ void Context::_create_sync_objects() {
           "failed to create synchronisation objects for frame " +
           std::to_string(i) + ": " + e.what());
     }
+  }
+}
+
+void Context::_handle_framebuffer_resize() {
+  m_device.waitIdle();
+
+  m_swap_chain->recreate();
+  for (auto *g : m_created_graphics_pipelines) {
+    g->recreate();
   }
 }
 
