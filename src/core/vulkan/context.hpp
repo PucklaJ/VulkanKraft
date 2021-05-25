@@ -92,12 +92,10 @@ private:
                                         const vk::CommandPool &command_pool,
                                         const vk::Queue &queue,
                                         vk::CommandBuffer command_buffer);
-  static void
-  _transition_image_layout(const vk::Device &device,
-                           const vk::CommandPool &command_pool,
-                           const vk::Queue &queue, const vk::Image &image,
-                           vk::Format format, vk::ImageLayout old_layout,
-                           vk::ImageLayout new_layout, uint32_t mip_levels);
+  void _transition_image_layout(const vk::Image &image, vk::Format format,
+                                vk::ImageLayout old_layout,
+                                vk::ImageLayout new_layout,
+                                uint32_t mip_levels) const;
   static inline bool _has_stencil_component(vk::Format format) {
     return format == vk::Format::eD32SfloatS8Uint ||
            format == vk::Format::eD24UnormS8Uint;
@@ -113,10 +111,9 @@ private:
   void
   _create_logical_device(const std::vector<const char *> &extensions,
                          const std::vector<const char *> &validation_layers);
-  void _create_swap_chain(const Window &window);
-  void _create_render_pass();
   void _create_command_pool();
-  void _create_depth_image();
+  void _create_swap_chain(const Window &window);
+  void _allocate_command_buffers();
   void _create_sync_objects();
   // ****************************
 
@@ -128,12 +125,9 @@ private:
   vk::Queue m_graphics_queue;
   vk::Queue m_present_queue;
   std::unique_ptr<SwapChain> m_swap_chain;
-  vk::RenderPass m_render_pass;
   vk::CommandPool m_graphic_command_pool;
   std::vector<vk::CommandBuffer> m_graphic_command_buffers;
-  vk::Image m_depth_image;
-  vk::DeviceMemory m_depth_image_memory;
-  vk::ImageView m_depth_image_view;
+
   std::vector<vk::Semaphore> m_image_available_semaphores;
   std::vector<vk::Semaphore> m_render_finished_semaphores;
   std::vector<vk::Fence> m_in_flight_fences;

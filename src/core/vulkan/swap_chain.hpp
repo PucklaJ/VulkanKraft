@@ -7,11 +7,11 @@
 
 namespace core {
 namespace vulkan {
+class Context;
+
 class SwapChain {
 public:
-  SwapChain(const vk::PhysicalDevice &physical_device, const vk::Device &device,
-            const vk::SurfaceKHR &surface, const vk::RenderPass &render_pass,
-            const Window &window);
+  SwapChain(const Context *context, const Window &window);
   ~SwapChain();
 
   inline const vk::Format &get_image_format() const { return m_image_format; }
@@ -21,9 +21,10 @@ public:
   inline const std::optional<uint32_t> &get_current_image() const {
     return m_current_image;
   }
-  void create_framebuffers(vk::ImageView &depth_image_view);
+  inline const vk::RenderPass &get_render_pass() const { return m_render_pass; }
   std::optional<std::tuple<uint32_t, vk::Framebuffer>>
   acquire_next_image(const vk::Device &device, const vk::Semaphore &semaphore);
+  void recreate();
 
 private:
   static vk::SurfaceFormatKHR
@@ -33,7 +34,14 @@ private:
   static vk::Extent2D _choose_extent(const vk::SurfaceCapabilitiesKHR &caps,
                                      const Window &window);
 
+  // ***** Intialisation *****
+  void _create_handle();
+  void _retrieve_images();
   void _create_image_views();
+  void _create_render_pass();
+  void _create_depth_image();
+  void _create_framebuffers();
+  // **************************
   void _destroy();
 
   vk::SwapchainKHR m_handle;
@@ -43,9 +51,13 @@ private:
   std::vector<vk::ImageView> m_image_views;
   std::vector<vk::Framebuffer> m_framebuffers;
   std::optional<uint32_t> m_current_image;
+  vk::RenderPass m_render_pass;
+  vk::Image m_depth_image;
+  vk::DeviceMemory m_depth_image_memory;
+  vk::ImageView m_depth_image_view;
 
-  const vk::Device &m_device;
-  const vk::RenderPass &m_render_pass;
+  const Context *m_context;
+  const Window &m_window;
 };
 } // namespace vulkan
 } // namespace core

@@ -116,7 +116,7 @@ GraphicsPipeline::GraphicsPipeline(const Context &context,
   p_i.pColorBlendState = &cb_i;
   p_i.pDepthStencilState = &ds_i;
   p_i.layout = m_layout;
-  p_i.renderPass = context.m_render_pass;
+  p_i.renderPass = context.m_swap_chain->get_render_pass();
   p_i.subpass = 0;
   p_i.basePipelineHandle = VK_NULL_HANDLE;
 

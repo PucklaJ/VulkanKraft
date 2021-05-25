@@ -40,11 +40,9 @@ Context::Context(const Window &window) : m_current_frame(0) {
     _pick_physical_device(device_extensions);
     _create_logical_device(device_extensions, validation_layers);
   }
-  _create_swap_chain(window);
-  _create_render_pass();
   _create_command_pool();
-  _create_depth_image();
-  m_swap_chain->create_framebuffers(m_depth_image_view);
+  _create_swap_chain(window);
+  _allocate_command_buffers();
   _create_sync_objects();
 
   Log::info("Successfully Constructed Vulkan Context");
@@ -55,10 +53,6 @@ Context::~Context() {
 
   m_swap_chain.reset();
 
-  m_device.destroyImageView(m_depth_image_view);
-  m_device.destroyImage(m_depth_image);
-  m_device.freeMemory(m_depth_image_memory);
-
   for (size_t i = 0; i < _max_images_in_flight; i++) {
     m_device.destroySemaphore(m_render_finished_semaphores[i]);
     m_device.destroySemaphore(m_image_available_semaphores[i]);
@@ -67,7 +61,6 @@ Context::~Context() {
 
   m_device.destroyCommandPool(m_graphic_command_pool);
 
-  m_device.destroyRenderPass(m_render_pass);
   m_device.destroy();
   if constexpr (_enable_validation_layers) {
     m_instance.destroyDebugUtilsMessengerEXT(m_debug_messenger);
@@ -77,8 +70,11 @@ Context::~Context() {
 }
 
 void Context::render_begin() {
-  m_device.waitForFences(m_in_flight_fences[m_current_frame], VK_TRUE,
-                         std::numeric_limits<uint64_t>::max());
+  if (m_device.waitForFences(m_in_flight_fences[m_current_frame], VK_TRUE,
+                             std::numeric_limits<uint64_t>::max()) !=
+      vk::Result::eSuccess) {
+    return;
+  }
 
   auto acquired_image = m_swap_chain->acquire_next_image(
       m_device, m_image_available_semaphores[m_current_frame]);
@@ -89,15 +85,18 @@ void Context::render_begin() {
   auto [image_index, framebuffer] = acquired_image.value();
 
   if (m_images_in_flight[image_index]) {
-    m_device.waitForFences(m_images_in_flight[image_index], VK_TRUE,
-                           std::numeric_limits<uint64_t>::max());
+    if (m_device.waitForFences(m_images_in_flight[image_index], VK_TRUE,
+                               std::numeric_limits<uint64_t>::max()) !=
+        vk::Result::eSuccess) {
+      return;
+    }
   }
   m_images_in_flight[image_index] = m_in_flight_fences[m_current_frame];
 
   m_graphic_command_buffers[image_index].begin(vk::CommandBufferBeginInfo());
 
   vk::RenderPassBeginInfo rbi;
-  rbi.renderPass = m_render_pass;
+  rbi.renderPass = m_swap_chain->get_render_pass();
   rbi.framebuffer = framebuffer;
   rbi.renderArea.extent = m_swap_chain->get_extent();
 
@@ -381,12 +380,12 @@ void Context::_end_single_time_commands(const vk::Device &device,
   device.freeCommandBuffers(command_pool, command_buffer);
 }
 
-void Context::_transition_image_layout(
-    const vk::Device &device, const vk::CommandPool &command_pool,
-    const vk::Queue &queue, const vk::Image &image, vk::Format format,
-    vk::ImageLayout old_layout, vk::ImageLayout new_layout,
-    uint32_t mip_levels) {
-  auto com_buf(_begin_single_time_commands(device, command_pool));
+void Context::_transition_image_layout(const vk::Image &image,
+                                       vk::Format format,
+                                       vk::ImageLayout old_layout,
+                                       vk::ImageLayout new_layout,
+                                       uint32_t mip_levels) const {
+  auto com_buf(_begin_single_time_commands(m_device, m_graphic_command_pool));
 
   vk::ImageMemoryBarrier bar;
   bar.oldLayout = old_layout;
@@ -441,7 +440,8 @@ void Context::_transition_image_layout(
                           static_cast<vk::DependencyFlagBits>(0), nullptr,
                           nullptr, bar);
 
-  _end_single_time_commands(device, command_pool, queue, std::move(com_buf));
+  _end_single_time_commands(m_device, m_graphic_command_pool, m_graphics_queue,
+                            std::move(com_buf));
 }
 
 void Context::_create_instance(
@@ -580,74 +580,6 @@ void Context::_create_logical_device(
   m_present_queue = m_device.getQueue(indices.present_family.value(), 0);
 }
 
-void Context::_create_swap_chain(const Window &window) {
-  m_swap_chain = std::make_unique<SwapChain>(m_physical_device, m_device,
-                                             m_surface, m_render_pass, window);
-}
-
-void Context::_create_render_pass() {
-  vk::AttachmentDescription col_at;
-  col_at.format = m_swap_chain->get_image_format();
-  col_at.samples = vk::SampleCountFlagBits::e1;
-  col_at.loadOp = vk::AttachmentLoadOp::eClear;
-  col_at.storeOp = vk::AttachmentStoreOp::eStore;
-  col_at.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-  col_at.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-  col_at.initialLayout = vk::ImageLayout::eUndefined;
-  col_at.finalLayout = vk::ImageLayout::ePresentSrcKHR;
-
-  vk::AttachmentDescription depth_at;
-  depth_at.format = _find_depth_format(m_physical_device);
-  depth_at.samples = vk::SampleCountFlagBits::e1;
-  depth_at.loadOp = vk::AttachmentLoadOp::eClear;
-  depth_at.storeOp = vk::AttachmentStoreOp::eDontCare;
-  depth_at.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-  depth_at.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-  depth_at.initialLayout = vk::ImageLayout::eUndefined;
-  depth_at.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-  vk::AttachmentReference col_at_ref;
-  col_at_ref.attachment = 0;
-  col_at_ref.layout = vk::ImageLayout::eColorAttachmentOptimal;
-
-  vk::AttachmentReference depth_at_ref;
-  depth_at_ref.attachment = 1;
-  depth_at_ref.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-
-  vk::SubpassDescription sub;
-  sub.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-  sub.colorAttachmentCount = 1;
-  sub.pColorAttachments = &col_at_ref;
-  sub.pDepthStencilAttachment = &depth_at_ref;
-
-  vk::SubpassDependency dep;
-  dep.srcSubpass = VK_SUBPASS_EXTERNAL;
-  dep.dstSubpass = 0;
-  dep.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput |
-                     vk::PipelineStageFlagBits::eEarlyFragmentTests;
-  dep.srcAccessMask = vk::AccessFlagBits::eNoneKHR;
-  dep.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput |
-                     vk::PipelineStageFlagBits::eEarlyFragmentTests;
-  dep.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite |
-                      vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-
-  const auto ats = std::array{col_at, depth_at};
-  vk::RenderPassCreateInfo ri;
-  ri.attachmentCount = static_cast<uint32_t>(ats.size());
-  ri.pAttachments = ats.data();
-  ri.subpassCount = 1;
-  ri.pSubpasses = &sub;
-  ri.dependencyCount = 1;
-  ri.pDependencies = &dep;
-
-  try {
-    m_render_pass = m_device.createRenderPass(ri);
-  } catch (const std::runtime_error &e) {
-    throw VulkanKraftException(std::string("failed to create render pass: ") +
-                               e.what());
-  }
-}
-
 void Context::_create_command_pool() {
   const QueueFamilyIndices indices(m_physical_device, m_surface);
 
@@ -661,7 +593,13 @@ void Context::_create_command_pool() {
     throw VulkanKraftException(
         std::string("failed to create graphics command pool: ") + e.what());
   }
+}
 
+void Context::_create_swap_chain(const Window &window) {
+  m_swap_chain = std::make_unique<SwapChain>(this, window);
+}
+
+void Context::_allocate_command_buffers() {
   // Create command buffer for graphics commands
   vk::CommandBufferAllocateInfo ai;
   ai.commandPool = m_graphic_command_pool;
@@ -675,73 +613,6 @@ void Context::_create_command_pool() {
     throw VulkanKraftException(
         std::string("failed to create graphic command buffer: ") + e.what());
   }
-}
-
-void Context::_create_depth_image() {
-  const auto format{_find_depth_format(m_physical_device)};
-
-  // Create image
-  vk::ImageCreateInfo ii{};
-  ii.imageType = vk::ImageType::e2D;
-  ii.extent.width = m_swap_chain->get_extent().width;
-  ii.extent.height = m_swap_chain->get_extent().height;
-  ii.extent.depth = 1;
-  ii.mipLevels = 1;
-  ii.arrayLayers = 1;
-  ii.format = format;
-  ii.tiling = vk::ImageTiling::eOptimal;
-  ii.initialLayout = vk::ImageLayout::eUndefined;
-  ii.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-  ii.samples = vk::SampleCountFlagBits::e1;
-  ii.sharingMode = vk::SharingMode::eExclusive;
-
-  try {
-    m_depth_image = m_device.createImage(ii);
-  } catch (const std::runtime_error &e) {
-    throw VulkanKraftException(std::string("failed to create depth image: ") +
-                               e.what());
-  }
-
-  // Allocate memory
-  const auto mem_req{m_device.getImageMemoryRequirements(m_depth_image)};
-
-  vk::MemoryAllocateInfo ai;
-  ai.allocationSize = mem_req.size;
-  ai.memoryTypeIndex =
-      _find_memory_type(m_physical_device, mem_req.memoryTypeBits,
-                        vk::MemoryPropertyFlagBits::eDeviceLocal);
-
-  try {
-    m_depth_image_memory = m_device.allocateMemory(ai);
-  } catch (const std::runtime_error &e) {
-    throw VulkanKraftException(
-        std::string("failed to allocate depth image memory: ") + e.what());
-  }
-
-  m_device.bindImageMemory(m_depth_image, m_depth_image_memory, 0);
-
-  // Create image view
-  vk::ImageViewCreateInfo vi{};
-  vi.image = m_depth_image;
-  vi.viewType = vk::ImageViewType::e2D;
-  vi.format = format;
-  vi.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
-  vi.subresourceRange.baseMipLevel = 0;
-  vi.subresourceRange.levelCount = 1;
-  vi.subresourceRange.baseArrayLayer = 0;
-  vi.subresourceRange.layerCount = 1;
-
-  VkImageView imageView;
-  try {
-    m_depth_image_view = m_device.createImageView(vi);
-  } catch (const std::runtime_error &e) {
-    throw VulkanKraftException(
-        std::string("failed to create depth image view: ") + e.what());
-  }
-
-  _transition_image_layout(m_device, m_graphic_command_pool, m_graphics_queue,
-                           m_depth_image, format, vk::ImageLayout::eUndefined,
-                           vk::ImageLayout::eDepthStencilAttachmentOptimal, 1);
 }
 
 void Context::_create_sync_objects() {

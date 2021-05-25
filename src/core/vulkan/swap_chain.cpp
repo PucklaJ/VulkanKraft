@@ -7,91 +7,23 @@
 
 namespace core {
 namespace vulkan {
-SwapChain::SwapChain(const vk::PhysicalDevice &physical_device,
-                     const vk::Device &device, const vk::SurfaceKHR &surface,
-                     const vk::RenderPass &render_pass, const Window &window)
-    : m_device(device), m_render_pass(render_pass) {
-  const Context::SwapChainSupportDetails scs(physical_device, surface);
-  const auto format{_choose_surface_format(scs.formats)};
-  const auto present_mode{_choose_present_mode(scs.present_modes)};
-  const auto extent{_choose_extent(scs.capabilities, window)};
-
-  auto image_count{scs.capabilities.minImageCount + 1};
-  if (scs.capabilities.maxImageCount > 0 &&
-      image_count > scs.capabilities.maxImageCount) {
-    image_count = scs.capabilities.maxImageCount;
-  }
-
-  vk::SwapchainCreateInfoKHR si;
-  si.surface = surface;
-  si.minImageCount = image_count;
-  si.imageFormat = format.format;
-  si.imageColorSpace = format.colorSpace;
-  si.imageExtent = extent;
-  si.imageArrayLayers = 1;
-  si.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
-
-  const Context::QueueFamilyIndices indices(physical_device, surface);
-  const auto qfi = std::array{indices.graphics_family.value(),
-                              indices.present_family.value()};
-  if (indices.graphics_family != indices.present_family) {
-    si.imageSharingMode = vk::SharingMode::eConcurrent;
-    si.queueFamilyIndexCount = 2;
-    si.pQueueFamilyIndices = qfi.data();
-  } else {
-    si.imageSharingMode = vk::SharingMode::eExclusive;
-  }
-
-  si.preTransform = scs.capabilities.currentTransform;
-  si.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-  si.presentMode = present_mode;
-  si.clipped = VK_TRUE;
-  si.oldSwapchain = VK_NULL_HANDLE;
-
-  try {
-    m_handle = device.createSwapchainKHR(si);
-  } catch (const std::runtime_error &e) {
-    throw VulkanKraftException(std::string("failed to create swap chain: ") +
-                               e.what());
-  }
-
-  m_images = device.getSwapchainImagesKHR(m_handle);
-  m_image_format = format.format;
-  m_extent = extent;
-
+SwapChain::SwapChain(const Context *context, const Window &window)
+    : m_context(context), m_window(window) {
+  _create_handle();
+  _retrieve_images();
   _create_image_views();
+  _create_render_pass();
+  _create_depth_image();
+  _create_framebuffers();
 }
 
 SwapChain::~SwapChain() { _destroy(); }
 
-void SwapChain::create_framebuffers(vk::ImageView &depth_image_view) {
-  m_framebuffers.reserve(m_image_views.size());
-  for (const auto &iv : m_image_views) {
-    const auto ats = std::array{iv, depth_image_view};
-
-    vk::FramebufferCreateInfo fb_i;
-    fb_i.renderPass = m_render_pass;
-    fb_i.attachmentCount = static_cast<uint32_t>(ats.size());
-    fb_i.pAttachments = ats.data();
-    fb_i.width = m_extent.width;
-    fb_i.height = m_extent.height;
-    fb_i.layers = 1;
-
-    try {
-      m_framebuffers.emplace_back(m_device.createFramebuffer(fb_i));
-    } catch (const std::runtime_error &e) {
-      throw VulkanKraftException("failed to create swap chain framebuffer " +
-                                 std::to_string(m_framebuffers.size()) + ": " +
-                                 e.what());
-    }
-  }
-}
-
 std::optional<std::tuple<uint32_t, vk::Framebuffer>>
-SwapChain::acquire_next_image(const vk::Device &device,
+SwapChain::acquire_next_image(const vk::Device &m_device,
                               const vk::Semaphore &semaphore) {
   try {
-    const auto r = device.acquireNextImageKHR(
+    const auto r = m_device.acquireNextImageKHR(
         m_handle, std::numeric_limits<uint64_t>::max(), semaphore,
         VK_NULL_HANDLE);
     switch (r.result) {
@@ -111,6 +43,17 @@ SwapChain::acquire_next_image(const vk::Device &device,
     throw VulkanKraftException(
         std::string("failed to acquire next swap chain image: ") + e.what());
   }
+}
+
+void SwapChain::recreate() {
+  _destroy();
+
+  _create_handle();
+  _retrieve_images();
+  _create_image_views();
+  _create_render_pass();
+  _create_depth_image();
+  _create_framebuffers();
 }
 
 vk::SurfaceFormatKHR SwapChain::_choose_surface_format(
@@ -148,6 +91,61 @@ vk::Extent2D SwapChain::_choose_extent(const vk::SurfaceCapabilitiesKHR &caps,
                                std::min(caps.maxImageExtent.height, height)));
 }
 
+void SwapChain::_create_handle() {
+  const Context::SwapChainSupportDetails scs(m_context->m_physical_device,
+                                             m_context->m_surface);
+  const auto format{_choose_surface_format(scs.formats)};
+  const auto present_mode{_choose_present_mode(scs.present_modes)};
+  const auto extent{_choose_extent(scs.capabilities, m_window)};
+
+  auto image_count{scs.capabilities.minImageCount + 1};
+  if (scs.capabilities.maxImageCount > 0 &&
+      image_count > scs.capabilities.maxImageCount) {
+    image_count = scs.capabilities.maxImageCount;
+  }
+
+  vk::SwapchainCreateInfoKHR si;
+  si.surface = m_context->m_surface;
+  si.minImageCount = image_count;
+  si.imageFormat = format.format;
+  si.imageColorSpace = format.colorSpace;
+  si.imageExtent = extent;
+  si.imageArrayLayers = 1;
+  si.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
+
+  const Context::QueueFamilyIndices indices(m_context->m_physical_device,
+                                            m_context->m_surface);
+  const auto qfi = std::array{indices.graphics_family.value(),
+                              indices.present_family.value()};
+  if (indices.graphics_family != indices.present_family) {
+    si.imageSharingMode = vk::SharingMode::eConcurrent;
+    si.queueFamilyIndexCount = 2;
+    si.pQueueFamilyIndices = qfi.data();
+  } else {
+    si.imageSharingMode = vk::SharingMode::eExclusive;
+  }
+
+  si.preTransform = scs.capabilities.currentTransform;
+  si.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
+  si.presentMode = present_mode;
+  si.clipped = VK_TRUE;
+  si.oldSwapchain = VK_NULL_HANDLE;
+
+  try {
+    m_handle = m_context->m_device.createSwapchainKHR(si);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(std::string("failed to create swap chain: ") +
+                               e.what());
+  }
+
+  m_image_format = format.format;
+  m_extent = extent;
+}
+
+void SwapChain::_retrieve_images() {
+  m_images = m_context->m_device.getSwapchainImagesKHR(m_handle);
+}
+
 void SwapChain::_create_image_views() {
   vk::ImageViewCreateInfo vi;
   vi.viewType = vk::ImageViewType::e2D;
@@ -162,7 +160,7 @@ void SwapChain::_create_image_views() {
   for (const auto &i : m_images) {
     vi.image = i;
     try {
-      m_image_views.emplace_back(m_device.createImageView(vi));
+      m_image_views.emplace_back(m_context->m_device.createImageView(vi));
     } catch (const std::runtime_error &e) {
       throw VulkanKraftException(std::string("failed to create image view ") +
                                  std::to_string(m_image_views.size()) + ": " +
@@ -171,15 +169,173 @@ void SwapChain::_create_image_views() {
   }
 }
 
-void SwapChain::_destroy() {
-  for (auto &fb : m_framebuffers) {
-    m_device.destroyFramebuffer(fb);
+void SwapChain::_create_render_pass() {
+  vk::AttachmentDescription col_at;
+  col_at.format = m_image_format;
+  col_at.samples = vk::SampleCountFlagBits::e1;
+  col_at.loadOp = vk::AttachmentLoadOp::eClear;
+  col_at.storeOp = vk::AttachmentStoreOp::eStore;
+  col_at.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+  col_at.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+  col_at.initialLayout = vk::ImageLayout::eUndefined;
+  col_at.finalLayout = vk::ImageLayout::ePresentSrcKHR;
+
+  vk::AttachmentDescription depth_at;
+  depth_at.format = Context::_find_depth_format(m_context->m_physical_device);
+  depth_at.samples = vk::SampleCountFlagBits::e1;
+  depth_at.loadOp = vk::AttachmentLoadOp::eClear;
+  depth_at.storeOp = vk::AttachmentStoreOp::eDontCare;
+  depth_at.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+  depth_at.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+  depth_at.initialLayout = vk::ImageLayout::eUndefined;
+  depth_at.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+  vk::AttachmentReference col_at_ref;
+  col_at_ref.attachment = 0;
+  col_at_ref.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+  vk::AttachmentReference depth_at_ref;
+  depth_at_ref.attachment = 1;
+  depth_at_ref.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+  vk::SubpassDescription sub;
+  sub.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+  sub.colorAttachmentCount = 1;
+  sub.pColorAttachments = &col_at_ref;
+  sub.pDepthStencilAttachment = &depth_at_ref;
+
+  vk::SubpassDependency dep;
+  dep.srcSubpass = VK_SUBPASS_EXTERNAL;
+  dep.dstSubpass = 0;
+  dep.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput |
+                     vk::PipelineStageFlagBits::eEarlyFragmentTests;
+  dep.srcAccessMask = vk::AccessFlagBits::eNoneKHR;
+  dep.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput |
+                     vk::PipelineStageFlagBits::eEarlyFragmentTests;
+  dep.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite |
+                      vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+
+  const auto ats = std::array{col_at, depth_at};
+  vk::RenderPassCreateInfo ri;
+  ri.attachmentCount = static_cast<uint32_t>(ats.size());
+  ri.pAttachments = ats.data();
+  ri.subpassCount = 1;
+  ri.pSubpasses = &sub;
+  ri.dependencyCount = 1;
+  ri.pDependencies = &dep;
+
+  try {
+    m_render_pass = m_context->m_device.createRenderPass(ri);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(std::string("failed to create render pass: ") +
+                               e.what());
   }
+}
+
+void SwapChain::_create_depth_image() {
+  const auto format{Context::_find_depth_format(m_context->m_physical_device)};
+
+  // Create image
+  vk::ImageCreateInfo ii{};
+  ii.imageType = vk::ImageType::e2D;
+  ii.extent.width = m_extent.width;
+  ii.extent.height = m_extent.height;
+  ii.extent.depth = 1;
+  ii.mipLevels = 1;
+  ii.arrayLayers = 1;
+  ii.format = format;
+  ii.tiling = vk::ImageTiling::eOptimal;
+  ii.initialLayout = vk::ImageLayout::eUndefined;
+  ii.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+  ii.samples = vk::SampleCountFlagBits::e1;
+  ii.sharingMode = vk::SharingMode::eExclusive;
+
+  try {
+    m_depth_image = m_context->m_device.createImage(ii);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(std::string("failed to create depth image: ") +
+                               e.what());
+  }
+
+  // Allocate memory
+  const auto mem_req{
+      m_context->m_device.getImageMemoryRequirements(m_depth_image)};
+
+  vk::MemoryAllocateInfo ai;
+  ai.allocationSize = mem_req.size;
+  ai.memoryTypeIndex = Context::_find_memory_type(
+      m_context->m_physical_device, mem_req.memoryTypeBits,
+      vk::MemoryPropertyFlagBits::eDeviceLocal);
+
+  try {
+    m_depth_image_memory = m_context->m_device.allocateMemory(ai);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string("failed to allocate depth image memory: ") + e.what());
+  }
+
+  m_context->m_device.bindImageMemory(m_depth_image, m_depth_image_memory, 0);
+
+  // Create image view
+  vk::ImageViewCreateInfo vi{};
+  vi.image = m_depth_image;
+  vi.viewType = vk::ImageViewType::e2D;
+  vi.format = format;
+  vi.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+  vi.subresourceRange.baseMipLevel = 0;
+  vi.subresourceRange.levelCount = 1;
+  vi.subresourceRange.baseArrayLayer = 0;
+  vi.subresourceRange.layerCount = 1;
+
+  VkImageView imageView;
+  try {
+    m_depth_image_view = m_context->m_device.createImageView(vi);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string("failed to create depth image view: ") + e.what());
+  }
+
+  m_context->_transition_image_layout(
+      m_depth_image, format, vk::ImageLayout::eUndefined,
+      vk::ImageLayout::eDepthStencilAttachmentOptimal, 1);
+}
+
+void SwapChain::_create_framebuffers() {
+  m_framebuffers.reserve(m_image_views.size());
+  for (const auto &iv : m_image_views) {
+    const auto ats = std::array{iv, m_depth_image_view};
+
+    vk::FramebufferCreateInfo fb_i;
+    fb_i.renderPass = m_render_pass;
+    fb_i.attachmentCount = static_cast<uint32_t>(ats.size());
+    fb_i.pAttachments = ats.data();
+    fb_i.width = m_extent.width;
+    fb_i.height = m_extent.height;
+    fb_i.layers = 1;
+
+    try {
+      m_framebuffers.emplace_back(m_context->m_device.createFramebuffer(fb_i));
+    } catch (const std::runtime_error &e) {
+      throw VulkanKraftException("failed to create swap chain framebuffer " +
+                                 std::to_string(m_framebuffers.size()) + ": " +
+                                 e.what());
+    }
+  }
+}
+
+void SwapChain::_destroy() {
+  m_context->m_device.destroyImageView(m_depth_image_view);
+  m_context->m_device.destroyImage(m_depth_image);
+  m_context->m_device.freeMemory(m_depth_image_memory);
+  for (auto &fb : m_framebuffers) {
+    m_context->m_device.destroyFramebuffer(fb);
+  }
+  m_context->m_device.destroyRenderPass(m_render_pass);
   for (auto &iv : m_image_views) {
-    m_device.destroyImageView(iv);
+    m_context->m_device.destroyImageView(iv);
   }
   m_image_views.clear();
-  m_device.destroySwapchainKHR(m_handle);
+  m_context->m_device.destroySwapchainKHR(m_handle);
 }
 
 } // namespace vulkan
