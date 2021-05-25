@@ -8,30 +8,71 @@ GraphicsPipeline::GraphicsPipeline(const Context &context,
                                    std::vector<char> vertex_code,
                                    std::vector<char> fragment_code)
     : m_context(context) {
+  _create_handle(std::move(vertex_code), std::move(fragment_code));
+}
+
+GraphicsPipeline::~GraphicsPipeline() { _destroy(); }
+
+void GraphicsPipeline::bind(const Context &context) {
+  if (!m_context.m_swap_chain->get_current_image()) {
+    return;
+  }
+  context
+      .m_graphic_command_buffers[m_context.m_swap_chain->get_current_image()
+                                     .value()]
+      .bindPipeline(vk::PipelineBindPoint::eGraphics, m_handle);
+}
+
+void GraphicsPipeline::recreate() {
+  _destroy();
+  _create_handle();
+}
+
+vk::ShaderModule
+GraphicsPipeline::_create_shader_module(const vk::Device &device,
+                                        std::vector<char> shader_code) {
+  vk::ShaderModuleCreateInfo si;
+  si.codeSize = shader_code.size();
+  si.pCode = reinterpret_cast<const uint32_t *>(shader_code.data());
 
   try {
-    m_vertex_module =
-        _create_shader_module(context.m_device, std::move(vertex_code));
-  } catch (const VulkanKraftException &e) {
-    throw VulkanKraftException(
-        std::string("failed to create vertex shader module: ") + e.what());
+    return device.createShaderModule(si);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(std::string("failed to create shader module: ") +
+                               e.what());
   }
-  try {
-    m_fragment_module =
-        _create_shader_module(context.m_device, std::move(fragment_code));
-  } catch (const VulkanKraftException &e) {
-    throw VulkanKraftException(
-        std::string("failed to create fragment shader module: ") + e.what());
+}
+
+void GraphicsPipeline::_create_handle(std::vector<char> vertex_code,
+                                      std::vector<char> fragment_code) {
+  if (!m_vertex_module) {
+    try {
+      m_vertex_module =
+          _create_shader_module(m_context.m_device, std::move(vertex_code));
+    } catch (const VulkanKraftException &e) {
+      throw VulkanKraftException(
+          std::string("failed to create vertex shader module: ") + e.what());
+    }
+  }
+
+  if (!m_fragment_module) {
+    try {
+      m_fragment_module =
+          _create_shader_module(m_context.m_device, std::move(fragment_code));
+    } catch (const VulkanKraftException &e) {
+      throw VulkanKraftException(
+          std::string("failed to create fragment shader module: ") + e.what());
+    }
   }
 
   vk::PipelineShaderStageCreateInfo vert_i;
   vert_i.stage = vk::ShaderStageFlagBits::eVertex;
-  vert_i.module = m_vertex_module;
+  vert_i.module = m_vertex_module.value();
   vert_i.pName = _shader_function_name;
 
   vk::PipelineShaderStageCreateInfo frag_i;
   frag_i.stage = vk::ShaderStageFlagBits::eFragment;
-  frag_i.module = m_fragment_module;
+  frag_i.module = m_fragment_module.value();
   frag_i.pName = _shader_function_name;
 
   const auto shader_stages = std::array{vert_i, frag_i};
@@ -45,13 +86,13 @@ GraphicsPipeline::GraphicsPipeline(const Context &context,
   vk::Viewport vp;
   vp.x = 0.0f;
   vp.y = 0.0f;
-  vp.width = static_cast<float>(context.m_swap_chain->get_extent().width);
-  vp.height = static_cast<float>(context.m_swap_chain->get_extent().height);
+  vp.width = static_cast<float>(m_context.m_swap_chain->get_extent().width);
+  vp.height = static_cast<float>(m_context.m_swap_chain->get_extent().height);
   vp.minDepth = 0.0f;
   vp.maxDepth = 1.0f;
 
   vk::Rect2D scissor;
-  scissor.extent = context.m_swap_chain->get_extent();
+  scissor.extent = m_context.m_swap_chain->get_extent();
 
   vk::PipelineViewportStateCreateInfo vs_i;
   vs_i.viewportCount = 1;
@@ -85,15 +126,17 @@ GraphicsPipeline::GraphicsPipeline(const Context &context,
   cb_i.pAttachments = &col_blend_at;
   cb_i.blendConstants.fill(0.0f);
 
-  vk::PipelineLayoutCreateInfo pl_i;
-  pl_i.setLayoutCount = 0;
-  pl_i.pushConstantRangeCount = 0;
+  if (!m_layout) {
+    vk::PipelineLayoutCreateInfo pl_i;
+    pl_i.setLayoutCount = 0;
+    pl_i.pushConstantRangeCount = 0;
 
-  try {
-    m_layout = context.m_device.createPipelineLayout(pl_i);
-  } catch (const std::runtime_error &e) {
-    throw VulkanKraftException(
-        std::string("failed to create pipeline layout: ") + e.what());
+    try {
+      m_layout = m_context.m_device.createPipelineLayout(pl_i);
+    } catch (const std::runtime_error &e) {
+      throw VulkanKraftException(
+          std::string("failed to create pipeline layout: ") + e.what());
+    }
   }
 
   vk::PipelineDepthStencilStateCreateInfo ds_i;
@@ -115,14 +158,14 @@ GraphicsPipeline::GraphicsPipeline(const Context &context,
   p_i.pMultisampleState = &multi_i;
   p_i.pColorBlendState = &cb_i;
   p_i.pDepthStencilState = &ds_i;
-  p_i.layout = m_layout;
-  p_i.renderPass = context.m_swap_chain->get_render_pass();
+  p_i.layout = m_layout.value();
+  p_i.renderPass = m_context.m_swap_chain->get_render_pass();
   p_i.subpass = 0;
   p_i.basePipelineHandle = VK_NULL_HANDLE;
 
   try {
     const auto ps =
-        context.m_device.createGraphicsPipelines(VK_NULL_HANDLE, p_i);
+        m_context.m_device.createGraphicsPipelines(VK_NULL_HANDLE, p_i);
     if (ps.result != vk::Result::eSuccess) {
       throw std::runtime_error(std::to_string(static_cast<int>(ps.result)));
     }
@@ -133,38 +176,14 @@ GraphicsPipeline::GraphicsPipeline(const Context &context,
   }
 }
 
-GraphicsPipeline::~GraphicsPipeline() {
+void GraphicsPipeline::_destroy() {
   m_context.m_device.waitIdle();
 
   m_context.m_device.destroyPipeline(m_handle);
-  m_context.m_device.destroyPipelineLayout(m_layout);
-  m_context.m_device.destroyShaderModule(m_vertex_module);
-  m_context.m_device.destroyShaderModule(m_fragment_module);
+  m_context.m_device.destroyPipelineLayout(m_layout.value());
+  m_context.m_device.destroyShaderModule(m_vertex_module.value());
+  m_context.m_device.destroyShaderModule(m_fragment_module.value());
 }
 
-void GraphicsPipeline::bind(const Context &context) {
-  if (!m_context.m_swap_chain->get_current_image()) {
-    return;
-  }
-  context
-      .m_graphic_command_buffers[m_context.m_swap_chain->get_current_image()
-                                     .value()]
-      .bindPipeline(vk::PipelineBindPoint::eGraphics, m_handle);
-}
-
-vk::ShaderModule
-GraphicsPipeline::_create_shader_module(const vk::Device &device,
-                                        std::vector<char> shader_code) {
-  vk::ShaderModuleCreateInfo si;
-  si.codeSize = shader_code.size();
-  si.pCode = reinterpret_cast<const uint32_t *>(shader_code.data());
-
-  try {
-    return device.createShaderModule(si);
-  } catch (const std::runtime_error &e) {
-    throw VulkanKraftException(std::string("failed to create shader module: ") +
-                               e.what());
-  }
-}
 } // namespace vulkan
 } // namespace core
