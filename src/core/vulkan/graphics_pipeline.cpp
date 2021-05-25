@@ -143,9 +143,7 @@ GraphicsPipeline::~GraphicsPipeline() {
 }
 
 void GraphicsPipeline::bind(const Context &context) {
-  if (!m_context.m_swap_chain->get_current_image() ||
-      m_context.m_command_buffer_created
-          [m_context.m_swap_chain->get_current_image().value()]) {
+  if (!m_context.m_swap_chain->get_current_image()) {
     return;
   }
   context

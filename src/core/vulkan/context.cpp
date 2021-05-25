@@ -94,28 +94,26 @@ void Context::render_begin() {
   }
   m_images_in_flight[image_index] = m_in_flight_fences[m_current_frame];
 
-  if (!m_command_buffer_created[image_index]) {
-    m_graphic_command_buffers[image_index].begin(vk::CommandBufferBeginInfo());
+  m_graphic_command_buffers[image_index].begin(vk::CommandBufferBeginInfo());
 
-    vk::RenderPassBeginInfo rbi;
-    rbi.renderPass = m_render_pass;
-    rbi.framebuffer = framebuffer;
-    rbi.renderArea.extent = m_swap_chain->get_extent();
+  vk::RenderPassBeginInfo rbi;
+  rbi.renderPass = m_render_pass;
+  rbi.framebuffer = framebuffer;
+  rbi.renderArea.extent = m_swap_chain->get_extent();
 
-    std::array<vk::ClearValue, 2> clear_values;
-    clear_values[0].color = std::array{
-        0.0f,
-        0.0f,
-        0.0f,
-        1.0f,
-    };
-    clear_values[1].depthStencil.depth = 1.0f;
-    rbi.clearValueCount = static_cast<uint32_t>(clear_values.size());
-    rbi.pClearValues = clear_values.data();
+  std::array<vk::ClearValue, 2> clear_values;
+  clear_values[0].color = std::array{
+      0.0f,
+      0.0f,
+      0.0f,
+      1.0f,
+  };
+  clear_values[1].depthStencil.depth = 1.0f;
+  rbi.clearValueCount = static_cast<uint32_t>(clear_values.size());
+  rbi.pClearValues = clear_values.data();
 
-    m_graphic_command_buffers[image_index].beginRenderPass(
-        rbi, vk::SubpassContents::eInline);
-  }
+  m_graphic_command_buffers[image_index].beginRenderPass(
+      rbi, vk::SubpassContents::eInline);
 }
 
 void Context::render_end() {
@@ -123,11 +121,8 @@ void Context::render_end() {
     return;
   }
   const auto image_index = m_swap_chain->get_current_image().value();
-  if (!m_command_buffer_created[image_index]) {
-    m_graphic_command_buffers[image_index].endRenderPass();
-    m_graphic_command_buffers[image_index].end();
-    m_command_buffer_created[image_index] = true;
-  }
+  m_graphic_command_buffers[image_index].endRenderPass();
+  m_graphic_command_buffers[image_index].end();
 
   vk::SubmitInfo si;
 
@@ -172,10 +167,8 @@ void Context::render_vertices(const uint32_t num_vertices,
   if (!m_swap_chain->get_current_image()) {
     return;
   }
-  if (!m_command_buffer_created[m_swap_chain->get_current_image().value()]) {
-    m_graphic_command_buffers[m_swap_chain->get_current_image().value()].draw(
-        num_vertices, 1, first_vertex, 0);
-  }
+  m_graphic_command_buffers[m_swap_chain->get_current_image().value()].draw(
+      num_vertices, 1, first_vertex, 0);
 }
 
 Context::QueueFamilyIndices::QueueFamilyIndices(
@@ -660,6 +653,7 @@ void Context::_create_command_pool() {
 
   vk::CommandPoolCreateInfo ci;
   ci.queueFamilyIndex = indices.graphics_family.value();
+  ci.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
 
   try {
     m_graphic_command_pool = m_device.createCommandPool(ci);
@@ -681,8 +675,6 @@ void Context::_create_command_pool() {
     throw VulkanKraftException(
         std::string("failed to create graphic command buffer: ") + e.what());
   }
-
-  m_command_buffer_created.resize(m_graphic_command_buffers.size(), false);
 }
 
 void Context::_create_depth_image() {

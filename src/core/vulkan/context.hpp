@@ -140,7 +140,6 @@ private:
   std::vector<vk::Fence> m_images_in_flight;
 
   size_t m_current_frame;
-  std::vector<bool> m_command_buffer_created;
 };
 } // namespace vulkan
 } // namespace core
