@@ -119,6 +119,20 @@ void Context::render_begin() {
 
   m_graphic_command_buffers[image_index].beginRenderPass(
       rbi, vk::SubpassContents::eInline);
+
+  vk::Viewport view;
+  view.width = static_cast<float>(m_swap_chain->get_extent().width);
+  view.height = static_cast<float>(m_swap_chain->get_extent().height);
+  view.minDepth = 0.0f;
+  view.maxDepth = 1.0f;
+  view.x = 0.0f;
+  view.y = 0.0f;
+
+  vk::Rect2D scissor;
+  scissor.extent = m_swap_chain->get_extent();
+
+  m_graphic_command_buffers[image_index].setViewport(0, view);
+  m_graphic_command_buffers[image_index].setScissor(0, scissor);
 }
 
 void Context::render_end() {
@@ -651,9 +665,6 @@ void Context::_handle_framebuffer_resize() {
   m_device.waitIdle();
 
   m_swap_chain->recreate();
-  for (auto *g : m_created_graphics_pipelines) {
-    g->recreate();
-  }
 }
 
 } // namespace vulkan

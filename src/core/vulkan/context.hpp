@@ -8,7 +8,6 @@
 
 namespace core {
 namespace vulkan {
-class GraphicsPipeline;
 
 class Context {
 public:
@@ -136,8 +135,6 @@ private:
   std::vector<vk::Semaphore> m_render_finished_semaphores;
   std::vector<vk::Fence> m_in_flight_fences;
   std::vector<vk::Fence> m_images_in_flight;
-
-  std::vector<GraphicsPipeline *> m_created_graphics_pipelines;
 
   size_t m_current_frame;
   bool m_framebuffer_resized;

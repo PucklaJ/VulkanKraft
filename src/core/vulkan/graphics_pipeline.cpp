@@ -4,25 +4,14 @@
 
 namespace core {
 namespace vulkan {
-GraphicsPipeline::GraphicsPipeline(Context &context,
+GraphicsPipeline::GraphicsPipeline(const Context &context,
                                    std::vector<char> vertex_code,
                                    std::vector<char> fragment_code)
     : m_context(context) {
   _create_handle(std::move(vertex_code), std::move(fragment_code));
-  m_context.m_created_graphics_pipelines.push_back(this);
 }
 
-GraphicsPipeline::~GraphicsPipeline() {
-  _destroy();
-  for (size_t i = 0; i < m_context.m_created_graphics_pipelines.size(); i++) {
-    if (m_context.m_created_graphics_pipelines[i] == this) {
-      m_context.m_created_graphics_pipelines[i] =
-          m_context.m_created_graphics_pipelines.back();
-      m_context.m_created_graphics_pipelines.pop_back();
-      break;
-    }
-  }
-}
+GraphicsPipeline::~GraphicsPipeline() { _destroy(); }
 
 void GraphicsPipeline::bind() {
   if (!m_context.m_swap_chain->get_current_image()) {
@@ -32,11 +21,6 @@ void GraphicsPipeline::bind() {
       .m_graphic_command_buffers[m_context.m_swap_chain->get_current_image()
                                      .value()]
       .bindPipeline(vk::PipelineBindPoint::eGraphics, m_handle);
-}
-
-void GraphicsPipeline::recreate() {
-  _destroy(false);
-  _create_handle();
 }
 
 vk::ShaderModule
@@ -56,34 +40,30 @@ GraphicsPipeline::_create_shader_module(const vk::Device &device,
 
 void GraphicsPipeline::_create_handle(std::vector<char> vertex_code,
                                       std::vector<char> fragment_code) {
-  if (!m_vertex_module) {
-    try {
-      m_vertex_module =
-          _create_shader_module(m_context.m_device, std::move(vertex_code));
-    } catch (const VulkanKraftException &e) {
-      throw VulkanKraftException(
-          std::string("failed to create vertex shader module: ") + e.what());
-    }
+  try {
+    m_vertex_module =
+        _create_shader_module(m_context.m_device, std::move(vertex_code));
+  } catch (const VulkanKraftException &e) {
+    throw VulkanKraftException(
+        std::string("failed to create vertex shader module: ") + e.what());
   }
 
-  if (!m_fragment_module) {
-    try {
-      m_fragment_module =
-          _create_shader_module(m_context.m_device, std::move(fragment_code));
-    } catch (const VulkanKraftException &e) {
-      throw VulkanKraftException(
-          std::string("failed to create fragment shader module: ") + e.what());
-    }
+  try {
+    m_fragment_module =
+        _create_shader_module(m_context.m_device, std::move(fragment_code));
+  } catch (const VulkanKraftException &e) {
+    throw VulkanKraftException(
+        std::string("failed to create fragment shader module: ") + e.what());
   }
 
   vk::PipelineShaderStageCreateInfo vert_i;
   vert_i.stage = vk::ShaderStageFlagBits::eVertex;
-  vert_i.module = m_vertex_module.value();
+  vert_i.module = m_vertex_module;
   vert_i.pName = _shader_function_name;
 
   vk::PipelineShaderStageCreateInfo frag_i;
   frag_i.stage = vk::ShaderStageFlagBits::eFragment;
-  frag_i.module = m_fragment_module.value();
+  frag_i.module = m_fragment_module;
   frag_i.pName = _shader_function_name;
 
   const auto shader_stages = std::array{vert_i, frag_i};
@@ -94,22 +74,9 @@ void GraphicsPipeline::_create_handle(std::vector<char> vertex_code,
   ia_i.topology = vk::PrimitiveTopology::eTriangleList;
   ia_i.primitiveRestartEnable = VK_FALSE;
 
-  vk::Viewport vp;
-  vp.x = 0.0f;
-  vp.y = 0.0f;
-  vp.width = static_cast<float>(m_context.m_swap_chain->get_extent().width);
-  vp.height = static_cast<float>(m_context.m_swap_chain->get_extent().height);
-  vp.minDepth = 0.0f;
-  vp.maxDepth = 1.0f;
-
-  vk::Rect2D scissor;
-  scissor.extent = m_context.m_swap_chain->get_extent();
-
   vk::PipelineViewportStateCreateInfo vs_i;
   vs_i.viewportCount = 1;
-  vs_i.pViewports = &vp;
   vs_i.scissorCount = 1;
-  vs_i.pScissors = &scissor;
 
   vk::PipelineRasterizationStateCreateInfo rast_i;
   rast_i.depthClampEnable = VK_FALSE;
@@ -159,6 +126,12 @@ void GraphicsPipeline::_create_handle(std::vector<char> vertex_code,
   ds_i.maxDepthBounds = 1.0f;
   ds_i.stencilTestEnable = VK_FALSE;
 
+  const auto dyn_states =
+      std::array{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+  vk::PipelineDynamicStateCreateInfo dyn_i;
+  dyn_i.dynamicStateCount = static_cast<uint32_t>(dyn_states.size());
+  dyn_i.pDynamicStates = dyn_states.data();
+
   vk::GraphicsPipelineCreateInfo p_i;
   p_i.stageCount = static_cast<uint32_t>(shader_stages.size());
   p_i.pStages = shader_stages.data();
@@ -169,7 +142,8 @@ void GraphicsPipeline::_create_handle(std::vector<char> vertex_code,
   p_i.pMultisampleState = &multi_i;
   p_i.pColorBlendState = &cb_i;
   p_i.pDepthStencilState = &ds_i;
-  p_i.layout = m_layout.value();
+  p_i.pDynamicState = &dyn_i;
+  p_i.layout = m_layout;
   p_i.renderPass = m_context.m_swap_chain->get_render_pass();
   p_i.subpass = 0;
   p_i.basePipelineHandle = VK_NULL_HANDLE;
@@ -187,15 +161,13 @@ void GraphicsPipeline::_create_handle(std::vector<char> vertex_code,
   }
 }
 
-void GraphicsPipeline::_destroy(const bool everything) {
+void GraphicsPipeline::_destroy() {
   m_context.m_device.waitIdle();
 
   m_context.m_device.destroyPipeline(m_handle);
-  if (everything) {
-    m_context.m_device.destroyPipelineLayout(m_layout.value());
-    m_context.m_device.destroyShaderModule(m_vertex_module.value());
-    m_context.m_device.destroyShaderModule(m_fragment_module.value());
-  }
+  m_context.m_device.destroyPipelineLayout(m_layout);
+  m_context.m_device.destroyShaderModule(m_vertex_module);
+  m_context.m_device.destroyShaderModule(m_fragment_module);
 }
 
 } // namespace vulkan
