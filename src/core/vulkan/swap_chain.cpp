@@ -48,12 +48,11 @@ SwapChain::acquire_next_image(const vk::Device &m_device,
 }
 
 void SwapChain::recreate() {
-  _destroy();
+  _destroy(false);
 
   _create_handle();
   _retrieve_images();
   _create_image_views();
-  _create_render_pass();
   _create_depth_image();
   _create_framebuffers();
 }
@@ -325,7 +324,7 @@ void SwapChain::_create_framebuffers() {
   }
 }
 
-void SwapChain::_destroy() {
+void SwapChain::_destroy(const bool everything) {
   m_context->m_device.destroyImageView(m_depth_image_view);
   m_context->m_device.destroyImage(m_depth_image);
   m_context->m_device.freeMemory(m_depth_image_memory);
@@ -333,7 +332,9 @@ void SwapChain::_destroy() {
     m_context->m_device.destroyFramebuffer(fb);
   }
   m_framebuffers.clear();
-  m_context->m_device.destroyRenderPass(m_render_pass);
+  if (everything) {
+    m_context->m_device.destroyRenderPass(m_render_pass);
+  }
   for (auto &iv : m_image_views) {
     m_context->m_device.destroyImageView(iv);
   }

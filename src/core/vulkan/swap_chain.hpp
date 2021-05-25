@@ -42,7 +42,7 @@ private:
   void _create_depth_image();
   void _create_framebuffers();
   // **************************
-  void _destroy();
+  void _destroy(const bool everything = true);
 
   vk::SwapchainKHR m_handle;
   vk::Format m_image_format;
