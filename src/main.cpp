@@ -32,8 +32,11 @@ std::vector<char> read_file(const std::string &filename) {
 }
 
 int main(int args, char *argv[]) {
-  const auto vertices = std::array{core::vulkan::Vertex(0.0f, -0.5f, 0.0f),
+  const auto vertices = std::array{core::vulkan::Vertex(-0.5f, 0.5f, 0.0f),
                                    core::vulkan::Vertex(0.5f, 0.5f, 0.0f),
+                                   core::vulkan::Vertex(0.5f, -0.5f, 0.0f),
+                                   core::vulkan::Vertex(0.5f, -0.5f, 0.0f),
+                                   core::vulkan::Vertex(-0.5f, -0.5f, 0.0f),
                                    core::vulkan::Vertex(-0.5f, 0.5f, 0.0f)};
 
   try {

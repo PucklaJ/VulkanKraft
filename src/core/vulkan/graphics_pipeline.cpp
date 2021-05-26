@@ -91,7 +91,7 @@ void GraphicsPipeline::_create_handle(std::vector<char> vertex_code,
   rast_i.polygonMode = vk::PolygonMode::eFill;
   rast_i.lineWidth = 1.0f;
   rast_i.cullMode = vk::CullModeFlagBits::eBack;
-  rast_i.frontFace = vk::FrontFace::eClockwise;
+  rast_i.frontFace = vk::FrontFace::eCounterClockwise;
   rast_i.depthBiasEnable = VK_FALSE;
 
   vk::PipelineMultisampleStateCreateInfo multi_i;
