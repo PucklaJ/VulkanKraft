@@ -6,11 +6,14 @@ namespace core {
 namespace vulkan {
 class GraphicsPipeline {
 public:
-  GraphicsPipeline(const Context &context, std::vector<char> vertex_code,
+  GraphicsPipeline(const Context &context,
+                   vk::DescriptorSetLayout descriptor_set_layout,
+                   std::vector<char> vertex_code,
                    std::vector<char> fragment_code);
   ~GraphicsPipeline();
 
   void bind();
+  inline const vk::PipelineLayout &get_layout() const { return m_layout; }
 
 private:
   static constexpr char _shader_function_name[] = "main";
@@ -18,7 +21,8 @@ private:
   static vk::ShaderModule _create_shader_module(const vk::Device &device,
                                                 std::vector<char> shader_code);
 
-  void _create_handle(std::vector<char> vertex_code,
+  void _create_handle(vk::DescriptorSetLayout descriptor_set_layout,
+                      std::vector<char> vertex_code,
                       std::vector<char> fragment_code);
   void _destroy();
 

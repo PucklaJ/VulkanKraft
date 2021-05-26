@@ -12,6 +12,7 @@ public:
   void set_data(const void *data, const size_t data_size,
                 const size_t offset = 0);
   void bind();
+  inline const vk::Buffer &get_handle() const { return m_handle; }
 
 private:
   vk::Buffer m_handle;

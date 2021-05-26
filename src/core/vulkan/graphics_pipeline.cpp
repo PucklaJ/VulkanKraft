@@ -5,11 +5,12 @@
 
 namespace core {
 namespace vulkan {
-GraphicsPipeline::GraphicsPipeline(const Context &context,
-                                   std::vector<char> vertex_code,
-                                   std::vector<char> fragment_code)
+GraphicsPipeline::GraphicsPipeline(
+    const Context &context, vk::DescriptorSetLayout descriptor_set_layout,
+    std::vector<char> vertex_code, std::vector<char> fragment_code)
     : m_context(context) {
-  _create_handle(std::move(vertex_code), std::move(fragment_code));
+  _create_handle(std::move(descriptor_set_layout), std::move(vertex_code),
+                 std::move(fragment_code));
 }
 
 GraphicsPipeline::~GraphicsPipeline() { _destroy(); }
@@ -39,8 +40,9 @@ GraphicsPipeline::_create_shader_module(const vk::Device &device,
   }
 }
 
-void GraphicsPipeline::_create_handle(std::vector<char> vertex_code,
-                                      std::vector<char> fragment_code) {
+void GraphicsPipeline::_create_handle(
+    vk::DescriptorSetLayout descriptor_set_layout,
+    std::vector<char> vertex_code, std::vector<char> fragment_code) {
   try {
     m_vertex_module =
         _create_shader_module(m_context.m_device, std::move(vertex_code));
@@ -111,17 +113,16 @@ void GraphicsPipeline::_create_handle(std::vector<char> vertex_code,
   cb_i.pAttachments = &col_blend_at;
   cb_i.blendConstants.fill(0.0f);
 
-  if (!m_layout) {
-    vk::PipelineLayoutCreateInfo pl_i;
-    pl_i.setLayoutCount = 0;
-    pl_i.pushConstantRangeCount = 0;
+  vk::PipelineLayoutCreateInfo pl_i;
+  pl_i.setLayoutCount = 1;
+  pl_i.pSetLayouts = &descriptor_set_layout;
+  pl_i.pushConstantRangeCount = 0;
 
-    try {
-      m_layout = m_context.m_device.createPipelineLayout(pl_i);
-    } catch (const std::runtime_error &e) {
-      throw VulkanKraftException(
-          std::string("failed to create pipeline layout: ") + e.what());
-    }
+  try {
+    m_layout = m_context.m_device.createPipelineLayout(pl_i);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string("failed to create pipeline layout: ") + e.what());
   }
 
   vk::PipelineDepthStencilStateCreateInfo ds_i;

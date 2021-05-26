@@ -3,4 +3,13 @@
 
 layout(location = 0) in vec3 in_position;
 
-void main() { gl_Position = vec4(in_position, 1.0); }
+layout(binding = 0) uniform MatrixData {
+  mat4 model;
+  mat4 view;
+  mat4 proj;
+}
+ubo0;
+
+void main() {
+  gl_Position = ubo0.proj * ubo0.view * ubo0.model * vec4(in_position, 1.0);
+}

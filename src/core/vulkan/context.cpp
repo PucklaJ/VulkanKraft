@@ -192,6 +192,64 @@ void Context::render_vertices(const uint32_t num_vertices,
       num_vertices, 1, first_vertex, 0);
 }
 
+vk::DescriptorSetLayout Context::create_descriptor_set_layout(
+    std::vector<vk::DescriptorSetLayoutBinding> bindings) const {
+  vk::DescriptorSetLayoutCreateInfo li;
+  li.bindingCount = bindings.size();
+  li.pBindings = bindings.data();
+
+  return m_device.createDescriptorSetLayout(li);
+}
+
+vk::DescriptorPool
+Context::create_descriptor_pool(std::vector<vk::DescriptorPoolSize> pool_sizes,
+                                const size_t set_count) const {
+  vk::DescriptorPoolCreateInfo pi;
+  pi.poolSizeCount = static_cast<uint32_t>(pool_sizes.size());
+  pi.pPoolSizes = pool_sizes.data();
+  pi.maxSets = static_cast<uint32_t>(set_count);
+
+  return m_device.createDescriptorPool(pi);
+}
+
+std::vector<vk::DescriptorSet>
+Context::create_descriptor_sets(const vk::DescriptorPool &pool,
+                                const vk::DescriptorSetLayout &layout) const {
+  std::vector<vk::DescriptorSetLayout> layouts(get_swap_chain_image_count(),
+                                               layout);
+  vk::DescriptorSetAllocateInfo ai;
+  ai.descriptorPool = pool;
+  ai.descriptorSetCount = static_cast<uint32_t>(layouts.size());
+  ai.pSetLayouts = layouts.data();
+
+  return m_device.allocateDescriptorSets(ai);
+}
+
+void Context::write_descriptor_sets(
+    std::vector<vk::WriteDescriptorSet> writes) const noexcept {
+  m_device.updateDescriptorSets(std::move(writes), nullptr);
+}
+
+void Context::destroy_descriptors(
+    vk::DescriptorPool pool, vk::DescriptorSetLayout layout) const noexcept {
+  m_device.destroyDescriptorPool(pool);
+  m_device.destroyDescriptorSetLayout(layout);
+}
+
+void Context::bind_descriptor_set(
+    const std::vector<vk::DescriptorSet> &sets,
+    const vk::PipelineLayout &layout) const noexcept {
+  if (!get_current_swap_chain_image()) {
+    return;
+  }
+
+  const auto &set(sets[get_current_swap_chain_image().value()]);
+
+  m_graphic_command_buffers[get_current_swap_chain_image().value()]
+      .bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout, 0, set,
+                          nullptr);
+}
+
 Context::QueueFamilyIndices::QueueFamilyIndices(
     const vk::PhysicalDevice &device, const vk::SurfaceKHR &surface) {
   const auto queue_families(device.getQueueFamilyProperties());
