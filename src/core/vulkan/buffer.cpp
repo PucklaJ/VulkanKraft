@@ -43,6 +43,8 @@ Buffer::Buffer(const Context &context, vk::BufferUsageFlags usage,
 }
 
 Buffer::~Buffer() {
+  m_context.m_device.waitIdle();
+
   m_context.m_device.destroyBuffer(m_handle);
   m_context.m_device.freeMemory(m_memory);
 }

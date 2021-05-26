@@ -1,5 +1,6 @@
 #include "graphics_pipeline.hpp"
 #include "../exception.hpp"
+#include "vertex.hpp"
 #include <array>
 
 namespace core {
@@ -68,7 +69,13 @@ void GraphicsPipeline::_create_handle(std::vector<char> vertex_code,
 
   const auto shader_stages = std::array{vert_i, frag_i};
 
+  const auto bind_desc(Vertex::get_binding_description());
+  const auto att_desc(Vertex::get_attribute_description());
   vk::PipelineVertexInputStateCreateInfo vi_i;
+  vi_i.vertexBindingDescriptionCount = 1;
+  vi_i.vertexAttributeDescriptionCount = static_cast<uint32_t>(att_desc.size());
+  vi_i.pVertexBindingDescriptions = &bind_desc;
+  vi_i.pVertexAttributeDescriptions = att_desc.data();
 
   vk::PipelineInputAssemblyStateCreateInfo ia_i;
   ia_i.topology = vk::PrimitiveTopology::eTriangleList;

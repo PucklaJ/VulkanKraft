@@ -1,7 +1,9 @@
 #include "core/exception.hpp"
 #include "core/log.hpp"
+#include "core/vulkan/buffer.hpp"
 #include "core/vulkan/context.hpp"
 #include "core/vulkan/graphics_pipeline.hpp"
+#include "core/vulkan/vertex.hpp"
 #include "core/window.hpp"
 #include <chrono>
 #include <fstream>
@@ -30,6 +32,10 @@ std::vector<char> read_file(const std::string &filename) {
 }
 
 int main(int args, char *argv[]) {
+  const auto vertices = std::array{core::vulkan::Vertex(0.0f, -0.5f, 0.0f),
+                                   core::vulkan::Vertex(0.5f, 0.5f, 0.0f),
+                                   core::vulkan::Vertex(-0.5f, 0.5f, 0.0f)};
+
   try {
     core::Window window(window_width, window_height, window_title);
     core::vulkan::Context context(window);
@@ -40,12 +46,17 @@ int main(int args, char *argv[]) {
     core::vulkan::GraphicsPipeline gp(context, std::move(vertex_code),
                                       std::move(fragment_code));
 
+    core::vulkan::Buffer vertex_buffer(context,
+                                       vk::BufferUsageFlagBits::eVertexBuffer,
+                                       sizeof(vertices), vertices.data());
+
     while (!window.should_close()) {
       window.poll_events();
 
       context.render_begin();
       gp.bind();
-      context.render_vertices(3);
+      vertex_buffer.bind();
+      context.render_vertices(vertices.size());
       context.render_end();
 
       std::this_thread::sleep_for(10ms);
