@@ -6,13 +6,13 @@ namespace core {
 namespace vulkan {
 Buffer::Buffer(const Context &context, vk::BufferUsageFlags usage,
                const size_t buffer_size, const void *data)
-    : m_usage(usage | vk::BufferUsageFlagBits::eTransferDst),
+    : m_usage(usage | ((usage & vk::BufferUsageFlagBits::eUniformBuffer)
+                           ? static_cast<vk::BufferUsageFlagBits>(0)
+                           : vk::BufferUsageFlagBits::eTransferDst)),
       m_context(context) {
-  usage |= vk::BufferUsageFlagBits::eTransferDst;
-
   vk::BufferCreateInfo bi;
   bi.size = static_cast<vk::DeviceSize>(buffer_size);
-  bi.usage = usage;
+  bi.usage = m_usage;
   bi.sharingMode = vk::SharingMode::eExclusive;
 
   try {
@@ -27,7 +27,7 @@ Buffer::Buffer(const Context &context, vk::BufferUsageFlags usage,
   ai.allocationSize = mem_req.size;
   ai.memoryTypeIndex = Context::_find_memory_type(
       m_context.m_physical_device, mem_req.memoryTypeBits,
-      (usage & vk::BufferUsageFlagBits::eUniformBuffer)
+      (m_usage & vk::BufferUsageFlagBits::eUniformBuffer)
           ? (vk::MemoryPropertyFlagBits::eHostVisible |
              vk::MemoryPropertyFlagBits::eHostCoherent)
           : vk::MemoryPropertyFlagBits::eDeviceLocal);

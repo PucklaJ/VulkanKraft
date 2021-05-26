@@ -195,7 +195,7 @@ void Context::render_vertices(const uint32_t num_vertices,
 vk::DescriptorSetLayout Context::create_descriptor_set_layout(
     std::vector<vk::DescriptorSetLayoutBinding> bindings) const {
   vk::DescriptorSetLayoutCreateInfo li;
-  li.bindingCount = bindings.size();
+  li.bindingCount = static_cast<uint32_t>(bindings.size());
   li.pBindings = bindings.data();
 
   return m_device.createDescriptorSetLayout(li);

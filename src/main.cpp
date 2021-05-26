@@ -18,12 +18,12 @@ constexpr uint32_t window_height = 480;
 constexpr char window_title[] = "VulkanKraft";
 
 int main(int args, char *argv[]) {
-  const auto vertices = std::array{core::vulkan::Vertex(-0.5f, 0.5f, 0.0f),
-                                   core::vulkan::Vertex(0.5f, 0.5f, 0.0f),
-                                   core::vulkan::Vertex(0.5f, -0.5f, 0.0f),
-                                   core::vulkan::Vertex(0.5f, -0.5f, 0.0f),
-                                   core::vulkan::Vertex(-0.5f, -0.5f, 0.0f),
-                                   core::vulkan::Vertex(-0.5f, 0.5f, 0.0f)};
+  const auto vertices = std::array{core::vulkan::Vertex(-0.5f, 0.5f, -1.0f),
+                                   core::vulkan::Vertex(0.5f, 0.5f, -1.0f),
+                                   core::vulkan::Vertex(0.5f, -0.5f, -1.0f),
+                                   core::vulkan::Vertex(0.5f, -0.5f, -1.0f),
+                                   core::vulkan::Vertex(-0.5f, -0.5f, -1.0f),
+                                   core::vulkan::Vertex(-0.5f, 0.5f, -1.0f)};
 
   try {
     core::Window window(window_width, window_height, window_title);
@@ -39,11 +39,23 @@ int main(int args, char *argv[]) {
                                        vk::BufferUsageFlagBits::eVertexBuffer,
                                        sizeof(vertices), vertices.data());
 
+    core::Shader::MatrixData ubo0;
+    ubo0.view = glm::identity<glm::mat4>();
+
     while (!window.should_close()) {
       window.poll_events();
 
+      const auto [width, height] = window.get_framebuffer_size();
+      ubo0.proj = glm::perspective(
+          glm::degrees(15.0f),
+          static_cast<float>(width) / static_cast<float>(height), 0.01f, 2.0f);
+      ubo0.model =
+          glm::rotate(glm::radians(90.0f * static_cast<float>(glfwGetTime())),
+                      glm::vec3(0.0f, 0.0f, 1.0f));
+
       context.render_begin();
 
+      shader.update_uniform_buffer(ubo0);
       shader.bind();
       vertex_buffer.bind();
       context.render_vertices(vertices.size());

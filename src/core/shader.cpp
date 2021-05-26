@@ -173,13 +173,13 @@ void Shader::_create_descriptor_sets(const vulkan::Context &context) {
         e.what());
   }
 
-  std::vector<vk::WriteDescriptorSet> writes;
   for (size_t i = 0; i < m_descriptor_sets.size(); i++) {
+    std::vector<vk::WriteDescriptorSet> writes;
     size_t current_binding{0};
-    const auto &uniform_buffers = m_uniform_buffers[i];
-    for (size_t j = 0; j < uniform_buffers.size(); j++, current_binding++) {
+    for (size_t j = 0; j < m_uniform_buffers[i].size();
+         j++, current_binding++) {
       vk::DescriptorBufferInfo bi;
-      bi.buffer = uniform_buffers[j].get_handle();
+      bi.buffer = m_uniform_buffers[i][j].get_handle();
       bi.offset = 0;
       bi.range = sizeof(MatrixData);
 
@@ -193,8 +193,7 @@ void Shader::_create_descriptor_sets(const vulkan::Context &context) {
 
       writes.emplace_back(std::move(w));
     }
+    context.write_descriptor_sets(std::move(writes));
   }
-
-  context.write_descriptor_sets(std::move(writes));
 }
 } // namespace core
