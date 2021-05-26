@@ -13,6 +13,7 @@ class Context {
 public:
   friend class SwapChain;
   friend class GraphicsPipeline;
+  friend class Buffer;
 
   static PFN_vkCreateDebugUtilsMessengerEXT pfnVkCreateDebugUtilsMessengerEXT;
   static PFN_vkDestroyDebugUtilsMessengerEXT pfnVkDestroyDebugUtilsMessengerEXT;
