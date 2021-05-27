@@ -1,7 +1,6 @@
 #include "shader.hpp"
 #include "exception.hpp"
 #include <fstream>
-#include <glm/gtx/transform.hpp>
 
 namespace core {
 Shader::Builder::Builder() {}
@@ -15,6 +14,11 @@ Shader Shader::Builder::build(const vulkan::Context &context) {
   if (m_fragment_code.empty()) {
     throw VulkanKraftException(
         "no fragment shader has been provided for core::Shader");
+  }
+
+  if (m_vertex_attributes.empty()) {
+    throw VulkanKraftException(
+        "no vertex atrributes have been specified for core::Shader");
   }
 
   return Shader(context, std::move(m_vertex_code), std::move(m_fragment_code),
