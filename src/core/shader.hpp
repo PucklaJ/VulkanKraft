@@ -45,8 +45,9 @@ public:
 
   ~Shader();
 
-  void update_uniform_buffer(const MatrixData &data, const size_t index = 0);
-  void bind();
+  void update_uniform_buffer(const vulkan::RenderCall &render_call,
+                             const MatrixData &data, const size_t index = 0);
+  void bind(const vulkan::RenderCall &render_call);
 
 private:
   static std::vector<char> _read_spv_file(std::filesystem::path file_name);

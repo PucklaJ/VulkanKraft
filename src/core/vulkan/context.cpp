@@ -74,18 +74,18 @@ Context::~Context() {
   m_instance.destroy();
 }
 
-void Context::render_begin() {
+std::optional<RenderCall> Context::render_begin() {
   if (m_device.waitForFences(m_in_flight_fences[m_current_frame], VK_TRUE,
                              std::numeric_limits<uint64_t>::max()) !=
       vk::Result::eSuccess) {
-    return;
+    return std::nullopt;
   }
 
   auto acquired_image = m_swap_chain->acquire_next_image(
       m_device, m_image_available_semaphores[m_current_frame]);
   if (!acquired_image) {
     _handle_framebuffer_resize();
-    return;
+    return std::nullopt;
   }
 
   auto [image_index, framebuffer] = acquired_image.value();
@@ -94,7 +94,7 @@ void Context::render_begin() {
     if (m_device.waitForFences(m_images_in_flight[image_index], VK_TRUE,
                                std::numeric_limits<uint64_t>::max()) !=
         vk::Result::eSuccess) {
-      return;
+      return std::nullopt;
     }
   }
   m_images_in_flight[image_index] = m_in_flight_fences[m_current_frame];
@@ -133,6 +133,8 @@ void Context::render_begin() {
 
   m_graphic_command_buffers[image_index].setViewport(0, view);
   m_graphic_command_buffers[image_index].setScissor(0, scissor);
+
+  return RenderCall(m_graphic_command_buffers[image_index], image_index);
 }
 
 void Context::render_end() {
@@ -183,15 +185,6 @@ void Context::render_end() {
   m_current_frame = (m_current_frame + 1) % _max_images_in_flight;
 }
 
-void Context::render_vertices(const uint32_t num_vertices,
-                              const uint32_t first_vertex) {
-  if (!m_swap_chain->get_current_image()) {
-    return;
-  }
-  m_graphic_command_buffers[m_swap_chain->get_current_image().value()].draw(
-      num_vertices, 1, first_vertex, 0);
-}
-
 vk::DescriptorSetLayout Context::create_descriptor_set_layout(
     std::vector<vk::DescriptorSetLayoutBinding> bindings) const {
   vk::DescriptorSetLayoutCreateInfo li;
@@ -234,20 +227,6 @@ void Context::destroy_descriptors(
     vk::DescriptorPool pool, vk::DescriptorSetLayout layout) const noexcept {
   m_device.destroyDescriptorPool(pool);
   m_device.destroyDescriptorSetLayout(layout);
-}
-
-void Context::bind_descriptor_set(
-    const std::vector<vk::DescriptorSet> &sets,
-    const vk::PipelineLayout &layout) const noexcept {
-  if (!get_current_swap_chain_image()) {
-    return;
-  }
-
-  const auto &set(sets[get_current_swap_chain_image().value()]);
-
-  m_graphic_command_buffers[get_current_swap_chain_image().value()]
-      .bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout, 0, set,
-                          nullptr);
 }
 
 Context::QueueFamilyIndices::QueueFamilyIndices(

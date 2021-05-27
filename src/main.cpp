@@ -53,12 +53,12 @@ int main(int args, char *argv[]) {
           glm::rotate(glm::radians(90.0f * static_cast<float>(glfwGetTime())),
                       glm::vec3(0.0f, 0.0f, 1.0f));
 
-      context.render_begin();
-
-      shader.update_uniform_buffer(ubo0);
-      shader.bind();
-      vertex_buffer.bind();
-      context.render_vertices(vertices.size());
+      if (const auto render_call = context.render_begin(); render_call) {
+        shader.update_uniform_buffer(render_call.value(), ubo0);
+        shader.bind(render_call.value());
+        vertex_buffer.bind(render_call.value());
+        render_call.value().render_vertices(vertices.size());
+      }
 
       context.render_end();
 

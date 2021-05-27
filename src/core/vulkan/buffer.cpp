@@ -132,20 +132,8 @@ void Buffer::set_data(const void *data, const size_t data_size,
   }
 }
 
-void Buffer::bind() {
-  if (!m_context.m_swap_chain->get_current_image()) {
-    return;
-  }
-
-  auto &com_buf = m_context.m_graphic_command_buffers
-                      [m_context.m_swap_chain->get_current_image().value()];
-
-  if (m_usage & vk::BufferUsageFlagBits::eVertexBuffer) {
-    com_buf.bindVertexBuffers(0, m_handle, static_cast<vk::DeviceSize>(0));
-  }
-  if (m_usage & vk::BufferUsageFlagBits::eIndexBuffer) {
-    com_buf.bindIndexBuffer(m_handle, 0, vk::IndexType::eUint32);
-  }
+void Buffer::bind(const RenderCall &render_call) const {
+  render_call.bind_buffer(m_handle, m_usage);
 }
 
 } // namespace vulkan

@@ -1,5 +1,6 @@
 #pragma once
 #include "../window.hpp"
+#include "render_call.hpp"
 #include "swap_chain.hpp"
 #include <memory>
 #include <optional>
@@ -21,10 +22,8 @@ public:
   Context(Window &window);
   ~Context();
 
-  void render_begin();
+  std::optional<RenderCall> render_begin();
   void render_end();
-  void render_vertices(const uint32_t num_vertices,
-                       const uint32_t first_vertex = 0);
 
   vk::DescriptorSetLayout create_descriptor_set_layout(
       std::vector<vk::DescriptorSetLayoutBinding> bindings) const;
@@ -41,11 +40,6 @@ public:
   inline size_t get_swap_chain_image_count() const {
     return m_swap_chain->get_image_count();
   }
-  inline const std::optional<uint32_t> &get_current_swap_chain_image() const {
-    return m_swap_chain->get_current_image();
-  }
-  void bind_descriptor_set(const std::vector<vk::DescriptorSet> &sets,
-                           const vk::PipelineLayout &layout) const noexcept;
 
 private:
   class QueueFamilyIndices {

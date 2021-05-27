@@ -27,18 +27,17 @@ Shader::~Shader() {
                                 std::move(m_descriptor_layout));
 }
 
-void Shader::update_uniform_buffer(const MatrixData &data, const size_t index) {
-  if (!m_context.get_current_swap_chain_image()) {
-    return;
-  }
-
-  m_uniform_buffers[m_context.get_current_swap_chain_image().value()][index]
-      .set_data(&data, sizeof(MatrixData));
+void Shader::update_uniform_buffer(const vulkan::RenderCall &render_call,
+                                   const MatrixData &data, const size_t index) {
+  m_uniform_buffers[render_call.get_swap_chain_image_index()][index].set_data(
+      &data, sizeof(MatrixData));
 }
 
-void Shader::bind() {
-  m_pipeline->bind();
-  m_context.bind_descriptor_set(m_descriptor_sets, m_pipeline->get_layout());
+void Shader::bind(const vulkan::RenderCall &render_call) {
+  m_pipeline->bind(render_call);
+  render_call.bind_descriptor_set(
+      m_descriptor_sets[render_call.get_swap_chain_image_index()],
+      m_pipeline->get_layout());
 }
 
 std::vector<char> Shader::_read_spv_file(std::filesystem::path file_name) {

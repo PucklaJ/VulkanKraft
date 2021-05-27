@@ -1,5 +1,6 @@
 #pragma once
 #include "context.hpp"
+#include "render_call.hpp"
 #include <vector>
 
 namespace core {
@@ -12,7 +13,7 @@ public:
                    std::vector<char> fragment_code);
   ~GraphicsPipeline();
 
-  void bind();
+  void bind(const RenderCall &render_call) const noexcept;
   inline const vk::PipelineLayout &get_layout() const { return m_layout; }
 
 private:

@@ -15,14 +15,8 @@ GraphicsPipeline::GraphicsPipeline(
 
 GraphicsPipeline::~GraphicsPipeline() { _destroy(); }
 
-void GraphicsPipeline::bind() {
-  if (!m_context.m_swap_chain->get_current_image()) {
-    return;
-  }
-  m_context
-      .m_graphic_command_buffers[m_context.m_swap_chain->get_current_image()
-                                     .value()]
-      .bindPipeline(vk::PipelineBindPoint::eGraphics, m_handle);
+void GraphicsPipeline::bind(const RenderCall &render_call) const noexcept {
+  render_call.bind_graphics_pipeline(m_handle);
 }
 
 vk::ShaderModule
