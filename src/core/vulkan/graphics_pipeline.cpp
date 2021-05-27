@@ -7,7 +7,7 @@ namespace core {
 namespace vulkan {
 GraphicsPipeline::GraphicsPipeline(
     const Context &context, vk::DescriptorSetLayout descriptor_set_layout,
-    std::vector<char> vertex_code, std::vector<char> fragment_code)
+    std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code)
     : m_context(context) {
   _create_handle(std::move(descriptor_set_layout), std::move(vertex_code),
                  std::move(fragment_code));
@@ -21,7 +21,7 @@ void GraphicsPipeline::bind(const RenderCall &render_call) const noexcept {
 
 vk::ShaderModule
 GraphicsPipeline::_create_shader_module(const vk::Device &device,
-                                        std::vector<char> shader_code) {
+                                        std::vector<uint8_t> shader_code) {
   vk::ShaderModuleCreateInfo si;
   si.codeSize = shader_code.size();
   si.pCode = reinterpret_cast<const uint32_t *>(shader_code.data());
@@ -36,7 +36,7 @@ GraphicsPipeline::_create_shader_module(const vk::Device &device,
 
 void GraphicsPipeline::_create_handle(
     vk::DescriptorSetLayout descriptor_set_layout,
-    std::vector<char> vertex_code, std::vector<char> fragment_code) {
+    std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code) {
   try {
     m_vertex_module =
         _create_shader_module(m_context.m_device, std::move(vertex_code));

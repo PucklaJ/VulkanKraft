@@ -9,8 +9,8 @@ class GraphicsPipeline {
 public:
   GraphicsPipeline(const Context &context,
                    vk::DescriptorSetLayout descriptor_set_layout,
-                   std::vector<char> vertex_code,
-                   std::vector<char> fragment_code);
+                   std::vector<uint8_t> vertex_code,
+                   std::vector<uint8_t> fragment_code);
   ~GraphicsPipeline();
 
   void bind(const RenderCall &render_call) const noexcept;
@@ -19,12 +19,13 @@ public:
 private:
   static constexpr char _shader_function_name[] = "main";
 
-  static vk::ShaderModule _create_shader_module(const vk::Device &device,
-                                                std::vector<char> shader_code);
+  static vk::ShaderModule
+  _create_shader_module(const vk::Device &device,
+                        std::vector<uint8_t> shader_code);
 
   void _create_handle(vk::DescriptorSetLayout descriptor_set_layout,
-                      std::vector<char> vertex_code,
-                      std::vector<char> fragment_code);
+                      std::vector<uint8_t> vertex_code,
+                      std::vector<uint8_t> fragment_code);
   void _destroy();
 
   vk::Pipeline m_handle;

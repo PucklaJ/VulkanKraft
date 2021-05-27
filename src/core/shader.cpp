@@ -7,18 +7,35 @@ namespace core {
 Shader::Builder::Builder() {}
 
 Shader Shader::Builder::build(const vulkan::Context &context) {
-  if (!m_vertex_path) {
+  if (m_vertex_code.empty()) {
     throw VulkanKraftException(
         "no vertex shader has been provided for core::Shader");
   }
 
-  if (!m_fragment_path) {
+  if (m_fragment_code.empty()) {
     throw VulkanKraftException(
         "no fragment shader has been provided for core::Shader");
   }
 
-  return Shader(context, m_vertex_path.value(), m_fragment_path.value(),
+  return Shader(context, std::move(m_vertex_code), std::move(m_fragment_code),
                 std::move(m_uniform_buffers));
+}
+
+std::vector<uint8_t>
+Shader::Builder::_read_spv_file(std::filesystem::path file_name) {
+  std::ifstream file;
+  file.open(file_name, std::ios_base::ate | std::ios_base::binary);
+  if (file.fail()) {
+    throw VulkanKraftException("failed to open shader file " +
+                               file_name.string());
+  }
+
+  const auto file_size{file.tellg()};
+  file.seekg(0);
+  std::vector<uint8_t> data(static_cast<size_t>(file_size));
+  file.read(reinterpret_cast<char *>(data.data()), file_size);
+
+  return data;
 }
 
 Shader::~Shader() {
@@ -40,38 +57,21 @@ void Shader::bind(const vulkan::RenderCall &render_call) {
       m_pipeline->get_layout());
 }
 
-std::vector<char> Shader::_read_spv_file(std::filesystem::path file_name) {
-  std::ifstream file;
-  file.open(file_name, std::ios_base::ate | std::ios_base::binary);
-  if (file.fail()) {
-    throw VulkanKraftException("failed to open shader file " +
-                               file_name.string());
-  }
-
-  const auto file_size{file.tellg()};
-  file.seekg(0, std::ios_base::seekdir::_S_beg);
-  std::vector<char> data(static_cast<size_t>(file_size));
-  file.read(data.data(), file_size);
-
-  return data;
-}
-
-Shader::Shader(const vulkan::Context &context,
-               std::filesystem::path vertex_path,
-               std::filesystem::path fragment_path,
+Shader::Shader(const vulkan::Context &context, std::vector<uint8_t> vertex_code,
+               std::vector<uint8_t> fragment_code,
                std::vector<vk::ShaderStageFlags> uniform_buffers)
     : m_context(context) {
 
-  _create_graphics_pipeline(context, std::move(vertex_path),
-                            std::move(fragment_path), uniform_buffers);
+  _create_graphics_pipeline(context, std::move(vertex_code),
+                            std::move(fragment_code), uniform_buffers);
   _create_descriptor_pool(context, uniform_buffers);
   _create_uniform_buffers(context, std::move(uniform_buffers));
   _create_descriptor_sets(context);
 }
 
 void Shader::_create_graphics_pipeline(
-    const vulkan::Context &context, std::filesystem::path vertex_path,
-    std::filesystem::path fragment_path,
+    const vulkan::Context &context, std::vector<uint8_t> vertex_code,
+    std::vector<uint8_t> fragment_code,
     const std::vector<vk::ShaderStageFlags> &uniform_buffers) {
   size_t binding_point{0};
 
@@ -93,9 +93,6 @@ void Shader::_create_graphics_pipeline(
             "failed to create descriptor set layout for core::Shader: ") +
         e.what());
   }
-
-  auto vertex_code = _read_spv_file(std::move(vertex_path));
-  auto fragment_code = _read_spv_file(std::move(fragment_path));
 
   try {
     m_pipeline = std::make_unique<vulkan::GraphicsPipeline>(

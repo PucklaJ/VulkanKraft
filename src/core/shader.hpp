@@ -18,11 +18,11 @@ public:
     Shader build(const vulkan::Context &context);
 
     inline Builder &vertex(std::filesystem::path vertex_path) {
-      m_vertex_path = std::move(vertex_path);
+      m_vertex_code = _read_spv_file(std::move(vertex_path));
       return *this;
     }
     inline Builder &fragment(std::filesystem::path fragment_path) {
-      m_fragment_path = std::move(fragment_path);
+      m_fragment_code = _read_spv_file(std::move(fragment_path));
       return *this;
     }
     inline Builder &add_uniform_buffer(vk::ShaderStageFlags shader_stage) {
@@ -31,8 +31,10 @@ public:
     }
 
   private:
-    std::optional<std::filesystem::path> m_vertex_path;
-    std::optional<std::filesystem::path> m_fragment_path;
+    static std::vector<uint8_t> _read_spv_file(std::filesystem::path file_name);
+
+    std::vector<uint8_t> m_vertex_code;
+    std::vector<uint8_t> m_fragment_code;
     std::vector<vk::ShaderStageFlags> m_uniform_buffers;
   };
 
@@ -50,15 +52,13 @@ public:
   void bind(const vulkan::RenderCall &render_call);
 
 private:
-  static std::vector<char> _read_spv_file(std::filesystem::path file_name);
-
-  Shader(const vulkan::Context &context, std::filesystem::path vertex_path,
-         std::filesystem::path fragment_path,
+  Shader(const vulkan::Context &context, std::vector<uint8_t> vertex_code,
+         std::vector<uint8_t> fragment_code,
          std::vector<vk::ShaderStageFlags> uniform_buffers);
 
   void _create_graphics_pipeline(
-      const vulkan::Context &context, std::filesystem::path vertex_path,
-      std::filesystem::path fragment_path,
+      const vulkan::Context &context, std::vector<uint8_t> vertex_code,
+      std::vector<uint8_t> fragment_code,
       const std::vector<vk::ShaderStageFlags> &uniform_buffers);
   void _create_descriptor_pool(
       const vulkan::Context &context,
