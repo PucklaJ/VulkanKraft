@@ -25,7 +25,7 @@ Buffer::Buffer(const Context &context, vk::BufferUsageFlags usage,
   const auto mem_req = m_context.m_device.getBufferMemoryRequirements(m_handle);
   vk::MemoryAllocateInfo ai;
   ai.allocationSize = mem_req.size;
-  ai.memoryTypeIndex = Context::_find_memory_type(
+  ai.memoryTypeIndex = Context::find_memory_type(
       m_context.m_physical_device, mem_req.memoryTypeBits,
       (m_usage & vk::BufferUsageFlagBits::eUniformBuffer)
           ? (vk::MemoryPropertyFlagBits::eHostVisible |
@@ -88,7 +88,7 @@ void Buffer::set_data(const void *data, const size_t data_size,
         m_context.m_device.getBufferMemoryRequirements(staging_buffer);
     vk::MemoryAllocateInfo ai;
     ai.allocationSize = mem_req.size;
-    ai.memoryTypeIndex = Context::_find_memory_type(
+    ai.memoryTypeIndex = Context::find_memory_type(
         m_context.m_physical_device, mem_req.memoryTypeBits,
         vk::MemoryPropertyFlagBits::eHostVisible |
             vk::MemoryPropertyFlagBits::eHostCoherent);
@@ -114,7 +114,7 @@ void Buffer::set_data(const void *data, const size_t data_size,
     }
 
     // Copy staging buffer to buffer
-    auto com_buf = Context::_begin_single_time_commands(
+    auto com_buf = Context::begin_single_time_commands(
         m_context.m_device, m_context.m_graphic_command_pool);
 
     vk::BufferCopy cp;
@@ -123,7 +123,7 @@ void Buffer::set_data(const void *data, const size_t data_size,
     cp.size = static_cast<vk::DeviceSize>(data_size);
     com_buf.copyBuffer(staging_buffer, m_handle, cp);
 
-    Context::_end_single_time_commands(
+    Context::end_single_time_commands(
         m_context.m_device, m_context.m_graphic_command_pool,
         m_context.m_graphics_queue, std::move(com_buf));
 

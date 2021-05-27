@@ -29,6 +29,63 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(
 
 namespace core {
 namespace vulkan {
+uint32_t Context::find_memory_type(const vk::PhysicalDevice &device,
+                                   uint32_t type_filter,
+                                   vk::MemoryPropertyFlags props) {
+  const auto mem_props(device.getMemoryProperties());
+  for (uint32_t i = 0; i < mem_props.memoryTypeCount; i++) {
+    if (type_filter & (1 << i) &&
+        (mem_props.memoryTypes[i].propertyFlags & props) == props) {
+      return i;
+    }
+  }
+
+  throw VulkanKraftException("failed to find suitable memory type");
+}
+
+vk::CommandBuffer
+Context::begin_single_time_commands(const vk::Device &device,
+                                    const vk::CommandPool &command_pool) {
+  vk::CommandBufferAllocateInfo ai;
+  ai.level = vk::CommandBufferLevel::ePrimary;
+  ai.commandPool = command_pool;
+  ai.commandBufferCount = 1;
+
+  vk::CommandBuffer cb;
+  try {
+    auto cbs = device.allocateCommandBuffers(ai);
+    cb = cbs[0];
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string(
+            "failed to allocate command buffer for single time commands: ") +
+        e.what());
+  }
+
+  vk::CommandBufferBeginInfo cbi;
+  cbi.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+
+  cb.begin(cbi);
+
+  return cb;
+}
+
+void Context::end_single_time_commands(const vk::Device &device,
+                                       const vk::CommandPool &command_pool,
+                                       const vk::Queue &queue,
+                                       vk::CommandBuffer command_buffer) {
+  command_buffer.end();
+
+  vk::SubmitInfo si;
+  si.commandBufferCount = 1;
+  si.pCommandBuffers = &command_buffer;
+
+  queue.submit(si);
+  queue.waitIdle();
+
+  device.freeCommandBuffers(command_pool, command_buffer);
+}
+
 Context::Context(Window &window)
     : m_current_frame(0), m_framebuffer_resized(false) {
   const std::vector<const char *> validation_layers = {
@@ -229,6 +286,78 @@ void Context::destroy_descriptors(
   m_device.destroyDescriptorSetLayout(layout);
 }
 
+void Context::destroy_texture(vk::Image image, vk::ImageView image_view,
+                              vk::DeviceMemory memory,
+                              vk::Sampler sampler) const noexcept {
+  m_device.destroySampler(sampler);
+  m_device.destroyImageView(image_view);
+  m_device.destroyImage(image);
+  m_device.freeMemory(memory);
+}
+
+void Context::transition_image_layout(const vk::Image &image, vk::Format format,
+                                      vk::ImageLayout old_layout,
+                                      vk::ImageLayout new_layout,
+                                      uint32_t mip_levels) const {
+  auto com_buf(begin_single_time_commands(m_device, m_graphic_command_pool));
+
+  vk::ImageMemoryBarrier bar;
+  bar.oldLayout = old_layout;
+  bar.newLayout = new_layout;
+  bar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  bar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  bar.image = image;
+  if (new_layout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
+    bar.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+
+    if (_has_stencil_component(format)) {
+      bar.subresourceRange.aspectMask |= vk::ImageAspectFlagBits::eStencil;
+    }
+  } else {
+    bar.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+  }
+  bar.subresourceRange.baseMipLevel = 0;
+  bar.subresourceRange.levelCount = mip_levels;
+  bar.subresourceRange.baseArrayLayer = 0;
+  bar.subresourceRange.layerCount = 1;
+  bar.srcAccessMask = vk::AccessFlagBits::eNoneKHR;
+  bar.dstAccessMask = vk::AccessFlagBits::eNoneKHR;
+
+  vk::PipelineStageFlags src_stage, dst_stage;
+  if (old_layout == vk::ImageLayout::eUndefined &&
+      new_layout == vk::ImageLayout::eTransferDstOptimal) {
+    bar.srcAccessMask = vk::AccessFlagBits::eNoneKHR;
+    bar.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+
+    src_stage = vk::PipelineStageFlagBits::eTopOfPipe;
+    dst_stage = vk::PipelineStageFlagBits::eTransfer;
+  } else if (old_layout == vk::ImageLayout::eTransferDstOptimal &&
+             new_layout == vk::ImageLayout::eShaderReadOnlyOptimal) {
+    bar.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+    bar.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+    src_stage = vk::PipelineStageFlagBits::eTransfer;
+    dst_stage = vk::PipelineStageFlagBits::eFragmentShader;
+  } else if (old_layout == vk::ImageLayout::eUndefined &&
+             new_layout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
+    bar.srcAccessMask = vk::AccessFlagBits::eNoneKHR;
+    bar.dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead |
+                        vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+
+    src_stage = vk::PipelineStageFlagBits::eTopOfPipe;
+    dst_stage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+  } else {
+    throw VulkanKraftException("unsupported layout transistion");
+  }
+
+  com_buf.pipelineBarrier(src_stage, dst_stage,
+                          static_cast<vk::DependencyFlagBits>(0), nullptr,
+                          nullptr, bar);
+
+  end_single_time_commands(m_device, m_graphic_command_pool, m_graphics_queue,
+                           std::move(com_buf));
+}
+
 Context::QueueFamilyIndices::QueueFamilyIndices(
     const vk::PhysicalDevice &device, const vk::SurfaceKHR &surface) {
   const auto queue_families(device.getQueueFamilyProperties());
@@ -380,127 +509,6 @@ vk::Format Context::_find_depth_format(const vk::PhysicalDevice &device) {
        vk::Format::eD24UnormS8Uint},
       vk::ImageTiling::eOptimal,
       vk::FormatFeatureFlagBits::eDepthStencilAttachment);
-}
-
-uint32_t Context::_find_memory_type(const vk::PhysicalDevice &device,
-                                    uint32_t type_filter,
-                                    vk::MemoryPropertyFlags props) {
-  const auto mem_props(device.getMemoryProperties());
-  for (uint32_t i = 0; i < mem_props.memoryTypeCount; i++) {
-    if (type_filter & (1 << i) &&
-        (mem_props.memoryTypes[i].propertyFlags & props) == props) {
-      return i;
-    }
-  }
-
-  throw VulkanKraftException("failed to find suitable memory type");
-}
-
-vk::CommandBuffer
-Context::_begin_single_time_commands(const vk::Device &device,
-                                     const vk::CommandPool &command_pool) {
-  vk::CommandBufferAllocateInfo ai;
-  ai.level = vk::CommandBufferLevel::ePrimary;
-  ai.commandPool = command_pool;
-  ai.commandBufferCount = 1;
-
-  vk::CommandBuffer cb;
-  try {
-    auto cbs = device.allocateCommandBuffers(ai);
-    cb = cbs[0];
-  } catch (const std::runtime_error &e) {
-    throw VulkanKraftException(
-        std::string(
-            "failed to allocate command buffer for single time commands: ") +
-        e.what());
-  }
-
-  vk::CommandBufferBeginInfo cbi;
-  cbi.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-
-  cb.begin(cbi);
-
-  return cb;
-}
-
-void Context::_end_single_time_commands(const vk::Device &device,
-                                        const vk::CommandPool &command_pool,
-                                        const vk::Queue &queue,
-                                        vk::CommandBuffer command_buffer) {
-  command_buffer.end();
-
-  vk::SubmitInfo si;
-  si.commandBufferCount = 1;
-  si.pCommandBuffers = &command_buffer;
-
-  queue.submit(si);
-  queue.waitIdle();
-
-  device.freeCommandBuffers(command_pool, command_buffer);
-}
-
-void Context::_transition_image_layout(const vk::Image &image,
-                                       vk::Format format,
-                                       vk::ImageLayout old_layout,
-                                       vk::ImageLayout new_layout,
-                                       uint32_t mip_levels) const {
-  auto com_buf(_begin_single_time_commands(m_device, m_graphic_command_pool));
-
-  vk::ImageMemoryBarrier bar;
-  bar.oldLayout = old_layout;
-  bar.newLayout = new_layout;
-  bar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  bar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  bar.image = image;
-  if (new_layout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
-    bar.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
-
-    if (_has_stencil_component(format)) {
-      bar.subresourceRange.aspectMask |= vk::ImageAspectFlagBits::eStencil;
-    }
-  } else {
-    bar.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-  }
-  bar.subresourceRange.baseMipLevel = 0;
-  bar.subresourceRange.levelCount = mip_levels;
-  bar.subresourceRange.baseArrayLayer = 0;
-  bar.subresourceRange.layerCount = 1;
-  bar.srcAccessMask = vk::AccessFlagBits::eNoneKHR;
-  bar.dstAccessMask = vk::AccessFlagBits::eNoneKHR;
-
-  vk::PipelineStageFlags src_stage, dst_stage;
-  if (old_layout == vk::ImageLayout::eUndefined &&
-      new_layout == vk::ImageLayout::eTransferDstOptimal) {
-    bar.srcAccessMask = vk::AccessFlagBits::eNoneKHR;
-    bar.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
-
-    src_stage = vk::PipelineStageFlagBits::eTopOfPipe;
-    dst_stage = vk::PipelineStageFlagBits::eTransfer;
-  } else if (old_layout == vk::ImageLayout::eTransferDstOptimal &&
-             new_layout == vk::ImageLayout::eShaderReadOnlyOptimal) {
-    bar.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-    bar.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-
-    src_stage = vk::PipelineStageFlagBits::eTransfer;
-    dst_stage = vk::PipelineStageFlagBits::eFragmentShader;
-  } else if (old_layout == vk::ImageLayout::eUndefined &&
-             new_layout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
-    bar.srcAccessMask = vk::AccessFlagBits::eNoneKHR;
-    bar.dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead |
-                        vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-
-    src_stage = vk::PipelineStageFlagBits::eTopOfPipe;
-    dst_stage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
-  } else {
-    throw VulkanKraftException("unsupported layout transistion");
-  }
-
-  com_buf.pipelineBarrier(src_stage, dst_stage,
-                          static_cast<vk::DependencyFlagBits>(0), nullptr,
-                          nullptr, bar);
-
-  _end_single_time_commands(m_device, m_graphic_command_pool, m_graphics_queue,
-                            std::move(com_buf));
 }
 
 void Context::_create_instance(

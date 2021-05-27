@@ -16,6 +16,17 @@ public:
   friend class GraphicsPipeline;
   friend class Buffer;
 
+  static uint32_t find_memory_type(const vk::PhysicalDevice &device,
+                                   uint32_t type_filter,
+                                   vk::MemoryPropertyFlags props);
+  static vk::CommandBuffer
+  begin_single_time_commands(const vk::Device &device,
+                             const vk::CommandPool &command_pool);
+  static void end_single_time_commands(const vk::Device &device,
+                                       const vk::CommandPool &command_pool,
+                                       const vk::Queue &queue,
+                                       vk::CommandBuffer command_buffer);
+
   static PFN_vkCreateDebugUtilsMessengerEXT pfnVkCreateDebugUtilsMessengerEXT;
   static PFN_vkDestroyDebugUtilsMessengerEXT pfnVkDestroyDebugUtilsMessengerEXT;
 
@@ -39,6 +50,25 @@ public:
                            vk::DescriptorSetLayout layout) const noexcept;
   inline size_t get_swap_chain_image_count() const {
     return m_swap_chain->get_image_count();
+  }
+  inline const vk::Device &get_device() const noexcept { return m_device; }
+  inline const vk::PhysicalDevice &get_physical_device() const noexcept {
+    return m_physical_device;
+  }
+  void destroy_texture(vk::Image image, vk::ImageView image_view,
+                       vk::DeviceMemory memory,
+                       vk::Sampler sampler) const noexcept;
+  void transition_image_layout(const vk::Image &image, vk::Format format,
+                               vk::ImageLayout old_layout,
+                               vk::ImageLayout new_layout,
+                               uint32_t mip_levels) const;
+  inline vk::CommandBuffer begin_single_time_graphics_commands() const {
+    return begin_single_time_commands(m_device, m_graphic_command_pool);
+  }
+  inline void
+  end_single_time_graphics_commands(vk::CommandBuffer buffer) const {
+    end_single_time_commands(m_device, m_graphic_command_pool, m_graphics_queue,
+                             std::move(buffer));
   }
 
 private:
@@ -99,20 +129,7 @@ private:
                          vk::ImageTiling tiling,
                          vk::FormatFeatureFlags features);
   static vk::Format _find_depth_format(const vk::PhysicalDevice &device);
-  static uint32_t _find_memory_type(const vk::PhysicalDevice &device,
-                                    uint32_t type_filter,
-                                    vk::MemoryPropertyFlags props);
-  static vk::CommandBuffer
-  _begin_single_time_commands(const vk::Device &device,
-                              const vk::CommandPool &command_pool);
-  static void _end_single_time_commands(const vk::Device &device,
-                                        const vk::CommandPool &command_pool,
-                                        const vk::Queue &queue,
-                                        vk::CommandBuffer command_buffer);
-  void _transition_image_layout(const vk::Image &image, vk::Format format,
-                                vk::ImageLayout old_layout,
-                                vk::ImageLayout new_layout,
-                                uint32_t mip_levels) const;
+
   static inline bool _has_stencil_component(vk::Format format) {
     return format == vk::Format::eD32SfloatS8Uint ||
            format == vk::Format::eD24UnormS8Uint;

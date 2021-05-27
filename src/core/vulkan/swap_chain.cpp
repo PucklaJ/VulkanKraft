@@ -264,7 +264,7 @@ void SwapChain::_create_depth_image() {
 
   vk::MemoryAllocateInfo ai;
   ai.allocationSize = mem_req.size;
-  ai.memoryTypeIndex = Context::_find_memory_type(
+  ai.memoryTypeIndex = Context::find_memory_type(
       m_context->m_physical_device, mem_req.memoryTypeBits,
       vk::MemoryPropertyFlagBits::eDeviceLocal);
 
@@ -296,7 +296,7 @@ void SwapChain::_create_depth_image() {
         std::string("failed to create depth image view: ") + e.what());
   }
 
-  m_context->_transition_image_layout(
+  m_context->transition_image_layout(
       m_depth_image, format, vk::ImageLayout::eUndefined,
       vk::ImageLayout::eDepthStencilAttachmentOptimal, 1);
 }
