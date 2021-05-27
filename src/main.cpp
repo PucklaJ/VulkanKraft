@@ -1,6 +1,7 @@
 #include "core/exception.hpp"
 #include "core/log.hpp"
 #include "core/shader.hpp"
+#include "core/texture.hpp"
 #include "core/vulkan/buffer.hpp"
 #include "core/vulkan/context.hpp"
 #include "core/vulkan/vertex.hpp"
@@ -34,6 +35,11 @@ int main(int args, char *argv[]) {
   try {
     core::Window window(window_width, window_height, window_title);
     core::vulkan::Context context(window);
+
+    std::vector<uint8_t> texture_data(512 * 512 * 4, 255);
+    auto texture = core::Texture::Builder().dimensions(512, 512).build(
+        context, texture_data.data());
+    texture_data.clear();
 
     Transform ubo0;
     ubo0.model = glm::identity<glm::mat4>();
