@@ -49,6 +49,14 @@ public:
 
   ~Texture();
 
+  inline vk::DescriptorImageInfo create_descriptor_image_info() const {
+    vk::DescriptorImageInfo ii;
+    ii.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+    ii.imageView = m_image_view;
+    ii.sampler = m_sampler;
+    return ii;
+  }
+
 private:
   Texture(const vulkan::Context &context, const Builder &builder,
           const void *data);

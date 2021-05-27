@@ -154,6 +154,11 @@ void Texture::_create_image(const Texture::Builder &builder, const void *data) {
   // Destroy staging buffer
   m_context.get_device().destroyBuffer(staging_buffer);
   m_context.get_device().freeMemory(staging_buffer_memory);
+
+  // Transistion to shader read only layout
+  m_context.transition_image_layout(m_image, vk::Format::eR8G8B8A8Srgb,
+                                    vk::ImageLayout::eTransferDstOptimal,
+                                    vk::ImageLayout::eShaderReadOnlyOptimal, 1);
 }
 
 void Texture::_create_image_view(const Texture::Builder &builder) {

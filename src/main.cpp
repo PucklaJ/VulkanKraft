@@ -1,3 +1,4 @@
+#include "Doge.hpp"
 #include "core/exception.hpp"
 #include "core/log.hpp"
 #include "core/shader.hpp"
@@ -11,6 +12,8 @@
 #include <glm/gtx/transform.hpp>
 #include <iostream>
 #include <thread>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 using namespace std::literals::chrono_literals;
 
@@ -26,21 +29,27 @@ struct Transform {
 
 int main(int args, char *argv[]) {
   const auto vertices =
-      std::array{core::vulkan::Vertex(-0.5f, 0.5f, -1.0f, 0.0f, 1.0f),
-                 core::vulkan::Vertex(0.5f, -0.5f, -1.0f, 1.0f, 0.0f),
-                 core::vulkan::Vertex(0.5f, 0.5f, -1.0f, 1.0f, 1.0f),
-                 core::vulkan::Vertex(-0.5f, -0.5f, -1.0f, 0.0f, 0.0f),
-                 core::vulkan::Vertex(0.5f, -0.5f, -1.0f, 1.0f, 0.0f),
-                 core::vulkan::Vertex(-0.5f, 0.5f, -1.0f, 0.0f, 1.0f)};
+      std::array{core::vulkan::Vertex(-0.5f, 0.5f, -1.0f, 1.0f, 1.0f),
+                 core::vulkan::Vertex(0.5f, -0.5f, -1.0f, 0.0f, 0.0f),
+                 core::vulkan::Vertex(0.5f, 0.5f, -1.0f, 0.0f, 1.0f),
+                 core::vulkan::Vertex(-0.5f, -0.5f, -1.0f, 1.0f, 0.0f),
+                 core::vulkan::Vertex(0.5f, -0.5f, -1.0f, 0.0f, 0.0f),
+                 core::vulkan::Vertex(-0.5f, 0.5f, -1.0f, 1.0f, 1.0f)};
 
   try {
     core::Window window(window_width, window_height, window_title);
     core::vulkan::Context context(window);
 
-    std::vector<uint8_t> texture_data(512 * 512 * 4, 255);
-    auto texture = core::Texture::Builder().dimensions(512, 512).build(
-        context, texture_data.data());
-    texture_data.clear();
+    int texture_width, texture_height, texture_channels;
+    auto *texture_data = stbi_load_from_memory(
+        reinterpret_cast<const stbi_uc *>(doge_img.data()), doge_img.size(),
+        &texture_width, &texture_height, &texture_channels, STBI_rgb_alpha);
+    if (!texture_data) {
+      throw core::VulkanKraftException("failed to load doge image");
+    }
+    auto texture = core::Texture::Builder()
+                       .dimensions(texture_width, texture_height)
+                       .build(context, texture_data);
 
     Transform ubo0;
     ubo0.model = glm::identity<glm::mat4>();
@@ -53,6 +62,7 @@ int main(int args, char *argv[]) {
                       .vertex("shaders_spv/triangle.vert.spv")
                       .fragment("shaders_spv/triangle.frag.spv")
                       .uniform_buffer(vk::ShaderStageFlagBits::eVertex, ubo0)
+                      .texture(texture)
                       .build(context);
 
     core::vulkan::Buffer vertex_buffer(context,
@@ -68,7 +78,7 @@ int main(int args, char *argv[]) {
           static_cast<float>(width) / static_cast<float>(height), 0.01f, 2.0f);
       ubo0.proj[1][1] *= -1.0f;
       ubo0.model =
-          glm::rotate(glm::radians(90.0f * static_cast<float>(glfwGetTime())),
+          glm::rotate(glm::radians(-90.0f * static_cast<float>(glfwGetTime())),
                       glm::vec3(0.0f, 0.0f, 1.0f));
 
       if (const auto render_call = context.render_begin(); render_call) {

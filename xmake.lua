@@ -1,5 +1,5 @@
 set_project("VulkanKraft")
-add_requires("glfw", "glm")
+add_requires("glfw", "glm", "stb")
 
 rule("shader")
     set_extensions(".vert", ".frag", ".glsl")
@@ -42,7 +42,7 @@ add_rules("mode.debug", "mode.release")
 target("vulkankraft")
   set_kind("binary")
   set_languages("cxx17")
-  add_packages("glfw", "glm")
+  add_packages("glfw", "glm", "stb")
   add_syslinks("vulkan")
   add_rules("shader")
 

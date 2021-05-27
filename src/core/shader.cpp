@@ -22,7 +22,8 @@ Shader Shader::Builder::build(const vulkan::Context &context) {
   }
 
   return Shader(context, std::move(m_vertex_code), std::move(m_fragment_code),
-                std::move(m_uniform_buffers), std::move(m_vertex_attributes));
+                std::move(m_uniform_buffers), std::move(m_vertex_attributes),
+                std::move(m_textures));
 }
 
 std::vector<uint8_t>
@@ -58,30 +59,42 @@ void Shader::bind(const vulkan::RenderCall &render_call) {
 Shader::Shader(const vulkan::Context &context, std::vector<uint8_t> vertex_code,
                std::vector<uint8_t> fragment_code,
                std::vector<Builder::UniformBufferInfo> uniform_buffers,
-               std::vector<Builder::VertexAttributeInfo> vertex_attributes)
+               std::vector<Builder::VertexAttributeInfo> vertex_attributes,
+               std::vector<const Texture *> textures)
     : m_context(context) {
   _create_graphics_pipeline(context, std::move(vertex_code),
                             std::move(fragment_code), uniform_buffers,
-                            std::move(vertex_attributes));
-  _create_descriptor_pool(context, uniform_buffers);
+                            std::move(vertex_attributes), textures);
+  _create_descriptor_pool(context, uniform_buffers, textures);
   _create_uniform_buffers(context, uniform_buffers);
-  _create_descriptor_sets(context, std::move(uniform_buffers));
+  _create_descriptor_sets(context, std::move(uniform_buffers),
+                          std::move(textures));
 }
 
 void Shader::_create_graphics_pipeline(
     const vulkan::Context &context, std::vector<uint8_t> vertex_code,
     std::vector<uint8_t> fragment_code,
     const std::vector<Builder::UniformBufferInfo> &uniform_buffers,
-    std::vector<Builder::VertexAttributeInfo> vertex_attributes) {
+    std::vector<Builder::VertexAttributeInfo> vertex_attributes,
+    const std::vector<const Texture *> &textures) {
   size_t binding_point{0};
 
-  std::vector<vk::DescriptorSetLayoutBinding> bindings(uniform_buffers.size());
-  for (size_t i = 0; i < bindings.size(); i++) {
+  std::vector<vk::DescriptorSetLayoutBinding> bindings(uniform_buffers.size() +
+                                                       textures.size());
+  for (size_t i = 0; i < uniform_buffers.size(); i++) {
     bindings[i].binding = binding_point++;
     bindings[i].descriptorType = vk::DescriptorType::eUniformBuffer;
     bindings[i].descriptorCount = 1;
     bindings[i].stageFlags = uniform_buffers[i].shader_stage;
     bindings[i].pImmutableSamplers = nullptr;
+  }
+  for (size_t i = 0; i < textures.size(); i++, binding_point++) {
+    bindings[binding_point].binding = binding_point;
+    bindings[binding_point].descriptorType =
+        vk::DescriptorType::eCombinedImageSampler;
+    bindings[binding_point].descriptorCount = 1;
+    bindings[binding_point].stageFlags = vk::ShaderStageFlagBits::eFragment;
+    bindings[binding_point].pImmutableSamplers = nullptr;
   }
 
   try {
@@ -126,11 +139,19 @@ void Shader::_create_graphics_pipeline(
 
 void Shader::_create_descriptor_pool(
     const vulkan::Context &context,
-    const std::vector<Builder::UniformBufferInfo> &uniform_buffers) {
-  std::vector<vk::DescriptorPoolSize> pool_sizes(uniform_buffers.size());
-  for (auto &p : pool_sizes) {
-    p.type = vk::DescriptorType::eUniformBuffer;
-    p.descriptorCount =
+    const std::vector<Builder::UniformBufferInfo> &uniform_buffers,
+    const std::vector<const Texture *> &textures) {
+  std::vector<vk::DescriptorPoolSize> pool_sizes(uniform_buffers.size() +
+                                                 textures.size());
+  for (size_t i = 0; i < uniform_buffers.size(); i++) {
+    pool_sizes[i].type = vk::DescriptorType::eUniformBuffer;
+    pool_sizes[i].descriptorCount =
+        static_cast<uint32_t>(context.get_swap_chain_image_count());
+  }
+  for (size_t i = 0; i < textures.size(); i++) {
+    pool_sizes[i + uniform_buffers.size()].type =
+        vk::DescriptorType::eCombinedImageSampler;
+    pool_sizes[i + uniform_buffers.size()].descriptorCount =
         static_cast<uint32_t>(context.get_swap_chain_image_count());
   }
 
@@ -160,7 +181,8 @@ void Shader::_create_uniform_buffers(
 
 void Shader::_create_descriptor_sets(
     const vulkan::Context &context,
-    std::vector<Builder::UniformBufferInfo> uniform_buffers) {
+    std::vector<Builder::UniformBufferInfo> uniform_buffers,
+    std::vector<const Texture *> textures) {
   try {
     m_descriptor_sets =
         context.create_descriptor_sets(m_descriptor_pool, m_descriptor_layout);
@@ -172,6 +194,8 @@ void Shader::_create_descriptor_sets(
 
   for (size_t i = 0; i < m_descriptor_sets.size(); i++) {
     std::vector<vk::WriteDescriptorSet> writes;
+    std::vector<vk::DescriptorBufferInfo> buffer_infos(uniform_buffers.size());
+    std::vector<vk::DescriptorImageInfo> image_infos(textures.size());
     size_t current_binding{0};
     for (size_t j = 0; j < m_uniform_buffers[i].size();
          j++, current_binding++) {
@@ -179,6 +203,7 @@ void Shader::_create_descriptor_sets(
       bi.buffer = m_uniform_buffers[i][j].get_handle();
       bi.offset = 0;
       bi.range = uniform_buffers[j].initial_state.size();
+      buffer_infos[j] = std::move(bi);
 
       vk::WriteDescriptorSet w;
       w.dstSet = m_descriptor_sets[i];
@@ -186,7 +211,21 @@ void Shader::_create_descriptor_sets(
       w.dstArrayElement = 0;
       w.descriptorType = vk::DescriptorType::eUniformBuffer;
       w.descriptorCount = 1;
-      w.pBufferInfo = &bi;
+      w.pBufferInfo = &buffer_infos[j];
+
+      writes.emplace_back(std::move(w));
+    }
+    for (size_t j = 0; j < textures.size(); j++, current_binding++) {
+      auto ii(textures[j]->create_descriptor_image_info());
+      image_infos[j] = std::move(ii);
+
+      vk::WriteDescriptorSet w;
+      w.dstSet = m_descriptor_sets[i];
+      w.dstBinding = current_binding;
+      w.dstArrayElement = 0;
+      w.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+      w.descriptorCount = 1;
+      w.pImageInfo = &image_infos[j];
 
       writes.emplace_back(std::move(w));
     }

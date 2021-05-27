@@ -1,4 +1,5 @@
 #pragma once
+#include "texture.hpp"
 #include "vulkan/buffer.hpp"
 #include "vulkan/graphics_pipeline.hpp"
 #include "vulkan/vertex.hpp"
@@ -45,6 +46,11 @@ public:
       return *this;
     }
 
+    inline Builder &texture(const Texture &texture) {
+      m_textures.push_back(&texture);
+      return *this;
+    }
+
   private:
     struct UniformBufferInfo {
       const std::vector<uint8_t> initial_state;
@@ -61,6 +67,7 @@ public:
     std::vector<uint8_t> m_fragment_code;
     std::vector<UniformBufferInfo> m_uniform_buffers;
     std::vector<VertexAttributeInfo> m_vertex_attributes;
+    std::vector<const Texture *> m_textures;
   };
 
   ~Shader();
@@ -76,22 +83,26 @@ private:
   Shader(const vulkan::Context &context, std::vector<uint8_t> vertex_code,
          std::vector<uint8_t> fragment_code,
          std::vector<Builder::UniformBufferInfo> uniform_buffers,
-         std::vector<Builder::VertexAttributeInfo> vertex_attributes);
+         std::vector<Builder::VertexAttributeInfo> vertex_attributes,
+         std::vector<const Texture *> textures);
 
   void _create_graphics_pipeline(
       const vulkan::Context &context, std::vector<uint8_t> vertex_code,
       std::vector<uint8_t> fragment_code,
       const std::vector<Builder::UniformBufferInfo> &uniform_buffers,
-      std::vector<Builder::VertexAttributeInfo> vertex_attributes);
+      std::vector<Builder::VertexAttributeInfo> vertex_attributes,
+      const std::vector<const Texture *> &textures);
   void _create_descriptor_pool(
       const vulkan::Context &context,
-      const std::vector<Builder::UniformBufferInfo> &uniform_buffers);
+      const std::vector<Builder::UniformBufferInfo> &uniform_buffers,
+      const std::vector<const Texture *> &textures);
   void _create_uniform_buffers(
       const vulkan::Context &context,
       const std::vector<Builder::UniformBufferInfo> &uniform_buffers);
   void _create_descriptor_sets(
       const vulkan::Context &context,
-      std::vector<Builder::UniformBufferInfo> uniform_buffers);
+      std::vector<Builder::UniformBufferInfo> uniform_buffers,
+      std::vector<const Texture *> textures);
   void _update_uniform_buffer(const vulkan::RenderCall &render_call,
                               const void *data, const size_t data_size,
                               const size_t index);
