@@ -17,6 +17,12 @@ constexpr uint32_t window_width = 840;
 constexpr uint32_t window_height = 480;
 constexpr char window_title[] = "VulkanKraft";
 
+struct Transform {
+  glm::mat4 model;
+  glm::mat4 view;
+  glm::mat4 proj;
+};
+
 int main(int args, char *argv[]) {
   const auto vertices = std::array{core::vulkan::Vertex(-0.5f, 0.5f, -1.0f),
                                    core::vulkan::Vertex(0.5f, 0.5f, -1.0f),
@@ -29,18 +35,21 @@ int main(int args, char *argv[]) {
     core::Window window(window_width, window_height, window_title);
     core::vulkan::Context context(window);
 
-    auto shader = core::Shader::Builder()
-                      .vertex("shaders_spv/triangle.vert.spv")
-                      .fragment("shaders_spv/triangle.frag.spv")
-                      .add_uniform_buffer(vk::ShaderStageFlagBits::eVertex)
-                      .build(context);
+    Transform ubo0;
+    ubo0.model = glm::identity<glm::mat4>();
+    ubo0.view = glm::identity<glm::mat4>();
+    ubo0.proj = glm::identity<glm::mat4>();
+
+    auto shader =
+        core::Shader::Builder()
+            .vertex("shaders_spv/triangle.vert.spv")
+            .fragment("shaders_spv/triangle.frag.spv")
+            .add_uniform_buffer(vk::ShaderStageFlagBits::eVertex, ubo0)
+            .build(context);
 
     core::vulkan::Buffer vertex_buffer(context,
                                        vk::BufferUsageFlagBits::eVertexBuffer,
                                        sizeof(vertices), vertices.data());
-
-    core::Shader::MatrixData ubo0;
-    ubo0.view = glm::identity<glm::mat4>();
 
     while (!window.should_close()) {
       window.poll_events();
