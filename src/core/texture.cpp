@@ -124,25 +124,32 @@ void Texture::_create_image(const Texture::Builder &builder, const void *data) {
                                     vk::ImageLayout::eTransferDstOptimal, 1);
 
   // Copy staging buffer contents to image
-  auto com_buf = m_context.begin_single_time_graphics_commands();
+  try {
+    auto com_buf = m_context.begin_single_time_graphics_commands();
 
-  vk::BufferImageCopy cp;
-  cp.bufferOffset = 0;
-  cp.bufferRowLength = 0;
-  cp.bufferImageHeight = 0;
+    vk::BufferImageCopy cp;
+    cp.bufferOffset = 0;
+    cp.bufferRowLength = 0;
+    cp.bufferImageHeight = 0;
 
-  cp.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-  cp.imageSubresource.mipLevel = 0;
-  cp.imageSubresource.baseArrayLayer = 0;
-  cp.imageSubresource.layerCount = 1;
+    cp.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+    cp.imageSubresource.mipLevel = 0;
+    cp.imageSubresource.baseArrayLayer = 0;
+    cp.imageSubresource.layerCount = 1;
 
-  cp.imageOffset = vk::Offset3D{0, 0, 0};
-  cp.imageExtent = vk::Extent3D{builder.m_width, builder.m_height, 1};
+    cp.imageOffset = vk::Offset3D{0, 0, 0};
+    cp.imageExtent = vk::Extent3D{builder.m_width, builder.m_height, 1};
 
-  com_buf.copyBufferToImage(staging_buffer, m_image,
-                            vk::ImageLayout::eTransferDstOptimal, cp);
+    com_buf.copyBufferToImage(staging_buffer, m_image,
+                              vk::ImageLayout::eTransferDstOptimal, cp);
 
-  m_context.end_single_time_graphics_commands(std::move(com_buf));
+    m_context.end_single_time_graphics_commands(std::move(com_buf));
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string(
+            "failed to copy staging buffer to image of core::Texture: ") +
+        e.what());
+  }
 
   // Destroy staging buffer
   m_context.get_device().destroyBuffer(staging_buffer);
@@ -150,7 +157,23 @@ void Texture::_create_image(const Texture::Builder &builder, const void *data) {
 }
 
 void Texture::_create_image_view(const Texture::Builder &builder) {
-  throw VulkanKraftException(__FUNCTION__ + std::string(" not implemented"));
+  vk::ImageViewCreateInfo vi;
+  vi.image = m_image;
+  vi.viewType = vk::ImageViewType::e2D;
+  vi.format = vk::Format::eR8G8B8A8Srgb;
+  vi.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+  vi.subresourceRange.baseMipLevel = 0;
+  vi.subresourceRange.levelCount = 1;
+  vi.subresourceRange.baseArrayLayer = 0;
+  vi.subresourceRange.layerCount = 1;
+
+  try {
+    m_image_view = m_context.get_device().createImageView(vi);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string("failed to create image view of core::Texture: ") +
+        e.what());
+  }
 }
 
 void Texture::_create_sampler(const Texture::Builder &builder) {
