@@ -177,6 +177,31 @@ void Texture::_create_image_view(const Texture::Builder &builder) {
 }
 
 void Texture::_create_sampler(const Texture::Builder &builder) {
-  throw VulkanKraftException(__FUNCTION__ + std::string(" not implemented"));
+  vk::SamplerCreateInfo si;
+  si.magFilter = builder.m_filter;
+  si.minFilter = builder.m_filter;
+  si.addressModeU = builder.m_address_mode;
+  si.addressModeV = builder.m_address_mode;
+  si.addressModeW = builder.m_address_mode;
+  si.anisotropyEnable = builder.m_max_anisotropy != 0.0f;
+
+  const auto props(m_context.get_physical_device().getProperties());
+  si.maxAnisotropy =
+      std::min(builder.m_max_anisotropy, props.limits.maxSamplerAnisotropy);
+  si.borderColor = builder.m_border_color;
+  si.unnormalizedCoordinates = VK_FALSE;
+  si.compareEnable = VK_FALSE;
+  si.compareOp = vk::CompareOp::eAlways;
+  si.mipmapMode = vk::SamplerMipmapMode::eLinear;
+  si.mipLodBias = 0.0f;
+  si.minLod = 0.0f;
+  si.maxLod = 1.0f;
+
+  try {
+    m_sampler = m_context.get_device().createSampler(si);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string("failed to create sampler of core::Texture: ") + e.what());
+  }
 }
 } // namespace core
