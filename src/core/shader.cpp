@@ -21,23 +21,6 @@ Shader Shader::Builder::build(const vulkan::Context &context) {
                 std::move(m_uniform_buffers));
 }
 
-Shader::Builder &Shader::Builder::vertex(std::filesystem::path vertex_path) {
-  m_vertex_path = std::move(vertex_path);
-  return *this;
-}
-
-Shader::Builder &
-Shader::Builder::fragment(std::filesystem::path fragment_path) {
-  m_fragment_path = std::move(fragment_path);
-  return *this;
-}
-
-Shader::Builder &
-Shader::Builder::add_uniform_buffer(vk::ShaderStageFlags shader_stage) {
-  m_uniform_buffers.push_back(shader_stage);
-  return *this;
-}
-
 Shader::~Shader() {
   m_pipeline.reset();
   m_context.destroy_descriptors(std::move(m_descriptor_pool),

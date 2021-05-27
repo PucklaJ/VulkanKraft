@@ -17,9 +17,18 @@ public:
 
     Shader build(const vulkan::Context &context);
 
-    Builder &vertex(std::filesystem::path vertex_path);
-    Builder &fragment(std::filesystem::path fragment_path);
-    Builder &add_uniform_buffer(vk::ShaderStageFlags shader_stage);
+    inline Builder &vertex(std::filesystem::path vertex_path) {
+      m_vertex_path = std::move(vertex_path);
+      return *this;
+    }
+    inline Builder &fragment(std::filesystem::path fragment_path) {
+      m_fragment_path = std::move(fragment_path);
+      return *this;
+    }
+    inline Builder &add_uniform_buffer(vk::ShaderStageFlags shader_stage) {
+      m_uniform_buffers.push_back(shader_stage);
+      return *this;
+    }
 
   private:
     std::optional<std::filesystem::path> m_vertex_path;
