@@ -25,12 +25,13 @@ struct Transform {
 };
 
 int main(int args, char *argv[]) {
-  const auto vertices = std::array{core::vulkan::Vertex(-0.5f, 0.5f, -1.0f),
-                                   core::vulkan::Vertex(0.5f, 0.5f, -1.0f),
-                                   core::vulkan::Vertex(0.5f, -0.5f, -1.0f),
-                                   core::vulkan::Vertex(0.5f, -0.5f, -1.0f),
-                                   core::vulkan::Vertex(-0.5f, -0.5f, -1.0f),
-                                   core::vulkan::Vertex(-0.5f, 0.5f, -1.0f)};
+  const auto vertices =
+      std::array{core::vulkan::Vertex(-0.5f, 0.5f, -1.0f, 0.0f, 1.0f),
+                 core::vulkan::Vertex(0.5f, -0.5f, -1.0f, 1.0f, 0.0f),
+                 core::vulkan::Vertex(0.5f, 0.5f, -1.0f, 1.0f, 1.0f),
+                 core::vulkan::Vertex(-0.5f, -0.5f, -1.0f, 0.0f, 0.0f),
+                 core::vulkan::Vertex(0.5f, -0.5f, -1.0f, 1.0f, 0.0f),
+                 core::vulkan::Vertex(-0.5f, 0.5f, -1.0f, 0.0f, 1.0f)};
 
   try {
     core::Window window(window_width, window_height, window_title);
@@ -48,6 +49,7 @@ int main(int args, char *argv[]) {
 
     auto shader = core::Shader::Builder()
                       .vertex_attribute<glm::vec3>()
+                      .vertex_attribute<glm::vec2>()
                       .vertex("shaders_spv/triangle.vert.spv")
                       .fragment("shaders_spv/triangle.frag.spv")
                       .uniform_buffer(vk::ShaderStageFlagBits::eVertex, ubo0)
@@ -62,8 +64,9 @@ int main(int args, char *argv[]) {
 
       const auto [width, height] = window.get_framebuffer_size();
       ubo0.proj = glm::perspective(
-          glm::degrees(15.0f),
+          glm::radians(75.0f),
           static_cast<float>(width) / static_cast<float>(height), 0.01f, 2.0f);
+      ubo0.proj[1][1] *= -1.0f;
       ubo0.model =
           glm::rotate(glm::radians(90.0f * static_cast<float>(glfwGetTime())),
                       glm::vec3(0.0f, 0.0f, 1.0f));

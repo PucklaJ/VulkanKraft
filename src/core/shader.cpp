@@ -107,10 +107,10 @@ void Shader::_create_graphics_pipeline(
     atts[i].binding = 0;
     atts[i].location = static_cast<uint32_t>(i);
     atts[i].format = vertex_attributes[i].format;
-    atts[i].offset = i == 0
-                         ? 0
-                         : (atts[i - 1].offset +
-                            static_cast<uint32_t>(vertex_attributes[i].size));
+    atts[i].offset =
+        i == 0 ? 0
+               : (atts[i - 1].offset +
+                  static_cast<uint32_t>(vertex_attributes[i - 1].size));
   }
 
   try {
