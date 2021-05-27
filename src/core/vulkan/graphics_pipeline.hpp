@@ -7,10 +7,11 @@ namespace core {
 namespace vulkan {
 class GraphicsPipeline {
 public:
-  GraphicsPipeline(const Context &context,
-                   vk::DescriptorSetLayout descriptor_set_layout,
-                   std::vector<uint8_t> vertex_code,
-                   std::vector<uint8_t> fragment_code);
+  GraphicsPipeline(
+      const Context &context, vk::DescriptorSetLayout descriptor_set_layout,
+      std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
+      vk::VertexInputBindingDescription vertex_binding,
+      std::vector<vk::VertexInputAttributeDescription> vertex_attributes);
   ~GraphicsPipeline();
 
   void bind(const RenderCall &render_call) const noexcept;
@@ -23,9 +24,11 @@ private:
   _create_shader_module(const vk::Device &device,
                         std::vector<uint8_t> shader_code);
 
-  void _create_handle(vk::DescriptorSetLayout descriptor_set_layout,
-                      std::vector<uint8_t> vertex_code,
-                      std::vector<uint8_t> fragment_code);
+  void _create_handle(
+      vk::DescriptorSetLayout descriptor_set_layout,
+      std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
+      vk::VertexInputBindingDescription vertex_binding,
+      std::vector<vk::VertexInputAttributeDescription> vertex_attributes);
   void _destroy();
 
   vk::Pipeline m_handle;

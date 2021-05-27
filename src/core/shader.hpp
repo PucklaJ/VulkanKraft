@@ -1,6 +1,7 @@
 #pragma once
 #include "vulkan/buffer.hpp"
 #include "vulkan/graphics_pipeline.hpp"
+#include "vulkan/vertex.hpp"
 #include <filesystem>
 #include <glm/glm.hpp>
 #include <memory>
@@ -28,8 +29,8 @@ public:
       return *this;
     }
     template <typename T>
-    inline Builder &add_uniform_buffer(vk::ShaderStageFlags shader_stage,
-                                       const T &initial_state) {
+    inline Builder &uniform_buffer(vk::ShaderStageFlags shader_stage,
+                                   const T &initial_state) {
       std::vector<uint8_t> init(sizeof(T));
       memcpy(init.data(), &initial_state, init.size());
 
@@ -38,11 +39,20 @@ public:
 
       return *this;
     }
+    template <typename T> inline Builder &vertex_attribute() {
+      m_vertex_attributes.emplace_back(
+          VertexAttributeInfo{vulkan::vertex_attribute_format<T>, sizeof(T)});
+      return *this;
+    }
 
   private:
     struct UniformBufferInfo {
       const std::vector<uint8_t> initial_state;
       const vk::ShaderStageFlags shader_stage;
+    };
+    struct VertexAttributeInfo {
+      const vk::Format format;
+      const size_t size;
     };
 
     static std::vector<uint8_t> _read_spv_file(std::filesystem::path file_name);
@@ -50,6 +60,7 @@ public:
     std::vector<uint8_t> m_vertex_code;
     std::vector<uint8_t> m_fragment_code;
     std::vector<UniformBufferInfo> m_uniform_buffers;
+    std::vector<VertexAttributeInfo> m_vertex_attributes;
   };
 
   ~Shader();
@@ -64,12 +75,14 @@ public:
 private:
   Shader(const vulkan::Context &context, std::vector<uint8_t> vertex_code,
          std::vector<uint8_t> fragment_code,
-         std::vector<Builder::UniformBufferInfo> uniform_buffers);
+         std::vector<Builder::UniformBufferInfo> uniform_buffers,
+         std::vector<Builder::VertexAttributeInfo> vertex_attributes);
 
   void _create_graphics_pipeline(
       const vulkan::Context &context, std::vector<uint8_t> vertex_code,
       std::vector<uint8_t> fragment_code,
-      const std::vector<Builder::UniformBufferInfo> &uniform_buffers);
+      const std::vector<Builder::UniformBufferInfo> &uniform_buffers,
+      std::vector<Builder::VertexAttributeInfo> vertex_attributes);
   void _create_descriptor_pool(
       const vulkan::Context &context,
       const std::vector<Builder::UniformBufferInfo> &uniform_buffers);

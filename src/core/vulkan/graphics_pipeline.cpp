@@ -7,10 +7,13 @@ namespace core {
 namespace vulkan {
 GraphicsPipeline::GraphicsPipeline(
     const Context &context, vk::DescriptorSetLayout descriptor_set_layout,
-    std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code)
+    std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
+    vk::VertexInputBindingDescription vertex_binding,
+    std::vector<vk::VertexInputAttributeDescription> vertex_attributes)
     : m_context(context) {
   _create_handle(std::move(descriptor_set_layout), std::move(vertex_code),
-                 std::move(fragment_code));
+                 std::move(fragment_code), std::move(vertex_binding),
+                 std::move(vertex_attributes));
 }
 
 GraphicsPipeline::~GraphicsPipeline() { _destroy(); }
@@ -36,7 +39,9 @@ GraphicsPipeline::_create_shader_module(const vk::Device &device,
 
 void GraphicsPipeline::_create_handle(
     vk::DescriptorSetLayout descriptor_set_layout,
-    std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code) {
+    std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
+    vk::VertexInputBindingDescription vertex_binding,
+    std::vector<vk::VertexInputAttributeDescription> vertex_attributes) {
   try {
     m_vertex_module =
         _create_shader_module(m_context.m_device, std::move(vertex_code));
@@ -65,13 +70,12 @@ void GraphicsPipeline::_create_handle(
 
   const auto shader_stages = std::array{vert_i, frag_i};
 
-  const auto bind_desc(Vertex::get_binding_description());
-  const auto att_desc(Vertex::get_attribute_description());
   vk::PipelineVertexInputStateCreateInfo vi_i;
   vi_i.vertexBindingDescriptionCount = 1;
-  vi_i.vertexAttributeDescriptionCount = static_cast<uint32_t>(att_desc.size());
-  vi_i.pVertexBindingDescriptions = &bind_desc;
-  vi_i.pVertexAttributeDescriptions = att_desc.data();
+  vi_i.vertexAttributeDescriptionCount =
+      static_cast<uint32_t>(vertex_attributes.size());
+  vi_i.pVertexBindingDescriptions = &vertex_binding;
+  vi_i.pVertexAttributeDescriptions = vertex_attributes.data();
 
   vk::PipelineInputAssemblyStateCreateInfo ia_i;
   ia_i.topology = vk::PrimitiveTopology::eTriangleList;

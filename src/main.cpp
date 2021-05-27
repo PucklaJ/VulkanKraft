@@ -40,12 +40,12 @@ int main(int args, char *argv[]) {
     ubo0.view = glm::identity<glm::mat4>();
     ubo0.proj = glm::identity<glm::mat4>();
 
-    auto shader =
-        core::Shader::Builder()
-            .vertex("shaders_spv/triangle.vert.spv")
-            .fragment("shaders_spv/triangle.frag.spv")
-            .add_uniform_buffer(vk::ShaderStageFlagBits::eVertex, ubo0)
-            .build(context);
+    auto shader = core::Shader::Builder()
+                      .vertex_attribute<glm::vec3>()
+                      .vertex("shaders_spv/triangle.vert.spv")
+                      .fragment("shaders_spv/triangle.frag.spv")
+                      .uniform_buffer(vk::ShaderStageFlagBits::eVertex, ubo0)
+                      .build(context);
 
     core::vulkan::Buffer vertex_buffer(context,
                                        vk::BufferUsageFlagBits::eVertexBuffer,

@@ -18,7 +18,7 @@ Shader Shader::Builder::build(const vulkan::Context &context) {
   }
 
   return Shader(context, std::move(m_vertex_code), std::move(m_fragment_code),
-                std::move(m_uniform_buffers));
+                std::move(m_uniform_buffers), std::move(m_vertex_attributes));
 }
 
 std::vector<uint8_t>
@@ -53,11 +53,12 @@ void Shader::bind(const vulkan::RenderCall &render_call) {
 
 Shader::Shader(const vulkan::Context &context, std::vector<uint8_t> vertex_code,
                std::vector<uint8_t> fragment_code,
-               std::vector<Builder::UniformBufferInfo> uniform_buffers)
+               std::vector<Builder::UniformBufferInfo> uniform_buffers,
+               std::vector<Builder::VertexAttributeInfo> vertex_attributes)
     : m_context(context) {
-
   _create_graphics_pipeline(context, std::move(vertex_code),
-                            std::move(fragment_code), uniform_buffers);
+                            std::move(fragment_code), uniform_buffers,
+                            std::move(vertex_attributes));
   _create_descriptor_pool(context, uniform_buffers);
   _create_uniform_buffers(context, uniform_buffers);
   _create_descriptor_sets(context, std::move(uniform_buffers));
@@ -66,7 +67,8 @@ Shader::Shader(const vulkan::Context &context, std::vector<uint8_t> vertex_code,
 void Shader::_create_graphics_pipeline(
     const vulkan::Context &context, std::vector<uint8_t> vertex_code,
     std::vector<uint8_t> fragment_code,
-    const std::vector<Builder::UniformBufferInfo> &uniform_buffers) {
+    const std::vector<Builder::UniformBufferInfo> &uniform_buffers,
+    std::vector<Builder::VertexAttributeInfo> vertex_attributes) {
   size_t binding_point{0};
 
   std::vector<vk::DescriptorSetLayoutBinding> bindings(uniform_buffers.size());
@@ -88,10 +90,29 @@ void Shader::_create_graphics_pipeline(
         e.what());
   }
 
+  vk::VertexInputBindingDescription bind;
+  bind.binding = 0;
+  for (const auto &vi : vertex_attributes) {
+    bind.stride += static_cast<uint32_t>(vi.size);
+  }
+  bind.inputRate = vk::VertexInputRate::eVertex;
+
+  std::vector<vk::VertexInputAttributeDescription> atts(
+      vertex_attributes.size());
+  for (size_t i = 0; i < atts.size(); i++) {
+    atts[i].binding = 0;
+    atts[i].location = static_cast<uint32_t>(i);
+    atts[i].format = vertex_attributes[i].format;
+    atts[i].offset = i == 0
+                         ? 0
+                         : (atts[i - 1].offset +
+                            static_cast<uint32_t>(vertex_attributes[i].size));
+  }
+
   try {
     m_pipeline = std::make_unique<vulkan::GraphicsPipeline>(
         context, m_descriptor_layout, std::move(vertex_code),
-        std::move(fragment_code));
+        std::move(fragment_code), std::move(bind), std::move(atts));
   } catch (const VulkanKraftException &e) {
     throw VulkanKraftException(
         std::string("failed to create graphics pipeline of core::Shader: ") +
