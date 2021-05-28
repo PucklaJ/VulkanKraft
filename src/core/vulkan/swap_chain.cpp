@@ -7,13 +7,15 @@
 
 namespace core {
 namespace vulkan {
-SwapChain::SwapChain(const Context *context, const Window &window)
+SwapChain::SwapChain(const Context *context, const Window &window,
+                     const vk::SampleCountFlagBits msaa_samples)
     : m_context(context), m_window(window) {
   _create_handle();
   _retrieve_images();
   _create_image_views();
-  _create_render_pass();
-  _create_depth_image();
+  _create_render_pass(msaa_samples);
+  _create_color_image(msaa_samples);
+  _create_depth_image(msaa_samples);
   _create_framebuffers();
 }
 
@@ -47,13 +49,14 @@ SwapChain::acquire_next_image(const vk::Device &m_device,
   }
 }
 
-void SwapChain::recreate() {
+void SwapChain::recreate(const vk::SampleCountFlagBits msaa_samples) {
   _destroy(false);
 
   _create_handle();
   _retrieve_images();
   _create_image_views();
-  _create_depth_image();
+  _create_color_image(msaa_samples);
+  _create_depth_image(msaa_samples);
   _create_framebuffers();
 }
 
@@ -170,10 +173,11 @@ void SwapChain::_create_image_views() {
   }
 }
 
-void SwapChain::_create_render_pass() {
+void SwapChain::_create_render_pass(
+    const vk::SampleCountFlagBits msaa_samples) {
   vk::AttachmentDescription col_at;
   col_at.format = m_image_format;
-  col_at.samples = vk::SampleCountFlagBits::e1;
+  col_at.samples = msaa_samples;
   col_at.loadOp = vk::AttachmentLoadOp::eClear;
   col_at.storeOp = vk::AttachmentStoreOp::eStore;
   col_at.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
@@ -183,13 +187,23 @@ void SwapChain::_create_render_pass() {
 
   vk::AttachmentDescription depth_at;
   depth_at.format = Context::_find_depth_format(m_context->m_physical_device);
-  depth_at.samples = vk::SampleCountFlagBits::e1;
+  depth_at.samples = msaa_samples;
   depth_at.loadOp = vk::AttachmentLoadOp::eClear;
   depth_at.storeOp = vk::AttachmentStoreOp::eDontCare;
   depth_at.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
   depth_at.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
   depth_at.initialLayout = vk::ImageLayout::eUndefined;
   depth_at.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+  vk::AttachmentDescription col_res_at;
+  col_res_at.format = m_image_format;
+  col_res_at.samples = vk::SampleCountFlagBits::e1;
+  col_res_at.loadOp = vk::AttachmentLoadOp::eDontCare;
+  col_res_at.storeOp = vk::AttachmentStoreOp::eStore;
+  col_res_at.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+  col_res_at.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+  col_res_at.initialLayout = vk::ImageLayout::eUndefined;
+  col_res_at.finalLayout = vk::ImageLayout::ePresentSrcKHR;
 
   vk::AttachmentReference col_at_ref;
   col_at_ref.attachment = 0;
@@ -199,11 +213,16 @@ void SwapChain::_create_render_pass() {
   depth_at_ref.attachment = 1;
   depth_at_ref.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
+  vk::AttachmentReference col_res_at_ref;
+  col_res_at_ref.attachment = 2;
+  col_res_at_ref.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
   vk::SubpassDescription sub;
   sub.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
   sub.colorAttachmentCount = 1;
   sub.pColorAttachments = &col_at_ref;
   sub.pDepthStencilAttachment = &depth_at_ref;
+  sub.pResolveAttachments = &col_res_at_ref;
 
   vk::SubpassDependency dep;
   dep.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -216,7 +235,7 @@ void SwapChain::_create_render_pass() {
   dep.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite |
                       vk::AccessFlagBits::eDepthStencilAttachmentWrite;
 
-  const auto ats = std::array{col_at, depth_at};
+  const auto ats = std::array{col_at, depth_at, col_res_at};
   vk::RenderPassCreateInfo ri;
   ri.attachmentCount = static_cast<uint32_t>(ats.size());
   ri.pAttachments = ats.data();
@@ -233,7 +252,76 @@ void SwapChain::_create_render_pass() {
   }
 }
 
-void SwapChain::_create_depth_image() {
+void SwapChain::_create_color_image(
+    const vk::SampleCountFlagBits msaa_samples) {
+  // Create image
+  vk::ImageCreateInfo ii;
+  ii.imageType = vk::ImageType::e2D;
+  ii.extent.width = m_extent.width;
+  ii.extent.height = m_extent.height;
+  ii.extent.depth = 1;
+  ii.mipLevels = 1;
+  ii.arrayLayers = 1;
+  ii.format = m_image_format;
+  ii.tiling = vk::ImageTiling::eOptimal;
+  ii.initialLayout = vk::ImageLayout::eUndefined;
+  ii.usage = vk::ImageUsageFlagBits::eTransientAttachment |
+             vk::ImageUsageFlagBits::eColorAttachment;
+  ii.samples = msaa_samples;
+  ii.sharingMode = vk::SharingMode::eExclusive;
+
+  try {
+    m_color_image = m_context->get_device().createImage(ii);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string(
+            "failed to create color image of core::vulkan::SwapChain: ") +
+        e.what());
+  }
+
+  // Allocate memory
+  const auto mem_req =
+      m_context->get_device().getImageMemoryRequirements(m_color_image);
+  vk::MemoryAllocateInfo ai;
+  ai.allocationSize = mem_req.size;
+  ai.memoryTypeIndex = Context::find_memory_type(
+      m_context->get_physical_device(), mem_req.memoryTypeBits,
+      vk::MemoryPropertyFlagBits::eDeviceLocal);
+  try {
+    m_color_image_memory = m_context->get_device().allocateMemory(ai);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string("failed to allocate memory for color image of "
+                    "core::vulkan::SwapChain: ") +
+        e.what());
+  }
+
+  m_context->get_device().bindImageMemory(m_color_image, m_color_image_memory,
+                                          0);
+
+  // Create Image View
+  vk::ImageViewCreateInfo vi;
+  vi.image = m_color_image;
+  vi.viewType = vk::ImageViewType::e2D;
+  vi.format = m_image_format;
+  vi.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+  vi.subresourceRange.baseMipLevel = 0;
+  vi.subresourceRange.levelCount = 1;
+  vi.subresourceRange.baseArrayLayer = 0;
+  vi.subresourceRange.layerCount = 1;
+
+  try {
+    m_color_image_view = m_context->get_device().createImageView(vi);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string(
+            "failed to create color image view of core::vulkan::SwapChain: ") +
+        e.what());
+  }
+}
+
+void SwapChain::_create_depth_image(
+    const vk::SampleCountFlagBits msaa_samples) {
   const auto format{Context::_find_depth_format(m_context->m_physical_device)};
 
   // Create image
@@ -248,7 +336,7 @@ void SwapChain::_create_depth_image() {
   ii.tiling = vk::ImageTiling::eOptimal;
   ii.initialLayout = vk::ImageLayout::eUndefined;
   ii.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-  ii.samples = vk::SampleCountFlagBits::e1;
+  ii.samples = msaa_samples;
   ii.sharingMode = vk::SharingMode::eExclusive;
 
   try {
@@ -304,7 +392,7 @@ void SwapChain::_create_depth_image() {
 void SwapChain::_create_framebuffers() {
   m_framebuffers.reserve(m_image_views.size());
   for (const auto &iv : m_image_views) {
-    const auto ats = std::array{iv, m_depth_image_view};
+    const auto ats = std::array{m_color_image_view, m_depth_image_view, iv};
 
     vk::FramebufferCreateInfo fb_i;
     fb_i.renderPass = m_render_pass;
@@ -328,6 +416,9 @@ void SwapChain::_destroy(const bool everything) {
   m_context->m_device.destroyImageView(m_depth_image_view);
   m_context->m_device.destroyImage(m_depth_image);
   m_context->m_device.freeMemory(m_depth_image_memory);
+  m_context->m_device.destroyImageView(m_color_image_view);
+  m_context->m_device.destroyImage(m_color_image);
+  m_context->m_device.freeMemory(m_color_image_memory);
   for (auto &fb : m_framebuffers) {
     m_context->m_device.destroyFramebuffer(fb);
   }

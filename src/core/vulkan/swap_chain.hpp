@@ -11,7 +11,8 @@ class Context;
 
 class SwapChain {
 public:
-  SwapChain(const Context *context, const Window &window);
+  SwapChain(const Context *context, const Window &window,
+            const vk::SampleCountFlagBits msaa_samples);
   ~SwapChain();
 
   inline const vk::Format &get_image_format() const { return m_image_format; }
@@ -24,7 +25,7 @@ public:
   inline const vk::RenderPass &get_render_pass() const { return m_render_pass; }
   std::optional<std::tuple<uint32_t, vk::Framebuffer>>
   acquire_next_image(const vk::Device &device, const vk::Semaphore &semaphore);
-  void recreate();
+  void recreate(const vk::SampleCountFlagBits msaa_samples);
 
 private:
   static vk::SurfaceFormatKHR
@@ -38,8 +39,9 @@ private:
   void _create_handle();
   void _retrieve_images();
   void _create_image_views();
-  void _create_render_pass();
-  void _create_depth_image();
+  void _create_render_pass(const vk::SampleCountFlagBits msaa_samples);
+  void _create_color_image(const vk::SampleCountFlagBits msaa_samples);
+  void _create_depth_image(const vk::SampleCountFlagBits msaa_samples);
   void _create_framebuffers();
   // **************************
   void _destroy(const bool everything = true);
@@ -55,6 +57,9 @@ private:
   vk::Image m_depth_image;
   vk::DeviceMemory m_depth_image_memory;
   vk::ImageView m_depth_image_view;
+  vk::Image m_color_image;
+  vk::DeviceMemory m_color_image_memory;
+  vk::ImageView m_color_image_view;
 
   const Context *m_context;
   const Window &m_window;

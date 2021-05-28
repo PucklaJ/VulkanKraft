@@ -9,11 +9,12 @@ GraphicsPipeline::GraphicsPipeline(
     const Context &context, vk::DescriptorSetLayout descriptor_set_layout,
     std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
     vk::VertexInputBindingDescription vertex_binding,
-    std::vector<vk::VertexInputAttributeDescription> vertex_attributes)
+    std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
+    const vk::SampleCountFlagBits msaa_samples)
     : m_context(context) {
   _create_handle(std::move(descriptor_set_layout), std::move(vertex_code),
                  std::move(fragment_code), std::move(vertex_binding),
-                 std::move(vertex_attributes));
+                 std::move(vertex_attributes), msaa_samples);
 }
 
 GraphicsPipeline::~GraphicsPipeline() { _destroy(); }
@@ -41,7 +42,8 @@ void GraphicsPipeline::_create_handle(
     vk::DescriptorSetLayout descriptor_set_layout,
     std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
     vk::VertexInputBindingDescription vertex_binding,
-    std::vector<vk::VertexInputAttributeDescription> vertex_attributes) {
+    std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
+    const vk::SampleCountFlagBits msaa_samples) {
   try {
     m_vertex_module =
         _create_shader_module(m_context.m_device, std::move(vertex_code));
@@ -95,8 +97,10 @@ void GraphicsPipeline::_create_handle(
   rast_i.depthBiasEnable = VK_FALSE;
 
   vk::PipelineMultisampleStateCreateInfo multi_i;
+  multi_i.sampleShadingEnable =
+      static_cast<vk::Bool32>(msaa_samples != vk::SampleCountFlagBits::e1);
+  multi_i.rasterizationSamples = msaa_samples;
   multi_i.sampleShadingEnable = VK_FALSE;
-  multi_i.rasterizationSamples = vk::SampleCountFlagBits::e1;
 
   vk::PipelineColorBlendAttachmentState col_blend_at;
   col_blend_at.colorWriteMask =

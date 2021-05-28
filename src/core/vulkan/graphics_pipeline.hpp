@@ -11,7 +11,8 @@ public:
       const Context &context, vk::DescriptorSetLayout descriptor_set_layout,
       std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
       vk::VertexInputBindingDescription vertex_binding,
-      std::vector<vk::VertexInputAttributeDescription> vertex_attributes);
+      std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
+      const vk::SampleCountFlagBits msaa_samples);
   ~GraphicsPipeline();
 
   void bind(const RenderCall &render_call) const noexcept;
@@ -28,7 +29,8 @@ private:
       vk::DescriptorSetLayout descriptor_set_layout,
       std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
       vk::VertexInputBindingDescription vertex_binding,
-      std::vector<vk::VertexInputAttributeDescription> vertex_attributes);
+      std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
+      const vk::SampleCountFlagBits msaa_samples);
   void _destroy();
 
   vk::Pipeline m_handle;

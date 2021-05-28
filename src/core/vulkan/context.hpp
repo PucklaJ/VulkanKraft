@@ -70,6 +70,9 @@ public:
     end_single_time_commands(m_device, m_graphic_command_pool, m_graphics_queue,
                              std::move(buffer));
   }
+  inline vk::SampleCountFlagBits get_msaa_samples() const {
+    return _get_max_usable_sample_count();
+  }
 
 private:
   class QueueFamilyIndices {
@@ -134,6 +137,7 @@ private:
     return format == vk::Format::eD32SfloatS8Uint ||
            format == vk::Format::eD24UnormS8Uint;
   }
+  vk::SampleCountFlagBits _get_max_usable_sample_count() const;
   // ****************************
 
   // ****** Initialisation ******

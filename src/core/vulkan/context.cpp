@@ -511,6 +511,22 @@ vk::Format Context::_find_depth_format(const vk::PhysicalDevice &device) {
       vk::FormatFeatureFlagBits::eDepthStencilAttachment);
 }
 
+vk::SampleCountFlagBits Context::_get_max_usable_sample_count() const {
+  const auto props(m_physical_device.getProperties());
+
+  const auto counts = props.limits.framebufferColorSampleCounts &
+                      props.limits.framebufferDepthSampleCounts;
+  for (auto sample_count = static_cast<uint32_t>(vk::SampleCountFlagBits::e64);
+       sample_count >= 1; sample_count /= 2) {
+    if (counts & static_cast<vk::SampleCountFlagBits>(sample_count)) {
+      return static_cast<vk::SampleCountFlagBits>(sample_count);
+    }
+  }
+
+  throw VulkanKraftException("max usable sample count reached below 1. If you"
+                             "see this you have uninvented physics");
+}
+
 void Context::_create_instance(
     const Window &window, const std::vector<const char *> &validation_layers) {
 
@@ -663,7 +679,7 @@ void Context::_create_command_pool() {
 }
 
 void Context::_create_swap_chain(const Window &window) {
-  m_swap_chain = std::make_unique<SwapChain>(this, window);
+  m_swap_chain = std::make_unique<SwapChain>(this, window, get_msaa_samples());
 }
 
 void Context::_allocate_command_buffers() {
@@ -709,7 +725,7 @@ void Context::_create_sync_objects() {
 void Context::_handle_framebuffer_resize() {
   m_device.waitIdle();
 
-  m_swap_chain->recreate();
+  m_swap_chain->recreate(get_msaa_samples());
 }
 
 } // namespace vulkan

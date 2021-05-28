@@ -129,7 +129,8 @@ void Shader::_create_graphics_pipeline(
   try {
     m_pipeline = std::make_unique<vulkan::GraphicsPipeline>(
         context, m_descriptor_layout, std::move(vertex_code),
-        std::move(fragment_code), std::move(bind), std::move(atts));
+        std::move(fragment_code), std::move(bind), std::move(atts),
+        context.get_msaa_samples());
   } catch (const VulkanKraftException &e) {
     throw VulkanKraftException(
         std::string("failed to create graphics pipeline of core::Shader: ") +
