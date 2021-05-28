@@ -49,7 +49,10 @@ int main(int args, char *argv[]) {
     }
     auto texture = core::Texture::Builder()
                        .dimensions(texture_width, texture_height)
+                       .mip_maps()
+                       .filter(vk::Filter::eNearest)
                        .build(context, texture_data);
+    stbi_image_free(texture_data);
 
     Transform ubo0;
     ubo0.model = glm::identity<glm::mat4>();

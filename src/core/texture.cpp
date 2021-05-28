@@ -1,14 +1,30 @@
 #include "texture.hpp"
 #include "exception.hpp"
+#include <algorithm>
+#include <cmath>
 
 namespace core {
 Texture::Builder::Builder()
     : m_width(0), m_height(0), m_filter(vk::Filter::eLinear),
       m_address_mode(vk::SamplerAddressMode::eRepeat), m_max_anisotropy(0.0f),
-      m_border_color(vk::BorderColor::eIntOpaqueBlack) {}
+      m_border_color(vk::BorderColor::eIntOpaqueBlack), m_mip_levels(1),
+      m_mip_mode(vk::SamplerMipmapMode::eLinear) {}
 
 Texture Texture::Builder::build(const vulkan::Context &context,
                                 const void *data) {
+  if (m_width == 0) {
+    throw VulkanKraftException("width of core::Texture cannot be 0");
+  }
+  if (m_height == 0) {
+    throw VulkanKraftException("height of core::Texture cannot be 0");
+  }
+
+  if (m_mip_levels == 2) {
+    m_mip_levels = static_cast<uint32_t>(
+                       std::floor(std::log2(std::max(m_width, m_height)))) +
+                   1;
+  }
+
   return Texture(context, *this, data);
 }
 
@@ -21,6 +37,9 @@ Texture::Texture(const vulkan::Context &context,
                  const Texture::Builder &builder, const void *data)
     : m_context(context) {
   _create_image(builder, data);
+  if (builder.m_mip_levels > 1) {
+    _generate_mip_maps(builder);
+  }
   _create_image_view(builder);
   _create_sampler(builder);
 }
@@ -32,13 +51,15 @@ void Texture::_create_image(const Texture::Builder &builder, const void *data) {
   ii.extent.width = builder.m_width;
   ii.extent.height = builder.m_height;
   ii.extent.depth = 1;
-  ii.mipLevels = 1;
+  ii.mipLevels = builder.m_mip_levels;
   ii.arrayLayers = 1;
   ii.format = vk::Format::eR8G8B8A8Srgb;
   ii.tiling = vk::ImageTiling::eOptimal;
   ii.initialLayout = vk::ImageLayout::eUndefined;
   ii.usage =
       vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+  if (builder.m_mip_levels > 1)
+    ii.usage |= vk::ImageUsageFlagBits::eTransferSrc;
   ii.samples = vk::SampleCountFlagBits::e1;
   ii.sharingMode = vk::SharingMode::eExclusive;
 
@@ -119,9 +140,9 @@ void Texture::_create_image(const Texture::Builder &builder, const void *data) {
   }
 
   // Transistion image layout
-  m_context.transition_image_layout(m_image, vk::Format::eR8G8B8A8Srgb,
-                                    vk::ImageLayout::eUndefined,
-                                    vk::ImageLayout::eTransferDstOptimal, 1);
+  m_context.transition_image_layout(
+      m_image, vk::Format::eR8G8B8A8Srgb, vk::ImageLayout::eUndefined,
+      vk::ImageLayout::eTransferDstOptimal, builder.m_mip_levels);
 
   // Copy staging buffer contents to image
   try {
@@ -155,10 +176,13 @@ void Texture::_create_image(const Texture::Builder &builder, const void *data) {
   m_context.get_device().destroyBuffer(staging_buffer);
   m_context.get_device().freeMemory(staging_buffer_memory);
 
-  // Transistion to shader read only layout
-  m_context.transition_image_layout(m_image, vk::Format::eR8G8B8A8Srgb,
-                                    vk::ImageLayout::eTransferDstOptimal,
-                                    vk::ImageLayout::eShaderReadOnlyOptimal, 1);
+  if (builder.m_mip_levels == 1) {
+    // Transistion to shader read only layout
+    m_context.transition_image_layout(m_image, vk::Format::eR8G8B8A8Srgb,
+                                      vk::ImageLayout::eTransferDstOptimal,
+                                      vk::ImageLayout::eShaderReadOnlyOptimal,
+                                      1);
+  }
 }
 
 void Texture::_create_image_view(const Texture::Builder &builder) {
@@ -168,7 +192,7 @@ void Texture::_create_image_view(const Texture::Builder &builder) {
   vi.format = vk::Format::eR8G8B8A8Srgb;
   vi.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
   vi.subresourceRange.baseMipLevel = 0;
-  vi.subresourceRange.levelCount = 1;
+  vi.subresourceRange.levelCount = builder.m_mip_levels;
   vi.subresourceRange.baseArrayLayer = 0;
   vi.subresourceRange.layerCount = 1;
 
@@ -200,7 +224,7 @@ void Texture::_create_sampler(const Texture::Builder &builder) {
   si.mipmapMode = vk::SamplerMipmapMode::eLinear;
   si.mipLodBias = 0.0f;
   si.minLod = 0.0f;
-  si.maxLod = 1.0f;
+  si.maxLod = static_cast<float>(builder.m_mip_levels);
 
   try {
     m_sampler = m_context.get_device().createSampler(si);
@@ -208,5 +232,92 @@ void Texture::_create_sampler(const Texture::Builder &builder) {
     throw VulkanKraftException(
         std::string("failed to create sampler of core::Texture: ") + e.what());
   }
+}
+
+void Texture::_generate_mip_maps(const Builder &builder) {
+  const auto format_pros = m_context.get_physical_device().getFormatProperties(
+      vk::Format::eR8G8B8A8Srgb);
+  if (!(format_pros.optimalTilingFeatures &
+        vk::FormatFeatureFlagBits::eSampledImageFilterLinear)) {
+    throw VulkanKraftException(
+        "unable to generate mip maps for core::Texture because this device "
+        "does not support linear blitting");
+  }
+
+  auto com_buf = m_context.begin_single_time_graphics_commands();
+
+  vk::ImageMemoryBarrier bar;
+  bar.image = m_image;
+  bar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  bar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  bar.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+  bar.subresourceRange.baseArrayLayer = 0;
+  bar.subresourceRange.layerCount = 1;
+  bar.subresourceRange.levelCount = 1;
+
+  auto mip_width{static_cast<int32_t>(builder.m_width)},
+      mip_height{static_cast<int32_t>(builder.m_height)};
+
+  for (uint32_t i = 1; i < builder.m_mip_levels; i++) {
+    bar.subresourceRange.baseMipLevel = i - 1;
+    bar.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+    bar.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+    bar.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+    bar.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+
+    com_buf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                            vk::PipelineStageFlagBits::eTransfer,
+                            static_cast<vk::DependencyFlagBits>(0), nullptr,
+                            nullptr, bar);
+
+    vk::ImageBlit b;
+    b.srcOffsets[0] = vk::Offset3D{0, 0, 0};
+    b.srcOffsets[1] = vk::Offset3D{mip_width, mip_height, 1};
+    b.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+    b.srcSubresource.mipLevel = i - 1;
+    b.srcSubresource.baseArrayLayer = 0;
+    b.srcSubresource.layerCount = 1;
+    b.dstOffsets[0] = vk::Offset3D{0, 0, 0};
+    b.dstOffsets[1] = vk::Offset3D{mip_width > 1 ? mip_width / 2 : 1,
+                                   mip_height > 1 ? mip_height / 2 : 1, 1};
+    b.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+    b.dstSubresource.mipLevel = i;
+    b.dstSubresource.baseArrayLayer = 0;
+    b.dstSubresource.layerCount = 1;
+
+    com_buf.blitImage(m_image, vk::ImageLayout::eTransferSrcOptimal, m_image,
+                      vk::ImageLayout::eTransferDstOptimal, b,
+                      vk::Filter::eLinear);
+
+    bar.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+    bar.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+    bar.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+    bar.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+    com_buf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                            vk::PipelineStageFlagBits::eFragmentShader,
+                            static_cast<vk::DependencyFlagBits>(0), nullptr,
+                            nullptr, bar);
+
+    if (mip_width > 1) {
+      mip_width /= 2;
+    }
+    if (mip_height > 1) {
+      mip_height /= 2;
+    }
+  }
+
+  bar.subresourceRange.baseMipLevel = builder.m_mip_levels - 1;
+  bar.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+  bar.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+  bar.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+  bar.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+  com_buf.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                          vk::PipelineStageFlagBits::eFragmentShader,
+                          static_cast<vk::DependencyFlagBits>(0), nullptr,
+                          nullptr, bar);
+
+  m_context.end_single_time_graphics_commands(com_buf);
 }
 } // namespace core
