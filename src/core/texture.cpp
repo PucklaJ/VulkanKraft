@@ -29,8 +29,10 @@ Texture Texture::Builder::build(const vulkan::Context &context,
 }
 
 Texture::~Texture() {
-  m_context.destroy_texture(std::move(m_image), std::move(m_image_view),
-                            std::move(m_memory), std::move(m_sampler));
+  m_context.get_device().destroySampler(m_sampler);
+  m_context.get_device().destroyImageView(m_image_view);
+  m_context.get_device().destroyImage(m_image);
+  m_context.get_device().freeMemory(m_memory);
 }
 
 Texture::Texture(const vulkan::Context &context,

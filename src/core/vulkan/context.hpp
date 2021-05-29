@@ -44,20 +44,7 @@ public:
   }
   // ***************************
 
-  // ***** create methods ******
-  vk::DescriptorSetLayout create_descriptor_set_layout(
-      std::vector<vk::DescriptorSetLayoutBinding> bindings) const;
-  vk::DescriptorPool
-  create_descriptor_pool(std::vector<vk::DescriptorPoolSize> pool_sizes,
-                         const size_t set_count) const;
-  std::vector<vk::DescriptorSet>
-  create_descriptor_sets(const vk::DescriptorPool &pool,
-                         const vk::DescriptorSetLayout &layout) const;
-  // ****************************
-
   // **** utility methods *******
-  void write_descriptor_sets(
-      std::vector<vk::WriteDescriptorSet> writes) const noexcept;
   void transition_image_layout(const vk::Image &image, vk::Format format,
                                vk::ImageLayout old_layout,
                                vk::ImageLayout new_layout,
@@ -65,14 +52,6 @@ public:
   uint32_t find_memory_type(uint32_t type_filter,
                             vk::MemoryPropertyFlags props) const;
   // ****************************
-
-  // ***** destroy methods ******
-  void destroy_descriptors(vk::DescriptorPool pool,
-                           vk::DescriptorSetLayout layout) const noexcept;
-  void destroy_texture(vk::Image image, vk::ImageView image_view,
-                       vk::DeviceMemory memory,
-                       vk::Sampler sampler) const noexcept;
-  // *****************************
 
   // ***** render methods ********
   std::optional<RenderCall> render_begin();

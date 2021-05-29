@@ -45,8 +45,8 @@ Shader::Builder::_read_spv_file(std::filesystem::path file_name) {
 
 Shader::~Shader() {
   m_pipeline.reset();
-  m_context.destroy_descriptors(std::move(m_descriptor_pool),
-                                std::move(m_descriptor_layout));
+  m_context.get_device().destroyDescriptorPool(m_descriptor_pool);
+  m_context.get_device().destroyDescriptorSetLayout(m_descriptor_layout);
 }
 
 void Shader::bind(const vulkan::RenderCall &render_call) {
@@ -97,9 +97,12 @@ void Shader::_create_graphics_pipeline(
     bindings[binding_point].pImmutableSamplers = nullptr;
   }
 
+  vk::DescriptorSetLayoutCreateInfo li;
+  li.bindingCount = static_cast<uint32_t>(bindings.size());
+  li.pBindings = bindings.data();
+
   try {
-    m_descriptor_layout =
-        context.create_descriptor_set_layout(std::move(bindings));
+    m_descriptor_layout = m_context.get_device().createDescriptorSetLayout(li);
   } catch (const std::runtime_error &e) {
     throw VulkanKraftException(
         std::string(
@@ -156,9 +159,13 @@ void Shader::_create_descriptor_pool(
         static_cast<uint32_t>(context.get_swap_chain_image_count());
   }
 
+  vk::DescriptorPoolCreateInfo pi;
+  pi.poolSizeCount = static_cast<uint32_t>(pool_sizes.size());
+  pi.pPoolSizes = pool_sizes.data();
+  pi.maxSets = static_cast<uint32_t>(m_context.get_swap_chain_image_count());
+
   try {
-    m_descriptor_pool = context.create_descriptor_pool(
-        std::move(pool_sizes), context.get_swap_chain_image_count());
+    m_descriptor_pool = m_context.get_device().createDescriptorPool(pi);
   } catch (const std::runtime_error &e) {
     throw VulkanKraftException(
         std::string("failed to create descriptor pool of core::Shader: ") +
@@ -184,9 +191,14 @@ void Shader::_create_descriptor_sets(
     const vulkan::Context &context,
     std::vector<Builder::UniformBufferInfo> uniform_buffers,
     std::vector<const Texture *> textures) {
+  const std::vector<vk::DescriptorSetLayout> layouts(
+      m_context.get_swap_chain_image_count(), m_descriptor_layout);
+  vk::DescriptorSetAllocateInfo ai;
+  ai.descriptorPool = m_descriptor_pool;
+  ai.descriptorSetCount = static_cast<uint32_t>(layouts.size());
+  ai.pSetLayouts = layouts.data();
   try {
-    m_descriptor_sets =
-        context.create_descriptor_sets(m_descriptor_pool, m_descriptor_layout);
+    m_descriptor_sets = m_context.get_device().allocateDescriptorSets(ai);
   } catch (const std::runtime_error &e) {
     throw VulkanKraftException(
         std::string("failed to allocate descriptor sets for core::Shader: ") +
@@ -230,7 +242,7 @@ void Shader::_create_descriptor_sets(
 
       writes.emplace_back(std::move(w));
     }
-    context.write_descriptor_sets(std::move(writes));
+    m_context.get_device().updateDescriptorSets(writes, nullptr);
   }
 }
 

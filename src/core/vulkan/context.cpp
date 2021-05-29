@@ -75,44 +75,6 @@ Context::~Context() {
   m_instance.destroy();
 }
 
-vk::DescriptorSetLayout Context::create_descriptor_set_layout(
-    std::vector<vk::DescriptorSetLayoutBinding> bindings) const {
-  vk::DescriptorSetLayoutCreateInfo li;
-  li.bindingCount = static_cast<uint32_t>(bindings.size());
-  li.pBindings = bindings.data();
-
-  return m_device.createDescriptorSetLayout(li);
-}
-
-vk::DescriptorPool
-Context::create_descriptor_pool(std::vector<vk::DescriptorPoolSize> pool_sizes,
-                                const size_t set_count) const {
-  vk::DescriptorPoolCreateInfo pi;
-  pi.poolSizeCount = static_cast<uint32_t>(pool_sizes.size());
-  pi.pPoolSizes = pool_sizes.data();
-  pi.maxSets = static_cast<uint32_t>(set_count);
-
-  return m_device.createDescriptorPool(pi);
-}
-
-std::vector<vk::DescriptorSet>
-Context::create_descriptor_sets(const vk::DescriptorPool &pool,
-                                const vk::DescriptorSetLayout &layout) const {
-  std::vector<vk::DescriptorSetLayout> layouts(get_swap_chain_image_count(),
-                                               layout);
-  vk::DescriptorSetAllocateInfo ai;
-  ai.descriptorPool = pool;
-  ai.descriptorSetCount = static_cast<uint32_t>(layouts.size());
-  ai.pSetLayouts = layouts.data();
-
-  return m_device.allocateDescriptorSets(ai);
-}
-
-void Context::write_descriptor_sets(
-    std::vector<vk::WriteDescriptorSet> writes) const noexcept {
-  m_device.updateDescriptorSets(std::move(writes), nullptr);
-}
-
 void Context::transition_image_layout(const vk::Image &image, vk::Format format,
                                       vk::ImageLayout old_layout,
                                       vk::ImageLayout new_layout,
@@ -187,21 +149,6 @@ uint32_t Context::find_memory_type(uint32_t type_filter,
   }
 
   throw VulkanKraftException("failed to find suitable memory type");
-}
-
-void Context::destroy_descriptors(
-    vk::DescriptorPool pool, vk::DescriptorSetLayout layout) const noexcept {
-  m_device.destroyDescriptorPool(pool);
-  m_device.destroyDescriptorSetLayout(layout);
-}
-
-void Context::destroy_texture(vk::Image image, vk::ImageView image_view,
-                              vk::DeviceMemory memory,
-                              vk::Sampler sampler) const noexcept {
-  m_device.destroySampler(sampler);
-  m_device.destroyImageView(image_view);
-  m_device.destroyImage(image);
-  m_device.freeMemory(memory);
 }
 
 std::optional<RenderCall> Context::render_begin() {
