@@ -186,7 +186,7 @@ void SwapChain::_create_render_pass(
   col_at.finalLayout = vk::ImageLayout::ePresentSrcKHR;
 
   vk::AttachmentDescription depth_at;
-  depth_at.format = Context::_find_depth_format(m_context->m_physical_device);
+  depth_at.format = m_context->_find_depth_format();
   depth_at.samples = msaa_samples;
   depth_at.loadOp = vk::AttachmentLoadOp::eClear;
   depth_at.storeOp = vk::AttachmentStoreOp::eDontCare;
@@ -284,9 +284,8 @@ void SwapChain::_create_color_image(
       m_context->get_device().getImageMemoryRequirements(m_color_image);
   vk::MemoryAllocateInfo ai;
   ai.allocationSize = mem_req.size;
-  ai.memoryTypeIndex = Context::find_memory_type(
-      m_context->get_physical_device(), mem_req.memoryTypeBits,
-      vk::MemoryPropertyFlagBits::eDeviceLocal);
+  ai.memoryTypeIndex = m_context->find_memory_type(
+      mem_req.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal);
   try {
     m_color_image_memory = m_context->get_device().allocateMemory(ai);
   } catch (const std::runtime_error &e) {
@@ -322,7 +321,7 @@ void SwapChain::_create_color_image(
 
 void SwapChain::_create_depth_image(
     const vk::SampleCountFlagBits msaa_samples) {
-  const auto format{Context::_find_depth_format(m_context->m_physical_device)};
+  const auto format{m_context->_find_depth_format()};
 
   // Create image
   vk::ImageCreateInfo ii{};
@@ -352,9 +351,8 @@ void SwapChain::_create_depth_image(
 
   vk::MemoryAllocateInfo ai;
   ai.allocationSize = mem_req.size;
-  ai.memoryTypeIndex = Context::find_memory_type(
-      m_context->m_physical_device, mem_req.memoryTypeBits,
-      vk::MemoryPropertyFlagBits::eDeviceLocal);
+  ai.memoryTypeIndex = m_context->find_memory_type(
+      mem_req.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal);
 
   try {
     m_depth_image_memory = m_context->m_device.allocateMemory(ai);

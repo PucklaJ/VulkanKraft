@@ -16,26 +16,34 @@ public:
   friend class GraphicsPipeline;
   friend class Buffer;
 
-  static uint32_t find_memory_type(const vk::PhysicalDevice &device,
-                                   uint32_t type_filter,
-                                   vk::MemoryPropertyFlags props);
-  static vk::CommandBuffer
-  begin_single_time_commands(const vk::Device &device,
-                             const vk::CommandPool &command_pool);
-  static void end_single_time_commands(const vk::Device &device,
-                                       const vk::CommandPool &command_pool,
-                                       const vk::Queue &queue,
-                                       vk::CommandBuffer command_buffer);
-
   static PFN_vkCreateDebugUtilsMessengerEXT pfnVkCreateDebugUtilsMessengerEXT;
   static PFN_vkDestroyDebugUtilsMessengerEXT pfnVkDestroyDebugUtilsMessengerEXT;
 
   Context(Window &window);
   ~Context();
 
-  std::optional<RenderCall> render_begin();
-  void render_end();
+  // ***** inline methods *****
+  inline size_t get_swap_chain_image_count() const {
+    return m_swap_chain->get_image_count();
+  }
+  inline const vk::Device &get_device() const noexcept { return m_device; }
+  inline const vk::PhysicalDevice &get_physical_device() const noexcept {
+    return m_physical_device;
+  }
+  inline vk::SampleCountFlagBits get_msaa_samples() const {
+    return _get_max_usable_sample_count();
+  }
+  inline vk::CommandBuffer begin_single_time_graphics_commands() const {
+    return _begin_single_time_commands(m_device, m_graphic_command_pool);
+  }
+  inline void
+  end_single_time_graphics_commands(vk::CommandBuffer buffer) const {
+    _end_single_time_commands(m_device, m_graphic_command_pool,
+                              m_graphics_queue, std::move(buffer));
+  }
+  // ***************************
 
+  // ***** create methods ******
   vk::DescriptorSetLayout create_descriptor_set_layout(
       std::vector<vk::DescriptorSetLayoutBinding> bindings) const;
   vk::DescriptorPool
@@ -44,35 +52,31 @@ public:
   std::vector<vk::DescriptorSet>
   create_descriptor_sets(const vk::DescriptorPool &pool,
                          const vk::DescriptorSetLayout &layout) const;
+  // ****************************
+
+  // **** utility methods *******
   void write_descriptor_sets(
       std::vector<vk::WriteDescriptorSet> writes) const noexcept;
-  void destroy_descriptors(vk::DescriptorPool pool,
-                           vk::DescriptorSetLayout layout) const noexcept;
-  inline size_t get_swap_chain_image_count() const {
-    return m_swap_chain->get_image_count();
-  }
-  inline const vk::Device &get_device() const noexcept { return m_device; }
-  inline const vk::PhysicalDevice &get_physical_device() const noexcept {
-    return m_physical_device;
-  }
-  void destroy_texture(vk::Image image, vk::ImageView image_view,
-                       vk::DeviceMemory memory,
-                       vk::Sampler sampler) const noexcept;
   void transition_image_layout(const vk::Image &image, vk::Format format,
                                vk::ImageLayout old_layout,
                                vk::ImageLayout new_layout,
                                uint32_t mip_levels) const;
-  inline vk::CommandBuffer begin_single_time_graphics_commands() const {
-    return begin_single_time_commands(m_device, m_graphic_command_pool);
-  }
-  inline void
-  end_single_time_graphics_commands(vk::CommandBuffer buffer) const {
-    end_single_time_commands(m_device, m_graphic_command_pool, m_graphics_queue,
-                             std::move(buffer));
-  }
-  inline vk::SampleCountFlagBits get_msaa_samples() const {
-    return _get_max_usable_sample_count();
-  }
+  uint32_t find_memory_type(uint32_t type_filter,
+                            vk::MemoryPropertyFlags props) const;
+  // ****************************
+
+  // ***** destroy methods ******
+  void destroy_descriptors(vk::DescriptorPool pool,
+                           vk::DescriptorSetLayout layout) const noexcept;
+  void destroy_texture(vk::Image image, vk::ImageView image_view,
+                       vk::DeviceMemory memory,
+                       vk::Sampler sampler) const noexcept;
+  // *****************************
+
+  // ***** render methods ********
+  std::optional<RenderCall> render_begin();
+  void render_end();
+  // *****************************
 
 private:
   class QueueFamilyIndices {
@@ -80,7 +84,9 @@ private:
     QueueFamilyIndices(const vk::PhysicalDevice &device,
                        const vk::SurfaceKHR &surface);
 
-    bool is_complete() const;
+    inline bool is_complete() const {
+      return graphics_family.has_value() && present_family.has_value();
+    }
 
     std::optional<uint32_t> graphics_family;
     std::optional<uint32_t> present_family;
@@ -96,6 +102,7 @@ private:
     std::vector<vk::PresentModeKHR> present_modes;
   };
 
+  // ****** constants **************
   static constexpr char _application_name[] = "VulkanKraft";
   static constexpr uint32_t _application_version =
       VK_MAKE_API_VERSION(0, 0, 0, 0);
@@ -107,9 +114,9 @@ private:
   static constexpr bool _enable_validation_layers = true;
 #endif
   static constexpr size_t _max_images_in_flight = 2;
+  // *********************************
 
-  static bool _has_validation_layer_support(
-      const std::vector<const char *> &layer_names) noexcept;
+  // ******* validation layers *******
   static void _populate_debug_messenger_create_info(
       vk::DebugUtilsMessengerCreateInfoEXT &di) noexcept;
   static VKAPI_ATTR VkBool32 VKAPI_CALL
@@ -117,6 +124,16 @@ private:
                   VkDebugUtilsMessageTypeFlagsEXT messageType,
                   const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
                   void *pUserData);
+  // *********************************
+
+  // ****** Utilities ****************
+  inline vk::Format _find_depth_format() const {
+    return _find_supported_format(
+        {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint,
+         vk::Format::eD24UnormS8Uint},
+        vk::ImageTiling::eOptimal,
+        vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+  }
   static bool
   _is_device_suitable(const vk::PhysicalDevice &device,
                       const vk::SurfaceKHR &surface,
@@ -124,16 +141,19 @@ private:
   static bool _device_has_extension_support(
       const vk::PhysicalDevice &device,
       const std::vector<const char *> &extension_names);
-
-  // ****** Utilities ***********
-  static vk::Format
-  _find_supported_format(const vk::PhysicalDevice &device,
-                         const std::vector<vk::Format> &candidates,
-                         vk::ImageTiling tiling,
-                         vk::FormatFeatureFlags features);
-  static vk::Format _find_depth_format(const vk::PhysicalDevice &device);
-
-  static inline bool _has_stencil_component(vk::Format format) {
+  static bool _has_validation_layer_support(
+      const std::vector<const char *> &layer_names) noexcept;
+  vk::Format _find_supported_format(const std::vector<vk::Format> &candidates,
+                                    vk::ImageTiling tiling,
+                                    vk::FormatFeatureFlags features) const;
+  static vk::CommandBuffer
+  _begin_single_time_commands(const vk::Device &device,
+                              const vk::CommandPool &command_pool);
+  static void _end_single_time_commands(const vk::Device &device,
+                                        const vk::CommandPool &command_pool,
+                                        const vk::Queue &queue,
+                                        vk::CommandBuffer command_buffer);
+  static inline constexpr bool _has_stencil_component(vk::Format format) {
     return format == vk::Format::eD32SfloatS8Uint ||
            format == vk::Format::eD24UnormS8Uint;
   }

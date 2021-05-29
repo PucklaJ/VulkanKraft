@@ -75,9 +75,8 @@ void Texture::_create_image(const Texture::Builder &builder, const void *data) {
 
   vk::MemoryAllocateInfo ai;
   ai.allocationSize = mem_req.size;
-  ai.memoryTypeIndex = vulkan::Context::find_memory_type(
-      m_context.get_physical_device(), mem_req.memoryTypeBits,
-      vk::MemoryPropertyFlagBits::eDeviceLocal);
+  ai.memoryTypeIndex = m_context.find_memory_type(
+      mem_req.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal);
 
   try {
     m_memory = m_context.get_device().allocateMemory(ai);
@@ -109,10 +108,9 @@ void Texture::_create_image(const Texture::Builder &builder, const void *data) {
   mem_req = m_context.get_device().getBufferMemoryRequirements(staging_buffer);
 
   ai.allocationSize = mem_req.size;
-  ai.memoryTypeIndex = vulkan::Context::find_memory_type(
-      m_context.get_physical_device(), mem_req.memoryTypeBits,
-      vk::MemoryPropertyFlagBits::eHostVisible |
-          vk::MemoryPropertyFlagBits::eHostCoherent);
+  ai.memoryTypeIndex = m_context.find_memory_type(
+      mem_req.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostVisible |
+                                  vk::MemoryPropertyFlagBits::eHostCoherent);
 
   vk::DeviceMemory staging_buffer_memory;
   try {
