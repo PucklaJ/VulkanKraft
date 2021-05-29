@@ -13,6 +13,9 @@ public:
 
     glm::vec3 position;
   };
+  struct GlobalUniform {
+    glm::mat4 proj_view;
+  };
 
   static ::core::Shader build_shader(const ::core::vulkan::Context &context,
                                      const ::core::Settings &settings);
