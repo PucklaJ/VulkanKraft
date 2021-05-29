@@ -63,6 +63,7 @@ Context::PhysicalDeviceInfo::PhysicalDeviceInfo(
     : properties(device.getProperties()),
       depth_format(_find_depth_format(device)),
       queue_family_indices(device, surface),
+      max_msaa_samples(_get_max_usable_sample_count(properties)),
       swap_chain_support_details(device, surface) {
   const auto format_pros(device.getFormatProperties(vk::Format::eR8G8B8A8Srgb));
   linear_blitting_support =
@@ -88,8 +89,24 @@ vk::Format Context::PhysicalDeviceInfo::_find_supported_format(
   throw VulkanKraftException("failed to find supported format");
 }
 
-Context::Context(Window &window)
-    : m_current_frame(0), m_framebuffer_resized(false) {
+vk::SampleCountFlagBits
+Context::PhysicalDeviceInfo::_get_max_usable_sample_count(
+    const vk::PhysicalDeviceProperties &props) {
+  const auto counts = props.limits.framebufferColorSampleCounts &
+                      props.limits.framebufferDepthSampleCounts;
+  for (auto sample_count = static_cast<uint32_t>(vk::SampleCountFlagBits::e64);
+       sample_count >= 1; sample_count /= 2) {
+    if (counts & static_cast<vk::SampleCountFlagBits>(sample_count)) {
+      return static_cast<vk::SampleCountFlagBits>(sample_count);
+    }
+  }
+
+  throw VulkanKraftException("max usable sample count reached below 1. If you"
+                             "see this you have uninvented physics");
+}
+
+Context::Context(Window &window, Settings &settings)
+    : m_current_frame(0), m_framebuffer_resized(false), m_settings(settings) {
   const std::vector<const char *> validation_layers = {
       "VK_LAYER_KHRONOS_validation"};
   _create_instance(window, validation_layers);
@@ -99,6 +116,13 @@ Context::Context(Window &window)
     const std::vector<const char *> device_extensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME};
     _pick_physical_device(device_extensions);
+    if (m_physical_device_info->max_msaa_samples < settings.msaa_samples) {
+      Log::warning(std::to_string(static_cast<int>(settings.msaa_samples)) +
+                   " MSAA samples are not supported by this GPU. Setting to " +
+                   std::to_string(static_cast<int>(
+                       m_physical_device_info->max_msaa_samples)));
+      settings.msaa_samples = m_physical_device_info->max_msaa_samples;
+    }
     _create_logical_device(device_extensions, validation_layers);
   }
   _create_command_pool();
@@ -378,22 +402,6 @@ void Context::_end_single_time_commands(const vk::Device &device,
   device.freeCommandBuffers(command_pool, command_buffer);
 }
 
-vk::SampleCountFlagBits Context::_get_max_usable_sample_count() const {
-  const auto props(m_physical_device.getProperties());
-
-  const auto counts = props.limits.framebufferColorSampleCounts &
-                      props.limits.framebufferDepthSampleCounts;
-  for (auto sample_count = static_cast<uint32_t>(vk::SampleCountFlagBits::e64);
-       sample_count >= 1; sample_count /= 2) {
-    if (counts & static_cast<vk::SampleCountFlagBits>(sample_count)) {
-      return static_cast<vk::SampleCountFlagBits>(sample_count);
-    }
-  }
-
-  throw VulkanKraftException("max usable sample count reached below 1. If you"
-                             "see this you have uninvented physics");
-}
-
 void Context::_create_instance(
     const Window &window, const std::vector<const char *> &validation_layers) {
 
@@ -549,7 +557,8 @@ void Context::_create_command_pool() {
 }
 
 void Context::_create_swap_chain(const Window &window) {
-  m_swap_chain = std::make_unique<SwapChain>(this, window, get_msaa_samples());
+  m_swap_chain =
+      std::make_unique<SwapChain>(this, window, m_settings.msaa_samples);
 }
 
 void Context::_allocate_command_buffers() {
@@ -597,7 +606,7 @@ void Context::_handle_framebuffer_resize() {
 
   m_physical_device_info->swap_chain_support_details =
       SwapChainSupportDetails(m_physical_device, m_surface);
-  m_swap_chain->recreate(get_msaa_samples());
+  m_swap_chain->recreate(m_settings.msaa_samples);
 }
 
 } // namespace vulkan

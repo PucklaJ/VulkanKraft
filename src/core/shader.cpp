@@ -5,7 +5,8 @@
 namespace core {
 Shader::Builder::Builder() {}
 
-Shader Shader::Builder::build(const vulkan::Context &context) {
+Shader Shader::Builder::build(const vulkan::Context &context,
+                              const Settings &settings) {
   if (m_vertex_code.empty()) {
     throw VulkanKraftException(
         "no vertex shader has been provided for core::Shader");
@@ -21,9 +22,9 @@ Shader Shader::Builder::build(const vulkan::Context &context) {
         "no vertex atrributes have been specified for core::Shader");
   }
 
-  return Shader(context, std::move(m_vertex_code), std::move(m_fragment_code),
-                std::move(m_uniform_buffers), std::move(m_vertex_attributes),
-                std::move(m_textures));
+  return Shader(context, settings, std::move(m_vertex_code),
+                std::move(m_fragment_code), std::move(m_uniform_buffers),
+                std::move(m_vertex_attributes), std::move(m_textures));
 }
 
 std::vector<uint8_t>
@@ -56,13 +57,14 @@ void Shader::bind(const vulkan::RenderCall &render_call) {
       m_pipeline->get_layout());
 }
 
-Shader::Shader(const vulkan::Context &context, std::vector<uint8_t> vertex_code,
+Shader::Shader(const vulkan::Context &context, const Settings &settings,
+               std::vector<uint8_t> vertex_code,
                std::vector<uint8_t> fragment_code,
                std::vector<Builder::UniformBufferInfo> uniform_buffers,
                std::vector<Builder::VertexAttributeInfo> vertex_attributes,
                std::vector<const Texture *> textures)
     : m_context(context) {
-  _create_graphics_pipeline(context, std::move(vertex_code),
+  _create_graphics_pipeline(context, settings, std::move(vertex_code),
                             std::move(fragment_code), uniform_buffers,
                             std::move(vertex_attributes), textures);
   _create_descriptor_pool(context, uniform_buffers, textures);
@@ -72,8 +74,8 @@ Shader::Shader(const vulkan::Context &context, std::vector<uint8_t> vertex_code,
 }
 
 void Shader::_create_graphics_pipeline(
-    const vulkan::Context &context, std::vector<uint8_t> vertex_code,
-    std::vector<uint8_t> fragment_code,
+    const vulkan::Context &context, const Settings &settings,
+    std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
     const std::vector<Builder::UniformBufferInfo> &uniform_buffers,
     std::vector<Builder::VertexAttributeInfo> vertex_attributes,
     const std::vector<const Texture *> &textures) {
@@ -133,7 +135,7 @@ void Shader::_create_graphics_pipeline(
     m_pipeline = std::make_unique<vulkan::GraphicsPipeline>(
         context, m_descriptor_layout, std::move(vertex_code),
         std::move(fragment_code), std::move(bind), std::move(atts),
-        context.get_msaa_samples());
+        settings.msaa_samples);
   } catch (const VulkanKraftException &e) {
     throw VulkanKraftException(
         std::string("failed to create graphics pipeline of core::Shader: ") +

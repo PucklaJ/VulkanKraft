@@ -1,6 +1,7 @@
 #include "Doge.hpp"
 #include "core/exception.hpp"
 #include "core/log.hpp"
+#include "core/settings.hpp"
 #include "core/shader.hpp"
 #include "core/texture.hpp"
 #include "core/vulkan/buffer.hpp"
@@ -37,8 +38,9 @@ int main(int args, char *argv[]) {
                  core::vulkan::Vertex(-0.5f, 0.5f, -1.0f, 1.0f, 1.0f)};
 
   try {
+    core::Settings settings;
     core::Window window(window_width, window_height, window_title);
-    core::vulkan::Context context(window);
+    core::vulkan::Context context(window, settings);
 
     int texture_width, texture_height, texture_channels;
     auto *texture_data = stbi_load_from_memory(
@@ -66,7 +68,7 @@ int main(int args, char *argv[]) {
                       .fragment("shaders_spv/triangle.frag.spv")
                       .uniform_buffer(vk::ShaderStageFlagBits::eVertex, ubo0)
                       .texture(texture)
-                      .build(context);
+                      .build(context, settings);
 
     core::vulkan::Buffer vertex_buffer(context,
                                        vk::BufferUsageFlagBits::eVertexBuffer,

@@ -1,4 +1,5 @@
 #pragma once
+#include "../settings.hpp"
 #include "../window.hpp"
 #include "render_call.hpp"
 #include "swap_chain.hpp"
@@ -43,6 +44,7 @@ public:
     const vk::PhysicalDeviceProperties properties;
     const vk::Format depth_format;
     const QueueFamilyIndices queue_family_indices;
+    const vk::SampleCountFlagBits max_msaa_samples;
     SwapChainSupportDetails swap_chain_support_details;
     bool linear_blitting_support;
 
@@ -61,6 +63,8 @@ public:
           vk::ImageTiling::eOptimal,
           vk::FormatFeatureFlagBits::eDepthStencilAttachment);
     }
+    static vk::SampleCountFlagBits
+    _get_max_usable_sample_count(const vk::PhysicalDeviceProperties &props);
   };
 
   friend class SwapChain;
@@ -69,7 +73,7 @@ public:
   static PFN_vkCreateDebugUtilsMessengerEXT pfnVkCreateDebugUtilsMessengerEXT;
   static PFN_vkDestroyDebugUtilsMessengerEXT pfnVkDestroyDebugUtilsMessengerEXT;
 
-  Context(Window &window);
+  Context(Window &window, Settings &settings);
   ~Context();
 
   // ***** inline methods *****
@@ -82,9 +86,6 @@ public:
   inline const vk::Device &get_device() const noexcept { return m_device; }
   inline const PhysicalDeviceInfo &get_physical_device_info() const noexcept {
     return *m_physical_device_info;
-  }
-  inline vk::SampleCountFlagBits get_msaa_samples() const {
-    return _get_max_usable_sample_count();
   }
   inline vk::CommandBuffer begin_single_time_graphics_commands() const {
     return _begin_single_time_commands(m_device, m_graphic_command_pool);
@@ -157,7 +158,6 @@ private:
     return format == vk::Format::eD32SfloatS8Uint ||
            format == vk::Format::eD24UnormS8Uint;
   }
-  vk::SampleCountFlagBits _get_max_usable_sample_count() const;
   // ****************************
 
   // ****** Initialisation ******
@@ -196,6 +196,7 @@ private:
   size_t m_current_frame;
   bool m_framebuffer_resized;
   std::unique_ptr<PhysicalDeviceInfo> m_physical_device_info;
+  const Settings &m_settings;
 };
 } // namespace vulkan
 } // namespace core

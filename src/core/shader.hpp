@@ -1,4 +1,5 @@
 #pragma once
+#include "settings.hpp"
 #include "texture.hpp"
 #include "vulkan/buffer.hpp"
 #include "vulkan/graphics_pipeline.hpp"
@@ -19,7 +20,7 @@ public:
 
     Builder();
 
-    Shader build(const vulkan::Context &context);
+    Shader build(const vulkan::Context &context, const Settings &settings);
 
     inline Builder &vertex(std::filesystem::path vertex_path) {
       m_vertex_code = _read_spv_file(std::move(vertex_path));
@@ -80,15 +81,15 @@ public:
   void bind(const vulkan::RenderCall &render_call);
 
 private:
-  Shader(const vulkan::Context &context, std::vector<uint8_t> vertex_code,
-         std::vector<uint8_t> fragment_code,
+  Shader(const vulkan::Context &context, const Settings &settings,
+         std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
          std::vector<Builder::UniformBufferInfo> uniform_buffers,
          std::vector<Builder::VertexAttributeInfo> vertex_attributes,
          std::vector<const Texture *> textures);
 
   void _create_graphics_pipeline(
-      const vulkan::Context &context, std::vector<uint8_t> vertex_code,
-      std::vector<uint8_t> fragment_code,
+      const vulkan::Context &context, const Settings &settings,
+      std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
       const std::vector<Builder::UniformBufferInfo> &uniform_buffers,
       std::vector<Builder::VertexAttributeInfo> vertex_attributes,
       const std::vector<const Texture *> &textures);
