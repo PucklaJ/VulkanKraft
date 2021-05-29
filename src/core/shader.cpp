@@ -46,15 +46,17 @@ Shader::Builder::_read_spv_file(std::filesystem::path file_name) {
 
 Shader::~Shader() {
   m_pipeline.reset();
-  m_context.get_device().destroyDescriptorPool(m_descriptor_pool);
+  if (m_descriptor_pool)
+    m_context.get_device().destroyDescriptorPool(m_descriptor_pool);
   m_context.get_device().destroyDescriptorSetLayout(m_descriptor_layout);
 }
 
 void Shader::bind(const vulkan::RenderCall &render_call) {
   m_pipeline->bind(render_call);
-  render_call.bind_descriptor_set(
-      m_descriptor_sets[render_call.get_swap_chain_image_index()],
-      m_pipeline->get_layout());
+  if (!m_descriptor_sets.empty())
+    render_call.bind_descriptor_set(
+        m_descriptor_sets[render_call.get_swap_chain_image_index()],
+        m_pipeline->get_layout());
 }
 
 Shader::Shader(const vulkan::Context &context, const Settings &settings,
@@ -147,6 +149,9 @@ void Shader::_create_descriptor_pool(
     const vulkan::Context &context,
     const std::vector<Builder::UniformBufferInfo> &uniform_buffers,
     const std::vector<const Texture *> &textures) {
+  if (uniform_buffers.empty() && textures.empty()) {
+    return;
+  }
   std::vector<vk::DescriptorPoolSize> pool_sizes(uniform_buffers.size() +
                                                  textures.size());
   for (size_t i = 0; i < uniform_buffers.size(); i++) {
@@ -178,6 +183,9 @@ void Shader::_create_descriptor_pool(
 void Shader::_create_uniform_buffers(
     const vulkan::Context &context,
     const std::vector<Builder::UniformBufferInfo> &uniform_buffers) {
+  if (uniform_buffers.empty()) {
+    return;
+  }
   for (size_t i = 0; i < context.get_swap_chain_image_count(); i++) {
     auto &current_buffers = m_uniform_buffers.emplace_back();
     for (size_t j = 0; j < uniform_buffers.size(); j++) {
@@ -193,6 +201,10 @@ void Shader::_create_descriptor_sets(
     const vulkan::Context &context,
     std::vector<Builder::UniformBufferInfo> uniform_buffers,
     std::vector<const Texture *> textures) {
+  if (uniform_buffers.empty() && textures.empty()) {
+    return;
+  }
+
   const std::vector<vk::DescriptorSetLayout> layouts(
       m_context.get_swap_chain_image_count(), m_descriptor_layout);
   vk::DescriptorSetAllocateInfo ai;
