@@ -13,8 +13,6 @@ namespace vulkan {
 class Context {
 public:
   friend class SwapChain;
-  friend class GraphicsPipeline;
-  friend class Buffer;
 
   static PFN_vkCreateDebugUtilsMessengerEXT pfnVkCreateDebugUtilsMessengerEXT;
   static PFN_vkDestroyDebugUtilsMessengerEXT pfnVkDestroyDebugUtilsMessengerEXT;
@@ -25,6 +23,9 @@ public:
   // ***** inline methods *****
   inline size_t get_swap_chain_image_count() const {
     return m_swap_chain->get_image_count();
+  }
+  inline const vk::RenderPass &get_swap_chain_render_pass() const {
+    return m_swap_chain->get_render_pass();
   }
   inline const vk::Device &get_device() const noexcept { return m_device; }
   inline const vk::PhysicalDevice &get_physical_device() const noexcept {

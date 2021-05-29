@@ -46,7 +46,7 @@ void GraphicsPipeline::_create_handle(
     const vk::SampleCountFlagBits msaa_samples) {
   try {
     m_vertex_module =
-        _create_shader_module(m_context.m_device, std::move(vertex_code));
+        _create_shader_module(m_context.get_device(), std::move(vertex_code));
   } catch (const VulkanKraftException &e) {
     throw VulkanKraftException(
         std::string("failed to create vertex shader module: ") + e.what());
@@ -54,7 +54,7 @@ void GraphicsPipeline::_create_handle(
 
   try {
     m_fragment_module =
-        _create_shader_module(m_context.m_device, std::move(fragment_code));
+        _create_shader_module(m_context.get_device(), std::move(fragment_code));
   } catch (const VulkanKraftException &e) {
     throw VulkanKraftException(
         std::string("failed to create fragment shader module: ") + e.what());
@@ -121,7 +121,7 @@ void GraphicsPipeline::_create_handle(
   pl_i.pushConstantRangeCount = 0;
 
   try {
-    m_layout = m_context.m_device.createPipelineLayout(pl_i);
+    m_layout = m_context.get_device().createPipelineLayout(pl_i);
   } catch (const std::runtime_error &e) {
     throw VulkanKraftException(
         std::string("failed to create pipeline layout: ") + e.what());
@@ -154,13 +154,13 @@ void GraphicsPipeline::_create_handle(
   p_i.pDepthStencilState = &ds_i;
   p_i.pDynamicState = &dyn_i;
   p_i.layout = m_layout;
-  p_i.renderPass = m_context.m_swap_chain->get_render_pass();
+  p_i.renderPass = m_context.get_swap_chain_render_pass();
   p_i.subpass = 0;
   p_i.basePipelineHandle = VK_NULL_HANDLE;
 
   try {
     const auto ps =
-        m_context.m_device.createGraphicsPipelines(VK_NULL_HANDLE, p_i);
+        m_context.get_device().createGraphicsPipelines(VK_NULL_HANDLE, p_i);
     if (ps.result != vk::Result::eSuccess) {
       throw std::runtime_error(std::to_string(static_cast<int>(ps.result)));
     }
@@ -172,12 +172,12 @@ void GraphicsPipeline::_create_handle(
 }
 
 void GraphicsPipeline::_destroy() {
-  m_context.m_device.waitIdle();
+  m_context.get_device().waitIdle();
 
-  m_context.m_device.destroyPipeline(m_handle);
-  m_context.m_device.destroyPipelineLayout(m_layout);
-  m_context.m_device.destroyShaderModule(m_vertex_module);
-  m_context.m_device.destroyShaderModule(m_fragment_module);
+  m_context.get_device().destroyPipeline(m_handle);
+  m_context.get_device().destroyPipelineLayout(m_layout);
+  m_context.get_device().destroyShaderModule(m_vertex_module);
+  m_context.get_device().destroyShaderModule(m_fragment_module);
 }
 
 } // namespace vulkan
