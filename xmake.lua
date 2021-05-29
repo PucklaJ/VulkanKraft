@@ -46,6 +46,12 @@ target("vulkankraft")
   add_syslinks("vulkan")
   add_rules("shader")
 
-  add_files("src/*.cpp", "src/core/*.cpp", "src/core/vulkan/*.cpp")
-  add_headerfiles("src/*.hpp", "src/core/*.hpp", "src/core/vulkan/*.hpp")
+  add_files("src/*.cpp", 
+            "src/core/*.cpp",
+            "src/core/vulkan/*.cpp",
+            "src/chunk/*.cpp")
+  add_headerfiles("src/*.hpp",
+                  "src/core/*.hpp",
+                  "src/core/vulkan/*.hpp",
+                  "src/chunk/*.hpp")
   add_files("shaders/*.vert", "shaders/*.frag")

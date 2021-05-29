@@ -99,6 +99,11 @@ void RenderCall::render_vertices(const uint32_t num_vertices,
   m_graphics_buffer.draw(num_vertices, 1, first_vertex, 0);
 }
 
+void RenderCall::render_indices(const uint32_t num_indices,
+                                const uint32_t first_index) const noexcept {
+  m_graphics_buffer.drawIndexed(num_indices, 1, first_index, 0, 0);
+}
+
 void RenderCall::bind_graphics_pipeline(
     const vk::Pipeline &pipeline) const noexcept {
   m_graphics_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);

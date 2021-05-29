@@ -21,6 +21,8 @@ public:
 
   void render_vertices(const uint32_t num_vertices,
                        const uint32_t first_vertex = 0) const noexcept;
+  void render_indices(const uint32_t num_indices,
+                      const uint32_t first_index = 0) const noexcept;
 
   void bind_graphics_pipeline(const vk::Pipeline &pipeline) const noexcept;
   void bind_descriptor_set(const vk::DescriptorSet &set,
