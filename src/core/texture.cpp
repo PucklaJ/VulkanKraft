@@ -214,9 +214,10 @@ void Texture::_create_sampler(const Texture::Builder &builder) {
   si.addressModeW = builder.m_address_mode;
   si.anisotropyEnable = builder.m_max_anisotropy != 0.0f;
 
-  const auto props(m_context.get_physical_device().getProperties());
+  const auto &device_info(m_context.get_physical_device_info());
   si.maxAnisotropy =
-      std::min(builder.m_max_anisotropy, props.limits.maxSamplerAnisotropy);
+      std::min(builder.m_max_anisotropy,
+               device_info.properties.limits.maxSamplerAnisotropy);
   si.borderColor = builder.m_border_color;
   si.unnormalizedCoordinates = VK_FALSE;
   si.compareEnable = VK_FALSE;
@@ -235,10 +236,7 @@ void Texture::_create_sampler(const Texture::Builder &builder) {
 }
 
 void Texture::_generate_mip_maps(const Builder &builder) {
-  const auto format_pros = m_context.get_physical_device().getFormatProperties(
-      vk::Format::eR8G8B8A8Srgb);
-  if (!(format_pros.optimalTilingFeatures &
-        vk::FormatFeatureFlagBits::eSampledImageFilterLinear)) {
+  if (!m_context.get_physical_device_info().linear_blitting_support) {
     throw VulkanKraftException(
         "unable to generate mip maps for core::Texture because this device "
         "does not support linear blitting");

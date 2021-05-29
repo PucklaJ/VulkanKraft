@@ -96,8 +96,8 @@ vk::Extent2D SwapChain::_choose_extent(const vk::SurfaceCapabilitiesKHR &caps,
 }
 
 void SwapChain::_create_handle() {
-  const Context::SwapChainSupportDetails scs(m_context->m_physical_device,
-                                             m_context->m_surface);
+  const auto &scs =
+      m_context->get_physical_device_info().swap_chain_support_details;
   const auto format{_choose_surface_format(scs.formats)};
   const auto present_mode{_choose_present_mode(scs.present_modes)};
   const auto extent{_choose_extent(scs.capabilities, m_window)};
@@ -117,8 +117,8 @@ void SwapChain::_create_handle() {
   si.imageArrayLayers = 1;
   si.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
 
-  const Context::QueueFamilyIndices indices(m_context->m_physical_device,
-                                            m_context->m_surface);
+  const auto &indices =
+      m_context->get_physical_device_info().queue_family_indices;
   const auto qfi = std::array{indices.graphics_family.value(),
                               indices.present_family.value()};
   if (indices.graphics_family != indices.present_family) {
@@ -186,7 +186,7 @@ void SwapChain::_create_render_pass(
   col_at.finalLayout = vk::ImageLayout::ePresentSrcKHR;
 
   vk::AttachmentDescription depth_at;
-  depth_at.format = m_context->_find_depth_format();
+  depth_at.format = m_context->get_physical_device_info().depth_format;
   depth_at.samples = msaa_samples;
   depth_at.loadOp = vk::AttachmentLoadOp::eClear;
   depth_at.storeOp = vk::AttachmentStoreOp::eDontCare;
@@ -321,7 +321,7 @@ void SwapChain::_create_color_image(
 
 void SwapChain::_create_depth_image(
     const vk::SampleCountFlagBits msaa_samples) {
-  const auto format{m_context->_find_depth_format()};
+  const auto format{m_context->get_physical_device_info().depth_format};
 
   // Create image
   vk::ImageCreateInfo ii{};

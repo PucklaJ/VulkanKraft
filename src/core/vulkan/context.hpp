@@ -12,6 +12,57 @@ namespace vulkan {
 
 class Context {
 public:
+  class QueueFamilyIndices {
+  public:
+    QueueFamilyIndices(const vk::PhysicalDevice &device,
+                       const vk::SurfaceKHR &surface);
+
+    inline bool is_complete() const {
+      return graphics_family.has_value() && present_family.has_value();
+    }
+
+    std::optional<uint32_t> graphics_family;
+    std::optional<uint32_t> present_family;
+  };
+
+  class SwapChainSupportDetails {
+  public:
+    SwapChainSupportDetails(const vk::PhysicalDevice &device,
+                            const vk::SurfaceKHR &surface);
+
+    vk::SurfaceCapabilitiesKHR capabilities;
+    std::vector<vk::SurfaceFormatKHR> formats;
+    std::vector<vk::PresentModeKHR> present_modes;
+  };
+
+  class PhysicalDeviceInfo {
+  public:
+    PhysicalDeviceInfo(const vk::PhysicalDevice &device,
+                       const vk::SurfaceKHR &surface);
+
+    const vk::PhysicalDeviceProperties properties;
+    const vk::Format depth_format;
+    const QueueFamilyIndices queue_family_indices;
+    SwapChainSupportDetails swap_chain_support_details;
+    bool linear_blitting_support;
+
+  private:
+    static vk::Format
+    _find_supported_format(const vk::PhysicalDevice &device,
+                           const std::vector<vk::Format> &candidates,
+                           vk::ImageTiling tiling,
+                           vk::FormatFeatureFlags features);
+    static inline vk::Format
+    _find_depth_format(const vk::PhysicalDevice &device) {
+      return _find_supported_format(
+          device,
+          {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint,
+           vk::Format::eD24UnormS8Uint},
+          vk::ImageTiling::eOptimal,
+          vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+    }
+  };
+
   friend class SwapChain;
   friend class RenderCall;
 
@@ -29,8 +80,8 @@ public:
     return m_swap_chain->get_render_pass();
   }
   inline const vk::Device &get_device() const noexcept { return m_device; }
-  inline const vk::PhysicalDevice &get_physical_device() const noexcept {
-    return m_physical_device;
+  inline const PhysicalDeviceInfo &get_physical_device_info() const noexcept {
+    return *m_physical_device_info;
   }
   inline vk::SampleCountFlagBits get_msaa_samples() const {
     return _get_max_usable_sample_count();
@@ -59,29 +110,6 @@ public:
   // *****************************
 
 private:
-  class QueueFamilyIndices {
-  public:
-    QueueFamilyIndices(const vk::PhysicalDevice &device,
-                       const vk::SurfaceKHR &surface);
-
-    inline bool is_complete() const {
-      return graphics_family.has_value() && present_family.has_value();
-    }
-
-    std::optional<uint32_t> graphics_family;
-    std::optional<uint32_t> present_family;
-  };
-
-  class SwapChainSupportDetails {
-  public:
-    SwapChainSupportDetails(const vk::PhysicalDevice &device,
-                            const vk::SurfaceKHR &surface);
-
-    vk::SurfaceCapabilitiesKHR capabilities;
-    std::vector<vk::SurfaceFormatKHR> formats;
-    std::vector<vk::PresentModeKHR> present_modes;
-  };
-
   // ****** constants **************
   static constexpr char _application_name[] = "VulkanKraft";
   static constexpr uint32_t _application_version =
@@ -107,13 +135,7 @@ private:
   // *********************************
 
   // ****** Utilities ****************
-  inline vk::Format _find_depth_format() const {
-    return _find_supported_format(
-        {vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint,
-         vk::Format::eD24UnormS8Uint},
-        vk::ImageTiling::eOptimal,
-        vk::FormatFeatureFlagBits::eDepthStencilAttachment);
-  }
+
   static bool
   _is_device_suitable(const vk::PhysicalDevice &device,
                       const vk::SurfaceKHR &surface,
@@ -123,9 +145,7 @@ private:
       const std::vector<const char *> &extension_names);
   static bool _has_validation_layer_support(
       const std::vector<const char *> &layer_names) noexcept;
-  vk::Format _find_supported_format(const std::vector<vk::Format> &candidates,
-                                    vk::ImageTiling tiling,
-                                    vk::FormatFeatureFlags features) const;
+
   static vk::CommandBuffer
   _begin_single_time_commands(const vk::Device &device,
                               const vk::CommandPool &command_pool);
@@ -175,6 +195,7 @@ private:
 
   size_t m_current_frame;
   bool m_framebuffer_resized;
+  std::unique_ptr<PhysicalDeviceInfo> m_physical_device_info;
 };
 } // namespace vulkan
 } // namespace core

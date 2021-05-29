@@ -29,6 +29,64 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(
 
 namespace core {
 namespace vulkan {
+Context::QueueFamilyIndices::QueueFamilyIndices(
+    const vk::PhysicalDevice &device, const vk::SurfaceKHR &surface) {
+  const auto queue_families(device.getQueueFamilyProperties());
+
+  int i = 0;
+  for (const auto &qf : queue_families) {
+    if (qf.queueFlags & vk::QueueFlagBits::eGraphics) {
+      graphics_family = i;
+    }
+
+    const auto present_support = device.getSurfaceSupportKHR(i, surface);
+    if (present_support) {
+      present_family = i;
+    }
+
+    if (is_complete()) {
+      break;
+    }
+
+    i++;
+  }
+}
+
+Context::SwapChainSupportDetails::SwapChainSupportDetails(
+    const vk::PhysicalDevice &device, const vk::SurfaceKHR &surface)
+    : capabilities(device.getSurfaceCapabilitiesKHR(surface)),
+      formats(device.getSurfaceFormatsKHR(surface)),
+      present_modes(device.getSurfacePresentModesKHR(surface)) {}
+
+Context::PhysicalDeviceInfo::PhysicalDeviceInfo(
+    const vk::PhysicalDevice &device, const vk::SurfaceKHR &surface)
+    : properties(device.getProperties()),
+      depth_format(_find_depth_format(device)),
+      queue_family_indices(device, surface),
+      swap_chain_support_details(device, surface) {
+  const auto format_pros(device.getFormatProperties(vk::Format::eR8G8B8A8Srgb));
+  linear_blitting_support =
+      (format_pros.optimalTilingFeatures &
+       vk::FormatFeatureFlagBits::eSampledImageFilterLinear) !=
+      static_cast<vk::FormatFeatureFlagBits>(0);
+}
+
+vk::Format Context::PhysicalDeviceInfo::_find_supported_format(
+    const vk::PhysicalDevice &device, const std::vector<vk::Format> &candidates,
+    vk::ImageTiling tiling, vk::FormatFeatureFlags features) {
+  for (const auto &format : candidates) {
+    const auto props{device.getFormatProperties(format)};
+    if (tiling == vk::ImageTiling::eLinear &&
+        (props.linearTilingFeatures & features) == features) {
+      return format;
+    } else if (tiling == vk::ImageTiling::eOptimal &&
+               (props.optimalTilingFeatures & features) == features) {
+      return format;
+    }
+  }
+
+  throw VulkanKraftException("failed to find supported format");
+}
 
 Context::Context(Window &window)
     : m_current_frame(0), m_framebuffer_resized(false) {
@@ -183,35 +241,6 @@ std::optional<RenderCall> Context::render_begin() {
       m_in_flight_fences[m_current_frame]);
 }
 
-Context::QueueFamilyIndices::QueueFamilyIndices(
-    const vk::PhysicalDevice &device, const vk::SurfaceKHR &surface) {
-  const auto queue_families(device.getQueueFamilyProperties());
-
-  int i = 0;
-  for (const auto &qf : queue_families) {
-    if (qf.queueFlags & vk::QueueFlagBits::eGraphics) {
-      graphics_family = i;
-    }
-
-    const auto present_support = device.getSurfaceSupportKHR(i, surface);
-    if (present_support) {
-      present_family = i;
-    }
-
-    if (is_complete()) {
-      break;
-    }
-
-    i++;
-  }
-}
-
-Context::SwapChainSupportDetails::SwapChainSupportDetails(
-    const vk::PhysicalDevice &device, const vk::SurfaceKHR &surface)
-    : capabilities(device.getSurfaceCapabilitiesKHR(surface)),
-      formats(device.getSurfaceFormatsKHR(surface)),
-      present_modes(device.getSurfacePresentModesKHR(surface)) {}
-
 void Context::_populate_debug_messenger_create_info(
     vk::DebugUtilsMessengerCreateInfoEXT &di) noexcept {
   di.messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
@@ -304,24 +333,6 @@ bool Context::_has_validation_layer_support(
   }
 
   return true;
-}
-
-vk::Format
-Context::_find_supported_format(const std::vector<vk::Format> &candidates,
-                                vk::ImageTiling tiling,
-                                vk::FormatFeatureFlags features) const {
-  for (const auto &format : candidates) {
-    const auto props{m_physical_device.getFormatProperties(format)};
-    if (tiling == vk::ImageTiling::eLinear &&
-        (props.linearTilingFeatures & features) == features) {
-      return format;
-    } else if (tiling == vk::ImageTiling::eOptimal &&
-               (props.optimalTilingFeatures & features) == features) {
-      return format;
-    }
-  }
-
-  throw VulkanKraftException("failed to find supported format");
 }
 
 vk::CommandBuffer
@@ -474,12 +485,15 @@ void Context::_pick_physical_device(
   if (!m_physical_device) {
     throw VulkanKraftException("failed to find a suitable GPU");
   }
+
+  m_physical_device_info =
+      std::make_unique<PhysicalDeviceInfo>(m_physical_device, m_surface);
 }
 
 void Context::_create_logical_device(
     const std::vector<const char *> &extensions,
     const std::vector<const char *> &validation_layers) {
-  const QueueFamilyIndices indices(m_physical_device, m_surface);
+  const auto &indices = m_physical_device_info->queue_family_indices;
   std::vector<vk::DeviceQueueCreateInfo> qis;
   std::set<uint32_t> unique_queue_families = {indices.graphics_family.value(),
                                               indices.present_family.value()};
@@ -520,7 +534,7 @@ void Context::_create_logical_device(
 }
 
 void Context::_create_command_pool() {
-  const QueueFamilyIndices indices(m_physical_device, m_surface);
+  const auto &indices = m_physical_device_info->queue_family_indices;
 
   vk::CommandPoolCreateInfo ci;
   ci.queueFamilyIndex = indices.graphics_family.value();
@@ -581,6 +595,8 @@ void Context::_create_sync_objects() {
 void Context::_handle_framebuffer_resize() {
   m_device.waitIdle();
 
+  m_physical_device_info->swap_chain_support_details =
+      SwapChainSupportDetails(m_physical_device, m_surface);
   m_swap_chain->recreate(get_msaa_samples());
 }
 
