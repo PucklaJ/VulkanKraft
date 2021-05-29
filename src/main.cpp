@@ -88,10 +88,8 @@ int main(int args, char *argv[]) {
         shader.update_uniform_buffer(render_call.value(), ubo0);
         shader.bind(render_call.value());
         vertex_buffer.bind(render_call.value());
-        render_call.value().render_vertices(vertices.size());
+        render_call->render_vertices(vertices.size());
       }
-
-      context.render_end();
 
       std::this_thread::sleep_for(10ms);
     }

@@ -3,13 +3,21 @@
 
 namespace core {
 namespace vulkan {
+class Context;
+
 class RenderCall {
 public:
-  friend class Context;
-
-  inline const size_t &get_swap_chain_image_index() const {
+  inline const uint32_t &get_swap_chain_image_index() const {
     return m_image_index;
   }
+
+  RenderCall(Context *context, const vk::CommandBuffer &graphics_buffer,
+             const vk::Framebuffer &framebuffer,
+             const uint32_t swap_chain_image_index,
+             const vk::Semaphore &image_available_semaphore,
+             const vk::Semaphore &render_finished_semaphore,
+             const vk::Fence &in_flight_fence);
+  ~RenderCall();
 
   void render_vertices(const uint32_t num_vertices,
                        const uint32_t first_vertex = 0) const noexcept;
@@ -20,11 +28,13 @@ public:
   void bind_buffer(const vk::Buffer &buffer, vk::BufferUsageFlags usage) const;
 
 private:
-  RenderCall(const vk::CommandBuffer &graphics_buffer,
-             const size_t swap_chain_image_index);
-
   const vk::CommandBuffer &m_graphics_buffer;
-  const size_t m_image_index;
+  const uint32_t m_image_index;
+  const vk::Semaphore &m_image_available_semaphore;
+  const vk::Semaphore &m_render_finished_semaphore;
+  const vk::Fence &m_in_flight_fence;
+
+  Context *m_context;
 };
 } // namespace vulkan
 } // namespace core

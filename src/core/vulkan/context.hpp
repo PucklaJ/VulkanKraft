@@ -13,6 +13,7 @@ namespace vulkan {
 class Context {
 public:
   friend class SwapChain;
+  friend class RenderCall;
 
   static PFN_vkCreateDebugUtilsMessengerEXT pfnVkCreateDebugUtilsMessengerEXT;
   static PFN_vkDestroyDebugUtilsMessengerEXT pfnVkDestroyDebugUtilsMessengerEXT;
@@ -55,7 +56,6 @@ public:
 
   // ***** render methods ********
   std::optional<RenderCall> render_begin();
-  void render_end();
   // *****************************
 
 private:

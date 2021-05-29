@@ -176,90 +176,11 @@ std::optional<RenderCall> Context::render_begin() {
   }
   m_images_in_flight[image_index] = m_in_flight_fences[m_current_frame];
 
-  m_graphic_command_buffers[image_index].begin(vk::CommandBufferBeginInfo());
-
-  vk::RenderPassBeginInfo rbi;
-  rbi.renderPass = m_swap_chain->get_render_pass();
-  rbi.framebuffer = framebuffer;
-  rbi.renderArea.extent = m_swap_chain->get_extent();
-
-  std::array<vk::ClearValue, 2> clear_values;
-  clear_values[0].color = std::array{
-      0.0f,
-      0.0f,
-      0.0f,
-      1.0f,
-  };
-  clear_values[1].depthStencil.depth = 1.0f;
-  rbi.clearValueCount = static_cast<uint32_t>(clear_values.size());
-  rbi.pClearValues = clear_values.data();
-
-  m_graphic_command_buffers[image_index].beginRenderPass(
-      rbi, vk::SubpassContents::eInline);
-
-  vk::Viewport view;
-  view.width = static_cast<float>(m_swap_chain->get_extent().width);
-  view.height = static_cast<float>(m_swap_chain->get_extent().height);
-  view.minDepth = 0.0f;
-  view.maxDepth = 1.0f;
-  view.x = 0.0f;
-  view.y = 0.0f;
-
-  vk::Rect2D scissor;
-  scissor.extent = m_swap_chain->get_extent();
-
-  m_graphic_command_buffers[image_index].setViewport(0, view);
-  m_graphic_command_buffers[image_index].setScissor(0, scissor);
-
-  return RenderCall(m_graphic_command_buffers[image_index], image_index);
-}
-
-void Context::render_end() {
-  if (!m_swap_chain->get_current_image()) {
-    return;
-  }
-  const auto image_index = m_swap_chain->get_current_image().value();
-  m_graphic_command_buffers[image_index].endRenderPass();
-  m_graphic_command_buffers[image_index].end();
-
-  vk::SubmitInfo si;
-
-  const auto wait_sems =
-      std::array{m_image_available_semaphores[m_current_frame]};
-  const auto wait_stages = std::array<vk::PipelineStageFlags, wait_sems.size()>{
-      vk::PipelineStageFlagBits::eColorAttachmentOutput};
-  si.waitSemaphoreCount = static_cast<uint32_t>(wait_sems.size());
-  si.pWaitSemaphores = wait_sems.data();
-  si.pWaitDstStageMask = wait_stages.data();
-  si.commandBufferCount = 1;
-  si.pCommandBuffers = &m_graphic_command_buffers[image_index];
-
-  const auto sig_sems =
-      std::array{m_render_finished_semaphores[m_current_frame]};
-  si.signalSemaphoreCount = static_cast<uint32_t>(sig_sems.size());
-  si.pSignalSemaphores = sig_sems.data();
-
-  m_device.resetFences(m_in_flight_fences[m_current_frame]);
-
-  m_graphics_queue.submit(si, m_in_flight_fences[m_current_frame]);
-
-  vk::PresentInfoKHR pi;
-  pi.waitSemaphoreCount = static_cast<uint32_t>(sig_sems.size());
-  pi.pWaitSemaphores = sig_sems.data();
-
-  const auto swap_chains = std::array{m_swap_chain->get_handle()};
-  pi.swapchainCount = static_cast<uint32_t>(swap_chains.size());
-  pi.pSwapchains = swap_chains.data();
-  pi.pImageIndices = &image_index;
-
-  if (const auto r = m_present_queue.presentKHR(pi);
-      r == vk::Result::eErrorOutOfDateKHR || r == vk::Result::eSuboptimalKHR ||
-      m_framebuffer_resized) {
-    _handle_framebuffer_resize();
-    m_framebuffer_resized = false;
-  }
-
-  m_current_frame = (m_current_frame + 1) % _max_images_in_flight;
+  return std::make_optional<RenderCall>(
+      this, m_graphic_command_buffers[image_index], framebuffer, image_index,
+      m_image_available_semaphores[m_current_frame],
+      m_render_finished_semaphores[m_current_frame],
+      m_in_flight_fences[m_current_frame]);
 }
 
 Context::QueueFamilyIndices::QueueFamilyIndices(
