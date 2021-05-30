@@ -1,5 +1,5 @@
 set_project("VulkanKraft")
-add_requires("glfw", "glm")
+add_requires("glfw", "glm", "stb")
 
 rule("shader")
     set_extensions(".vert", ".frag", ".glsl")

@@ -1,6 +1,8 @@
 #include "mesh.hpp"
 #include <array>
 #include <cstdlib>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 namespace chunk {
 Mesh::Vertex::Vertex(float x, float y, float z, float u, float v)
@@ -12,15 +14,17 @@ Mesh::Vertex::Vertex(float x, float y, float z, float u, float v)
   GlobalUniform global;
   global.proj_view = glm::mat4(1.0f);
 
-  constexpr uint32_t texture_width = 16, texture_height = 16;
-  std::array<uint8_t, texture_width * texture_height * 4> texture_data;
-  std::generate(texture_data.begin(), texture_data.end(),
-                []() { return static_cast<uint8_t>(rand() % 256); });
+  int texture_width, texture_height, texture_channels;
+  constexpr char texture_file_name[] = "textures/block.png";
+  void *texture_data =
+      stbi_load(texture_file_name, &texture_width, &texture_height,
+                &texture_channels, STBI_rgb_alpha);
   auto texture = ::core::Texture::Builder()
                      .dimensions(texture_width, texture_height)
                      .filter(vk::Filter::eNearest)
                      .mip_maps()
-                     .build(context, texture_data.data());
+                     .build(context, texture_data);
+  stbi_image_free(texture_data);
 
   auto shader = ::core::Shader::Builder()
                     .vertex_attribute<glm::vec3>()
