@@ -58,6 +58,10 @@ void Mesh::_create_cube(std::vector<Mesh::Vertex> &vertices,
                         const bool front_face, const bool back_face,
                         const bool left_face, const bool right_face,
                         const bool top_face, const bool bot_face) {
+  if (!(front_face || back_face || left_face || right_face || top_face ||
+        bot_face))
+    return;
+
   vertices.reserve(vertices.size() + 8);
 
   const auto i{vertices.size()};
