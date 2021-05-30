@@ -57,14 +57,29 @@ void Mesh::_create_cube(std::vector<Mesh::Vertex> &vertices,
   vertices.reserve(vertices.size() + 8);
 
   const auto i{vertices.size()};
-  vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + -0.5f, 0.0f, 1.0f);
-  vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + -0.5f, 1.0f, 1.0f);
-  vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + -0.5f, 1.0f, 0.0f);
-  vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + -0.5f, 1.0f, 1.0f);
-  vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + 0.5f, 0.0f, 1.0f);
-  vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + 0.5f, 0.0f, 0.0f);
-  vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + 0.5f, 1.0f, 0.0f);
-  vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + 0.5f, 1.0f, 1.0f);
+  vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + 0.5f, 0.0f, 1.0f);  // 0
+  vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + 0.5f, 1.0f, 1.0f);   // 1
+  vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + 0.5f, 1.0f, 0.0f);    // 2
+  vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + 0.5f, 0.0f, 0.0f);   // 3
+  vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + -0.5f, 1.0f, 1.0f); // 4
+  vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + -0.5f, 0.0f, 1.0f);  // 5
+  vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + -0.5f, 0.0f, 0.0f);   // 6
+  vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + -0.5f, 1.0f, 0.0f);  // 7
+  vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + 0.5f, 0.0f, 1.0f);   // 8
+  vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + 0.5f, 1.0f, 1.0f);    // 9
+  vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + -0.5f, 1.0f, 0.0f); // 10
+  vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + -0.5f, 0.0f,
+                        0.0f);                                             // 11
+  vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + 0.5f, 1.0f, 1.0f); // 12
+  vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + 0.5f, 0.0f, 1.0f);  // 13
+  vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + -0.5f, 0.0f, 0.0f); // 14
+  vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + -0.5f, 1.0f,
+                        0.0f);                                             // 15
+  vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + -0.5f, 1.0f, 1.0f); // 16
+  vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + 0.5f, 0.0f, 0.0f);   // 17
+  vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + -0.5f, 0.0f,
+                        1.0f);                                            // 18
+  vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + 0.5f, 1.0f, 0.0f); // 19
 
   if (front_face) {
     indices.reserve(indices.size() + 6);
@@ -78,52 +93,52 @@ void Mesh::_create_cube(std::vector<Mesh::Vertex> &vertices,
 
   if (back_face) {
     indices.reserve(indices.size() + 6);
-    indices.emplace_back(i + 6);
     indices.emplace_back(i + 5);
     indices.emplace_back(i + 4);
-    indices.emplace_back(i + 4);
+    indices.emplace_back(i + 7);
     indices.emplace_back(i + 7);
     indices.emplace_back(i + 6);
+    indices.emplace_back(i + 5);
   }
 
   if (right_face) {
     indices.reserve(indices.size() + 6);
-    indices.emplace_back(i + 1);
-    indices.emplace_back(i + 5);
-    indices.emplace_back(i + 6);
-    indices.emplace_back(i + 6);
-    indices.emplace_back(i + 2);
-    indices.emplace_back(i + 1);
+    indices.emplace_back(i + 13);
+    indices.emplace_back(i + 16);
+    indices.emplace_back(i + 10);
+    indices.emplace_back(i + 10);
+    indices.emplace_back(i + 17);
+    indices.emplace_back(i + 13);
   }
 
   if (left_face) {
     indices.reserve(indices.size() + 6);
-    indices.emplace_back(i + 4);
-    indices.emplace_back(i + 0);
-    indices.emplace_back(i + 3);
-    indices.emplace_back(i + 3);
-    indices.emplace_back(i + 7);
-    indices.emplace_back(i + 4);
+    indices.emplace_back(i + 18);
+    indices.emplace_back(i + 12);
+    indices.emplace_back(i + 19);
+    indices.emplace_back(i + 19);
+    indices.emplace_back(i + 11);
+    indices.emplace_back(i + 18);
   }
 
   if (top_face) {
     indices.reserve(indices.size() + 6);
-    indices.emplace_back(i + 3);
-    indices.emplace_back(i + 2);
-    indices.emplace_back(i + 6);
-    indices.emplace_back(i + 6);
-    indices.emplace_back(i + 7);
-    indices.emplace_back(i + 3);
+    indices.emplace_back(i + 8);
+    indices.emplace_back(i + 9);
+    indices.emplace_back(i + 10);
+    indices.emplace_back(i + 10);
+    indices.emplace_back(i + 11);
+    indices.emplace_back(i + 8);
   }
 
   if (bot_face) {
     indices.reserve(indices.size() + 6);
-    indices.emplace_back(i + 1);
-    indices.emplace_back(i + 0);
-    indices.emplace_back(i + 4);
-    indices.emplace_back(i + 4);
-    indices.emplace_back(i + 5);
-    indices.emplace_back(i + 1);
+    indices.emplace_back(i + 15);
+    indices.emplace_back(i + 14);
+    indices.emplace_back(i + 13);
+    indices.emplace_back(i + 13);
+    indices.emplace_back(i + 12);
+    indices.emplace_back(i + 15);
   }
 }
 }; // namespace chunk

@@ -83,11 +83,11 @@ private:
     left_face = x == 0 || !blocks[x - 1][z][y];
     right_face = x == width - 1 || !blocks[x + 1][z][y];
 
-    back_face = z == depth - 1 || !blocks[x][z + 1][y];
-    front_face = z == 0 || !blocks[x][z - 1][y];
+    front_face = z == depth - 1 || !blocks[x][z + 1][y];
+    back_face = z == 0 || !blocks[x][z - 1][y];
 
-    bot_face = y == height - 1 || !blocks[x][z][y + 1];
-    top_face = y == 0 || !blocks[x][z][y - 1];
+    top_face = y == height - 1 || !blocks[x][z][y + 1];
+    bot_face = y == 0 || !blocks[x][z][y - 1];
   }
 
   std::unique_ptr<::core::vulkan::Buffer> m_vertex_buffer;
