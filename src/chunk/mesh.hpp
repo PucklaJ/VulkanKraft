@@ -23,6 +23,7 @@ public:
   Mesh(const ::core::vulkan::Context &context);
 
   void render(const ::core::vulkan::RenderCall &render_call);
+
   template <size_t width, size_t depth, size_t height>
   void generate(const std::array<std::array<std::array<bool, height>, depth>,
                                  width> &blocks,
@@ -36,10 +37,22 @@ public:
       for (size_t z = 0; z < depth; z++) {
         for (size_t y = 0; y < height; y++) {
           if (blocks[x][z][y]) {
+            bool front_face;
+            bool back_face;
+            bool right_face;
+            bool left_face;
+            bool top_face;
+            bool bot_face;
+
+            _check_faces_of_block(blocks, x, y, z, front_face, back_face,
+                                  right_face, left_face, top_face, bot_face);
+
             _create_cube(vertices, indices,
                          glm::vec3(static_cast<float>(x) + pos.x + 0.5f,
                                    static_cast<float>(y) + pos.y + 0.5f,
-                                   static_cast<float>(z) + pos.z + 0.5f));
+                                   static_cast<float>(z) + pos.z + 0.5f),
+                         front_face, back_face, left_face, right_face, top_face,
+                         bot_face);
           }
         }
       }
@@ -57,6 +70,22 @@ private:
                const bool back_face = true, const bool left_face = true,
                const bool right_face = true, const bool top_face = true,
                const bool bot_face = true);
+  template <size_t width, size_t depth, size_t height>
+  static inline void _check_faces_of_block(
+      const std::array<std::array<std::array<bool, height>, depth>, width>
+          &blocks,
+      const size_t x, const size_t y, const size_t z, bool &front_face,
+      bool &back_face, bool &right_face, bool &left_face, bool &top_face,
+      bool &bot_face) {
+    left_face = x == 0 || !blocks[x - 1][z][y];
+    right_face = x == width - 1 || !blocks[x + 1][z][y];
+
+    back_face = z == depth - 1 || !blocks[x][z + 1][y];
+    front_face = z == 0 || !blocks[x][z - 1][y];
+
+    bot_face = y == height - 1 || !blocks[x][z][y + 1];
+    top_face = y == 0 || !blocks[x][z][y - 1];
+  }
 
   std::unique_ptr<::core::vulkan::Buffer> m_vertex_buffer;
   std::unique_ptr<::core::vulkan::Buffer> m_index_buffer;
