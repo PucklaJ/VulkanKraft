@@ -36,6 +36,8 @@ int main(int args, char *argv[]) {
       projection_matrix[1][1] *= -1.0f;
       chunk_mesh_global.proj_view = projection_matrix * view_matrix;
 
+      window.reset_keys();
+
       if (const auto _render_call(context.render_begin()); _render_call) {
         const auto &render_call{*_render_call};
         chunk_mesh_shader.update_uniform_buffer(render_call, chunk_mesh_global);
