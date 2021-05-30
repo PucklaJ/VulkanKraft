@@ -14,9 +14,20 @@ class Window {
 public:
   class Mouse {
   public:
+    friend class Window;
+
     Mouse() : screen_position(0.0f, 0.0f) {}
 
     glm::vec2 screen_position;
+
+    bool button_is_pressed(int button) const;
+    bool button_just_pressed(int button) const;
+
+  private:
+    void _on_mouse_button(int button, int action, int mods);
+
+    std::map<int, bool> m_pressed_buttons;
+    std::map<int, bool> m_previous_pressed_buttons;
   };
 
   static void on_framebuffer_resize(GLFWwindow *window, int width, int height);
@@ -43,11 +54,16 @@ public:
   void reset_keys();
   bool key_is_pressed(int key) const;
   bool key_just_pressed(int key) const;
+  void lock_cursor();
+  void release_cursor();
+  bool cursor_is_locked();
 
 private:
   static void _on_key_callback(GLFWwindow *window, int key, int scancode,
                                int action, int mods);
   static void _on_cursor_pos_callback(GLFWwindow *window, double x, double y);
+  static void _on_mouse_button_callback(GLFWwindow *window, int button,
+                                        int action, int mods);
 
   void _on_key(int key, int scancode, int action, int mods);
   void _on_cursor_position(double x, double y);
