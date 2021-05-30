@@ -18,48 +18,102 @@ Mesh::Vertex::Vertex(float x, float y, float z) : position(x, y, z) {}
 }
 
 Mesh::Mesh(const ::core::vulkan::Context &context) {
-  const auto vertices =
-      std::array{Vertex(-0.5f, 0.5f, -0.5f), Vertex(0.5f, 0.5f, -0.5f),
-                 Vertex(0.5f, -0.5f, -0.5f), Vertex(-0.5f, -0.5f, -0.5f),
-                 Vertex(-0.5f, 0.5f, 0.5f),  Vertex(0.5f, 0.5f, 0.5f),
-                 Vertex(0.5f, -0.5f, 0.5f),  Vertex(-0.5f, -0.5f, 0.5f)};
-  const auto indices =
-      std::array{static_cast<uint32_t>(0), static_cast<uint32_t>(1),
-                 static_cast<uint32_t>(2), static_cast<uint32_t>(2),
-                 static_cast<uint32_t>(3), static_cast<uint32_t>(0),
+  std::vector<Vertex> vertices;
+  std::vector<uint32_t> indices;
 
-                 static_cast<uint32_t>(6), static_cast<uint32_t>(5),
-                 static_cast<uint32_t>(4), static_cast<uint32_t>(4),
-                 static_cast<uint32_t>(7), static_cast<uint32_t>(6),
+  _create_cube(vertices, indices, glm::vec3(0.0f, 0.0f, 0.0f));
 
-                 static_cast<uint32_t>(1), static_cast<uint32_t>(5),
-                 static_cast<uint32_t>(6), static_cast<uint32_t>(6),
-                 static_cast<uint32_t>(2), static_cast<uint32_t>(1),
-
-                 static_cast<uint32_t>(4), static_cast<uint32_t>(0),
-                 static_cast<uint32_t>(3), static_cast<uint32_t>(3),
-                 static_cast<uint32_t>(7), static_cast<uint32_t>(4),
-
-                 static_cast<uint32_t>(3), static_cast<uint32_t>(2),
-                 static_cast<uint32_t>(6), static_cast<uint32_t>(6),
-                 static_cast<uint32_t>(7), static_cast<uint32_t>(3),
-
-                 static_cast<uint32_t>(1), static_cast<uint32_t>(0),
-                 static_cast<uint32_t>(4), static_cast<uint32_t>(4),
-                 static_cast<uint32_t>(5), static_cast<uint32_t>(1)};
-  num_indices = static_cast<uint32_t>(indices.size());
+  m_num_indices = indices.size();
 
   m_vertex_buffer = std::make_unique<::core::vulkan::Buffer>(
-      context, vk::BufferUsageFlagBits::eVertexBuffer, sizeof(vertices),
-      vertices.data());
+      context, vk::BufferUsageFlagBits::eVertexBuffer,
+      sizeof(Vertex) * vertices.size(), vertices.data());
   m_index_buffer = std::make_unique<::core::vulkan::Buffer>(
-      context, vk::BufferUsageFlagBits::eIndexBuffer, sizeof(indices),
-      indices.data());
+      context, vk::BufferUsageFlagBits::eIndexBuffer,
+      sizeof(uint32_t) * indices.size(), indices.data());
 }
 
 void Mesh::render(const ::core::vulkan::RenderCall &render_call) {
   m_vertex_buffer->bind(render_call);
   m_index_buffer->bind(render_call);
-  render_call.render_indices(num_indices);
+  render_call.render_indices(m_num_indices);
+}
+
+void Mesh::_create_cube(std::vector<Mesh::Vertex> &vertices,
+                        std::vector<uint32_t> &indices, const glm::vec3 &p,
+                        const bool front_face, const bool back_face,
+                        const bool left_face, const bool right_face,
+                        const bool top_face, const bool bot_face) {
+  vertices.reserve(vertices.size() + 8);
+
+  const auto i{vertices.size()};
+  vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + -0.5f);
+  vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + -0.5f);
+  vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + -0.5f);
+  vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + -0.5f);
+  vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + 0.5f);
+  vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + 0.5f);
+  vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + 0.5f);
+  vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + 0.5f);
+
+  if (front_face) {
+    indices.reserve(indices.size() + 6);
+    indices.emplace_back(i + 0);
+    indices.emplace_back(i + 1);
+    indices.emplace_back(i + 2);
+    indices.emplace_back(i + 2);
+    indices.emplace_back(i + 3);
+    indices.emplace_back(i + 0);
+  }
+
+  if (back_face) {
+    indices.reserve(indices.size() + 6);
+    indices.emplace_back(i + 6);
+    indices.emplace_back(i + 5);
+    indices.emplace_back(i + 4);
+    indices.emplace_back(i + 4);
+    indices.emplace_back(i + 7);
+    indices.emplace_back(i + 6);
+  }
+
+  if (right_face) {
+    indices.reserve(indices.size() + 6);
+    indices.emplace_back(i + 1);
+    indices.emplace_back(i + 5);
+    indices.emplace_back(i + 6);
+    indices.emplace_back(i + 6);
+    indices.emplace_back(i + 2);
+    indices.emplace_back(i + 1);
+  }
+
+  if (left_face) {
+    indices.reserve(indices.size() + 6);
+    indices.emplace_back(i + 4);
+    indices.emplace_back(i + 0);
+    indices.emplace_back(i + 3);
+    indices.emplace_back(i + 3);
+    indices.emplace_back(i + 7);
+    indices.emplace_back(i + 4);
+  }
+
+  if (top_face) {
+    indices.reserve(indices.size() + 6);
+    indices.emplace_back(i + 3);
+    indices.emplace_back(i + 2);
+    indices.emplace_back(i + 6);
+    indices.emplace_back(i + 6);
+    indices.emplace_back(i + 7);
+    indices.emplace_back(i + 3);
+  }
+
+  if (bot_face) {
+    indices.reserve(indices.size() + 6);
+    indices.emplace_back(i + 1);
+    indices.emplace_back(i + 0);
+    indices.emplace_back(i + 4);
+    indices.emplace_back(i + 4);
+    indices.emplace_back(i + 5);
+    indices.emplace_back(i + 1);
+  }
 }
 }; // namespace chunk

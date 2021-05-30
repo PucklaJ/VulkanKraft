@@ -25,8 +25,15 @@ public:
   void render(const ::core::vulkan::RenderCall &render_call);
 
 private:
+  static void
+  _create_cube(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices,
+               const glm::vec3 &position, const bool front_face = true,
+               const bool back_face = true, const bool left_face = true,
+               const bool right_face = true, const bool top_face = true,
+               const bool bot_face = true);
+
   std::unique_ptr<::core::vulkan::Buffer> m_vertex_buffer;
   std::unique_ptr<::core::vulkan::Buffer> m_index_buffer;
-  uint32_t num_indices;
+  uint32_t m_num_indices;
 };
 } // namespace chunk
