@@ -18,19 +18,10 @@ Mesh::Vertex::Vertex(float x, float y, float z) : position(x, y, z) {}
 }
 
 Mesh::Mesh(const ::core::vulkan::Context &context) {
-  std::vector<Vertex> vertices;
-  std::vector<uint32_t> indices;
-
-  _create_cube(vertices, indices, glm::vec3(0.0f, 0.0f, 0.0f));
-
-  m_num_indices = indices.size();
-
   m_vertex_buffer = std::make_unique<::core::vulkan::Buffer>(
-      context, vk::BufferUsageFlagBits::eVertexBuffer,
-      sizeof(Vertex) * vertices.size(), vertices.data());
+      context, vk::BufferUsageFlagBits::eVertexBuffer, 1);
   m_index_buffer = std::make_unique<::core::vulkan::Buffer>(
-      context, vk::BufferUsageFlagBits::eIndexBuffer,
-      sizeof(uint32_t) * indices.size(), indices.data());
+      context, vk::BufferUsageFlagBits::eIndexBuffer, 1);
 }
 
 void Mesh::render(const ::core::vulkan::RenderCall &render_call) {

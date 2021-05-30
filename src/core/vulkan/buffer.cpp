@@ -10,51 +10,22 @@ Buffer::Buffer(const Context &context, vk::BufferUsageFlags usage,
                            ? static_cast<vk::BufferUsageFlagBits>(0)
                            : vk::BufferUsageFlagBits::eTransferDst)),
       m_context(context) {
-  vk::BufferCreateInfo bi;
-  bi.size = static_cast<vk::DeviceSize>(buffer_size);
-  bi.usage = m_usage;
-  bi.sharingMode = vk::SharingMode::eExclusive;
-
-  try {
-    m_handle = m_context.get_device().createBuffer(bi);
-  } catch (const std::runtime_error &e) {
-    throw VulkanKraftException(std::string("failed to create buffer: ") +
-                               e.what());
-  }
-
-  const auto mem_req =
-      m_context.get_device().getBufferMemoryRequirements(m_handle);
-  vk::MemoryAllocateInfo ai;
-  ai.allocationSize = mem_req.size;
-  ai.memoryTypeIndex = m_context.find_memory_type(
-      mem_req.memoryTypeBits,
-      (m_usage & vk::BufferUsageFlagBits::eUniformBuffer)
-          ? (vk::MemoryPropertyFlagBits::eHostVisible |
-             vk::MemoryPropertyFlagBits::eHostCoherent)
-          : vk::MemoryPropertyFlagBits::eDeviceLocal);
-  try {
-    m_memory = m_context.get_device().allocateMemory(ai);
-  } catch (const std::runtime_error &e) {
-    throw VulkanKraftException(
-        std::string("failed to allocate memory for buffer: ") + e.what());
-  }
-
-  m_context.get_device().bindBufferMemory(m_handle, m_memory, 0);
+  _create(buffer_size);
 
   if (data) {
     set_data(data, buffer_size);
   }
 }
 
-Buffer::~Buffer() {
-  m_context.get_device().waitIdle();
-
-  m_context.get_device().destroyBuffer(m_handle);
-  m_context.get_device().freeMemory(m_memory);
-}
+Buffer::~Buffer() { _destroy(); }
 
 void Buffer::set_data(const void *data, const size_t data_size,
                       const size_t offset) {
+  if (data_size != m_buffer_size) {
+    _destroy();
+    _create(data_size);
+  }
+
   if (m_usage & vk::BufferUsageFlagBits::eUniformBuffer) {
     // memcpy data directly to buffer
     try {
@@ -131,6 +102,48 @@ void Buffer::set_data(const void *data, const size_t data_size,
 
 void Buffer::bind(const RenderCall &render_call) const {
   render_call.bind_buffer(m_handle, m_usage);
+}
+
+void Buffer::_create(const vk::DeviceSize buffer_size) {
+  vk::BufferCreateInfo bi;
+  bi.size = static_cast<vk::DeviceSize>(buffer_size);
+  bi.usage = m_usage;
+  bi.sharingMode = vk::SharingMode::eExclusive;
+
+  try {
+    m_handle = m_context.get_device().createBuffer(bi);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(std::string("failed to create buffer: ") +
+                               e.what());
+  }
+
+  const auto mem_req =
+      m_context.get_device().getBufferMemoryRequirements(m_handle);
+  vk::MemoryAllocateInfo ai;
+  ai.allocationSize = mem_req.size;
+  ai.memoryTypeIndex = m_context.find_memory_type(
+      mem_req.memoryTypeBits,
+      (m_usage & vk::BufferUsageFlagBits::eUniformBuffer)
+          ? (vk::MemoryPropertyFlagBits::eHostVisible |
+             vk::MemoryPropertyFlagBits::eHostCoherent)
+          : vk::MemoryPropertyFlagBits::eDeviceLocal);
+  try {
+    m_memory = m_context.get_device().allocateMemory(ai);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string("failed to allocate memory for buffer: ") + e.what());
+  }
+
+  m_context.get_device().bindBufferMemory(m_handle, m_memory, 0);
+
+  m_buffer_size = buffer_size;
+}
+
+void Buffer::_destroy() {
+  m_context.get_device().waitIdle();
+
+  m_context.get_device().destroyBuffer(m_handle);
+  m_context.get_device().freeMemory(m_memory);
 }
 
 } // namespace vulkan

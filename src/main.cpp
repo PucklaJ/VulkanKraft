@@ -1,4 +1,4 @@
-#include "chunk/mesh.hpp"
+#include "chunk/chunk.hpp"
 #include "core/exception.hpp"
 #include "core/fps_timer.hpp"
 #include "core/log.hpp"
@@ -13,7 +13,7 @@ int main(int args, char *argv[]) {
   chunk::Mesh::GlobalUniform chunk_mesh_global;
   glm::mat4 projection_matrix;
   glm::mat4 view_matrix =
-      glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f),
+      glm::lookAt(glm::vec3(2.0f, 2.0f, 100.0f), glm::vec3(0.0f, 0.0f, 0.0f),
                   glm::vec3(0.0f, 1.0f, 0.0f));
 
   try {
@@ -21,7 +21,7 @@ int main(int args, char *argv[]) {
                         core::Settings::window_title);
     core::vulkan::Context context(window, settings);
     auto chunk_mesh_shader = chunk::Mesh::build_shader(context, settings);
-    chunk::Mesh chunk_mesh(context);
+    chunk::Chunk chunk_chunk(context, glm::vec3(0.0f, 0.0f, 0.0f));
 
     float current_time = 0.0f;
     while (!window.should_close()) {
@@ -40,7 +40,7 @@ int main(int args, char *argv[]) {
         const auto &render_call{*_render_call};
         chunk_mesh_shader.update_uniform_buffer(render_call, chunk_mesh_global);
         chunk_mesh_shader.bind(render_call);
-        chunk_mesh.render(render_call);
+        chunk_chunk.render(render_call);
       }
       current_time += timer.get_delta_time();
     }

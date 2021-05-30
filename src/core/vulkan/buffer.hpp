@@ -16,9 +16,13 @@ public:
   inline const vk::Buffer &get_handle() const { return m_handle; }
 
 private:
+  void _create(const vk::DeviceSize buffer_size);
+  void _destroy();
+
   vk::Buffer m_handle;
   vk::DeviceMemory m_memory;
   const vk::BufferUsageFlags m_usage;
+  vk::DeviceSize m_buffer_size;
 
   const Context &m_context;
 };

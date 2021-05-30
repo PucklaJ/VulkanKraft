@@ -23,6 +23,32 @@ public:
   Mesh(const ::core::vulkan::Context &context);
 
   void render(const ::core::vulkan::RenderCall &render_call);
+  template <size_t width, size_t depth, size_t height>
+  void generate(const std::array<std::array<std::array<bool, height>, depth>,
+                                 width> &blocks,
+                const glm::vec3 &pos) {
+    std::vector<Vertex> vertices;
+    vertices.reserve(depth * width * height * 8);
+    std::vector<uint32_t> indices;
+    indices.reserve(depth * width * height * 36);
+
+    for (size_t x = 0; x < width; x++) {
+      for (size_t z = 0; z < depth; z++) {
+        for (size_t y = 0; y < height; y++) {
+          if (blocks[x][z][y]) {
+            _create_cube(vertices, indices,
+                         glm::vec3(static_cast<float>(x) + pos.x + 0.5f,
+                                   static_cast<float>(y) + pos.y + 0.5f,
+                                   static_cast<float>(z) + pos.z + 0.5f));
+          }
+        }
+      }
+    }
+    m_vertex_buffer->set_data(vertices.data(),
+                              sizeof(Vertex) * vertices.size());
+    m_index_buffer->set_data(indices.data(), sizeof(uint32_t) * indices.size());
+    m_num_indices = indices.size();
+  }
 
 private:
   static void
