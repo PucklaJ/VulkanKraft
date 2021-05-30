@@ -24,9 +24,9 @@ RenderCall::RenderCall(Context *context,
 
   std::array<vk::ClearValue, 2> clear_values;
   clear_values[0].color = std::array{
-      0.0f,
-      0.0f,
-      0.0f,
+      0.0f / 255.0f,
+      136.0f / 255.0f,
+      255.0f / 255.0f,
       1.0f,
   };
   clear_values[1].depthStencil.depth = 1.0f;
