@@ -1,4 +1,5 @@
 #pragma once
+#include "../core/resource_hodler.hpp"
 #include "../core/shader.hpp"
 #include "../core/vulkan/buffer.hpp"
 #include <glm/glm.hpp>
@@ -9,16 +10,18 @@ class Mesh {
 public:
   class Vertex {
   public:
-    Vertex(float x, float y, float z);
+    Vertex(float x, float y, float z, float u, float v);
 
     glm::vec3 position;
+    glm::vec2 uv;
   };
   struct GlobalUniform {
     glm::mat4 proj_view;
   };
 
   static ::core::Shader build_shader(const ::core::vulkan::Context &context,
-                                     const ::core::Settings &settings);
+                                     const ::core::Settings &settings,
+                                     ::core::ResourceHodler &resource_hodler);
 
   Mesh(const ::core::vulkan::Context &context);
 

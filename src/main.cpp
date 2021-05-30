@@ -18,7 +18,10 @@ int main(int args, char *argv[]) {
     core::Window window(settings.window_width, settings.window_height,
                         core::Settings::window_title);
     core::vulkan::Context context(window, settings);
-    auto chunk_mesh_shader = chunk::Mesh::build_shader(context, settings);
+    core::ResourceHodler hodler(context);
+
+    auto chunk_mesh_shader =
+        chunk::Mesh::build_shader(context, settings, hodler);
 
     Player player(glm::vec3(0.0f, 0.0f, 100.0f));
     chunk::Chunk chunk_chunk(context, glm::vec3(0.0f, 0.0f, 0.0f));

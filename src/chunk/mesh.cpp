@@ -1,20 +1,39 @@
 #include "mesh.hpp"
 #include <array>
+#include <cstdlib>
 
 namespace chunk {
-Mesh::Vertex::Vertex(float x, float y, float z) : position(x, y, z) {}
+Mesh::Vertex::Vertex(float x, float y, float z, float u, float v)
+    : position(x, y, z), uv(u, v) {}
 
 ::core::Shader Mesh::build_shader(const ::core::vulkan::Context &context,
-                                  const ::core::Settings &settings) {
+                                  const ::core::Settings &settings,
+                                  ::core::ResourceHodler &resource_hodler) {
   GlobalUniform global;
   global.proj_view = glm::mat4(1.0f);
 
-  return ::core::Shader::Builder()
-      .vertex_attribute<glm::vec3>()
-      .vertex("shaders_spv/chunk_mesh.vert.spv")
-      .fragment("shaders_spv/chunk_mesh.frag.spv")
-      .uniform_buffer(vk::ShaderStageFlagBits::eVertex, global)
-      .build(context, settings);
+  constexpr uint32_t texture_width = 16, texture_height = 16;
+  std::array<uint8_t, texture_width * texture_height * 4> texture_data;
+  std::generate(texture_data.begin(), texture_data.end(),
+                []() { return static_cast<uint8_t>(rand() % 256); });
+  auto texture = ::core::Texture::Builder()
+                     .dimensions(texture_width, texture_height)
+                     .filter(vk::Filter::eNearest)
+                     .mip_maps()
+                     .build(context, texture_data.data());
+
+  auto shader = ::core::Shader::Builder()
+                    .vertex_attribute<glm::vec3>()
+                    .vertex_attribute<glm::vec2>()
+                    .vertex("shaders_spv/chunk_mesh.vert.spv")
+                    .fragment("shaders_spv/chunk_mesh.frag.spv")
+                    .uniform_buffer(vk::ShaderStageFlagBits::eVertex, global)
+                    .texture(texture)
+                    .build(context, settings);
+
+  resource_hodler.hodl_texture("chunk_mesh_texture", std::move(texture));
+
+  return shader;
 }
 
 Mesh::Mesh(const ::core::vulkan::Context &context) {
@@ -38,14 +57,14 @@ void Mesh::_create_cube(std::vector<Mesh::Vertex> &vertices,
   vertices.reserve(vertices.size() + 8);
 
   const auto i{vertices.size()};
-  vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + -0.5f);
-  vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + -0.5f);
-  vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + -0.5f);
-  vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + -0.5f);
-  vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + 0.5f);
-  vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + 0.5f);
-  vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + 0.5f);
-  vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + 0.5f);
+  vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + -0.5f, 0.0f, 1.0f);
+  vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + -0.5f, 1.0f, 1.0f);
+  vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + -0.5f, 1.0f, 0.0f);
+  vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + -0.5f, 1.0f, 1.0f);
+  vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + 0.5f, 0.0f, 1.0f);
+  vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + 0.5f, 0.0f, 0.0f);
+  vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + 0.5f, 1.0f, 0.0f);
+  vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + 0.5f, 1.0f, 1.0f);
 
   if (front_face) {
     indices.reserve(indices.size() + 6);

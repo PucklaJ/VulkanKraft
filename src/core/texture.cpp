@@ -28,11 +28,26 @@ Texture Texture::Builder::build(const vulkan::Context &context,
   return Texture(context, *this, data);
 }
 
+Texture::Texture(Texture &&rhs)
+    : m_image(std::move(rhs.m_image)),
+      m_image_view(std::move(rhs.m_image_view)),
+      m_memory(std::move(rhs.m_memory)), m_sampler(std::move(rhs.m_sampler)),
+      m_context(rhs.m_context) {
+  rhs.m_image = VK_NULL_HANDLE;
+  rhs.m_image_view = VK_NULL_HANDLE;
+  rhs.m_memory = VK_NULL_HANDLE;
+  rhs.m_sampler = VK_NULL_HANDLE;
+}
+
 Texture::~Texture() {
-  m_context.get_device().destroySampler(m_sampler);
-  m_context.get_device().destroyImageView(m_image_view);
-  m_context.get_device().destroyImage(m_image);
-  m_context.get_device().freeMemory(m_memory);
+  if (m_sampler)
+    m_context.get_device().destroySampler(m_sampler);
+  if (m_image_view)
+    m_context.get_device().destroyImageView(m_image_view);
+  if (m_image)
+    m_context.get_device().destroyImage(m_image);
+  if (m_memory)
+    m_context.get_device().freeMemory(m_memory);
 }
 
 Texture::Texture(const vulkan::Context &context,

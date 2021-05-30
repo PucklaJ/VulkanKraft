@@ -59,6 +59,7 @@ public:
     vk::SamplerMipmapMode m_mip_mode;
   };
 
+  Texture(Texture &&rhs);
   ~Texture();
 
   inline vk::DescriptorImageInfo create_descriptor_image_info() const {

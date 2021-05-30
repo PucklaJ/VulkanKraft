@@ -71,6 +71,7 @@ public:
     std::vector<const Texture *> m_textures;
   };
 
+  Shader(Shader &&rhs);
   ~Shader();
 
   template <typename T>

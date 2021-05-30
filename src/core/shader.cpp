@@ -44,11 +44,25 @@ Shader::Builder::_read_spv_file(std::filesystem::path file_name) {
   return data;
 }
 
+Shader::Shader(Shader &&rhs)
+    : m_pipeline(std::move(rhs.m_pipeline)),
+      m_uniform_buffers(std::move(rhs.m_uniform_buffers)),
+      m_descriptor_layout(std::move(rhs.m_descriptor_layout)),
+      m_descriptor_pool(std::move(rhs.m_descriptor_pool)),
+      m_descriptor_sets(std::move(rhs.m_descriptor_sets)),
+      m_context(rhs.m_context) {
+  rhs.m_uniform_buffers.clear();
+  rhs.m_descriptor_layout = VK_NULL_HANDLE;
+  rhs.m_descriptor_pool = VK_NULL_HANDLE;
+  rhs.m_descriptor_sets.clear();
+}
+
 Shader::~Shader() {
   m_pipeline.reset();
   if (m_descriptor_pool)
     m_context.get_device().destroyDescriptorPool(m_descriptor_pool);
-  m_context.get_device().destroyDescriptorSetLayout(m_descriptor_layout);
+  if (m_descriptor_layout)
+    m_context.get_device().destroyDescriptorSetLayout(m_descriptor_layout);
 }
 
 void Shader::bind(const vulkan::RenderCall &render_call) {
