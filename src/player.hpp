@@ -16,6 +16,8 @@ public:
 private:
   static constexpr float eye_height = 1.8f;
 
+  glm::vec3 _get_look_direction() const;
+
   glm::vec3 m_position;
   glm::vec2 m_rotation;
 
