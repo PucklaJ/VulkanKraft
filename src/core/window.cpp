@@ -20,8 +20,9 @@ void Window::Mouse::_on_mouse_button(int button, int action, int mods) {
 
 void Window::on_framebuffer_resize(GLFWwindow *window, int width, int height) {
   auto *win = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
-  win->m_fb_resize_cb(static_cast<uint32_t>(width),
-                      static_cast<uint32_t>(height));
+  for (auto &cb : win->m_fb_resize_callbacks) {
+    cb(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+  }
 }
 
 Window::Window(const uint32_t width, const uint32_t height, std::string title) {

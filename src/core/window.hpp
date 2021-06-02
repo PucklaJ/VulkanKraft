@@ -47,7 +47,7 @@ public:
   }
   inline void
   set_on_resize(std::function<void(uint32_t width, uint32_t height)> callback) {
-    m_fb_resize_cb = callback;
+    m_fb_resize_callbacks.emplace_back(callback);
   }
   inline const Mouse &get_mouse() const { return m_mouse; }
 
@@ -69,7 +69,8 @@ private:
   void _on_cursor_position(double x, double y);
 
   GLFWwindow *m_window;
-  std::function<void(uint32_t width, uint32_t height)> m_fb_resize_cb;
+  std::vector<std::function<void(uint32_t width, uint32_t height)>>
+      m_fb_resize_callbacks;
   std::map<int, bool> m_pressed_keys;
   std::map<int, bool> m_previous_pressed_keys;
   Mouse m_mouse;
