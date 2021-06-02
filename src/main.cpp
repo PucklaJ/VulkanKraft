@@ -3,6 +3,7 @@
 #include "core/fps_timer.hpp"
 #include "core/log.hpp"
 #include "core/settings.hpp"
+#include "core/text/font.hpp"
 #include "core/vulkan/context.hpp"
 #include "core/window.hpp"
 #include "player.hpp"
@@ -19,6 +20,8 @@ int main(int args, char *argv[]) {
                         core::Settings::window_title);
     core::vulkan::Context context(window, settings);
     core::ResourceHodler hodler(context);
+
+    core::text::Font font("/usr/share/fonts/TTF/DejaVuSans.ttf");
 
     auto chunk_mesh_shader =
         chunk::Mesh::build_shader(context, settings, hodler);

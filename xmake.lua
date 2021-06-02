@@ -49,9 +49,11 @@ target("vulkankraft")
   add_files("src/*.cpp", 
             "src/core/*.cpp",
             "src/core/vulkan/*.cpp",
+            "src/core/text/*.cpp",
             "src/chunk/*.cpp")
   add_headerfiles("src/*.hpp",
                   "src/core/*.hpp",
                   "src/core/vulkan/*.hpp",
+                  "src/core/text/*.hpp",
                   "src/chunk/*.hpp")
   add_files("shaders/*.vert", "shaders/*.frag")
