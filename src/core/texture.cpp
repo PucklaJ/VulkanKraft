@@ -8,7 +8,8 @@ Texture::Builder::Builder()
     : m_width(0), m_height(0), m_filter(vk::Filter::eLinear),
       m_address_mode(vk::SamplerAddressMode::eRepeat), m_max_anisotropy(0.0f),
       m_border_color(vk::BorderColor::eIntOpaqueBlack), m_mip_levels(1),
-      m_mip_mode(vk::SamplerMipmapMode::eLinear) {}
+      m_mip_mode(vk::SamplerMipmapMode::eLinear),
+      m_format(vk::Format::eR8G8B8A8Srgb) {}
 
 Texture Texture::Builder::build(const vulkan::Context &context,
                                 const void *data) {
@@ -39,15 +40,31 @@ Texture::Texture(Texture &&rhs)
   rhs.m_sampler = VK_NULL_HANDLE;
 }
 
-Texture::~Texture() {
-  if (m_sampler)
-    m_context.get_device().destroySampler(m_sampler);
-  if (m_image_view)
-    m_context.get_device().destroyImageView(m_image_view);
-  if (m_image)
-    m_context.get_device().destroyImage(m_image);
-  if (m_memory)
-    m_context.get_device().freeMemory(m_memory);
+Texture &Texture::operator=(Texture &&rhs) {
+  m_image = std::move(rhs.m_image);
+  m_image_view = std::move(rhs.m_image_view);
+  m_memory = std::move(rhs.m_memory);
+  m_sampler = std::move(rhs.m_sampler);
+
+  rhs.m_image = VK_NULL_HANDLE;
+  rhs.m_image_view = VK_NULL_HANDLE;
+  rhs.m_memory = VK_NULL_HANDLE;
+  rhs.m_sampler = VK_NULL_HANDLE;
+
+  return *this;
+}
+
+Texture::~Texture() { _destroy(); }
+
+void Texture::rebuild(const Texture::Builder &builder, const void *data) {
+  _destroy();
+
+  _create_image(builder, data);
+  if (builder.m_mip_levels > 1) {
+    _generate_mip_maps(builder);
+  }
+  _create_image_view(builder);
+  _create_sampler(builder);
 }
 
 Texture::Texture(const vulkan::Context &context,
@@ -70,7 +87,7 @@ void Texture::_create_image(const Texture::Builder &builder, const void *data) {
   ii.extent.depth = 1;
   ii.mipLevels = builder.m_mip_levels;
   ii.arrayLayers = 1;
-  ii.format = vk::Format::eR8G8B8A8Srgb;
+  ii.format = builder.m_format;
   ii.tiling = vk::ImageTiling::eOptimal;
   ii.initialLayout = vk::ImageLayout::eUndefined;
   ii.usage =
@@ -156,7 +173,7 @@ void Texture::_create_image(const Texture::Builder &builder, const void *data) {
 
   // Transistion image layout
   m_context.transition_image_layout(
-      m_image, vk::Format::eR8G8B8A8Srgb, vk::ImageLayout::eUndefined,
+      m_image, builder.m_format, vk::ImageLayout::eUndefined,
       vk::ImageLayout::eTransferDstOptimal, builder.m_mip_levels);
 
   // Copy staging buffer contents to image
@@ -193,10 +210,9 @@ void Texture::_create_image(const Texture::Builder &builder, const void *data) {
 
   if (builder.m_mip_levels == 1) {
     // Transistion to shader read only layout
-    m_context.transition_image_layout(m_image, vk::Format::eR8G8B8A8Srgb,
-                                      vk::ImageLayout::eTransferDstOptimal,
-                                      vk::ImageLayout::eShaderReadOnlyOptimal,
-                                      1);
+    m_context.transition_image_layout(
+        m_image, builder.m_format, vk::ImageLayout::eTransferDstOptimal,
+        vk::ImageLayout::eShaderReadOnlyOptimal, 1);
   }
 }
 
@@ -204,7 +220,7 @@ void Texture::_create_image_view(const Texture::Builder &builder) {
   vk::ImageViewCreateInfo vi;
   vi.image = m_image;
   vi.viewType = vk::ImageViewType::e2D;
-  vi.format = vk::Format::eR8G8B8A8Srgb;
+  vi.format = builder.m_format;
   vi.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
   vi.subresourceRange.baseMipLevel = 0;
   vi.subresourceRange.levelCount = builder.m_mip_levels;
@@ -333,4 +349,16 @@ void Texture::_generate_mip_maps(const Builder &builder) {
 
   m_context.end_single_time_graphics_commands(com_buf);
 }
+
+void Texture::_destroy() {
+  if (m_sampler)
+    m_context.get_device().destroySampler(m_sampler);
+  if (m_image_view)
+    m_context.get_device().destroyImageView(m_image_view);
+  if (m_image)
+    m_context.get_device().destroyImage(m_image);
+  if (m_memory)
+    m_context.get_device().freeMemory(m_memory);
+}
+
 } // namespace core

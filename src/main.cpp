@@ -4,6 +4,7 @@
 #include "core/log.hpp"
 #include "core/settings.hpp"
 #include "core/text/font.hpp"
+#include "core/text/text.hpp"
 #include "core/vulkan/context.hpp"
 #include "core/window.hpp"
 #include "player.hpp"
@@ -22,9 +23,12 @@ int main(int args, char *argv[]) {
     core::ResourceHodler hodler(context);
 
     core::text::Font font("/usr/share/fonts/TTF/DejaVuSans.ttf");
+    core::text::Text fps_text(context, font, L"60 FPS");
 
     auto chunk_mesh_shader =
         chunk::Mesh::build_shader(context, settings, hodler);
+    auto text_shader = core::text::Text::build_shader(context, settings,
+                                                      fps_text.get_texture());
 
     Player player(glm::vec3(0.0f, 0.0f, 100.0f));
     chunk::Chunk chunk_chunk(context, glm::vec3(0.0f, 0.0f, 0.0f));
@@ -52,6 +56,9 @@ int main(int args, char *argv[]) {
 
         chunk_mesh_shader.bind(render_call);
         chunk_chunk.render(render_call);
+
+        text_shader.bind(render_call);
+        fps_text.render(render_call);
       }
       current_time += timer.get_delta_time();
     }

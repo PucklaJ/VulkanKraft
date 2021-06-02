@@ -26,8 +26,10 @@ Font::Font(std::filesystem::path font_file_name) {
   }
 }
 
-std::vector<uint8_t> Font::create_bitmap(std::wstring text_string,
-                                         const float font_size) {
+std::vector<float> Font::create_bitmap(std::wstring text_string,
+                                       const float font_size,
+                                       size_t &complete_width,
+                                       size_t &complete_height) {
   // Initialise all font values
   const auto scale = stbtt_ScaleForPixelHeight(&m_font_info, font_size);
   int ascent, descent, line_gap;
@@ -90,8 +92,8 @@ std::vector<uint8_t> Font::create_bitmap(std::wstring text_string,
     }
   }
 
-  size_t complete_width = 0;
-  size_t complete_height = 0;
+  complete_width = 0;
+  complete_height = 0;
   size_t min_y = -1;
   // Get the max width and max height
   for (size_t i = 0; i < all_characters.bitmaps.size(); i++) {
@@ -112,7 +114,7 @@ std::vector<uint8_t> Font::create_bitmap(std::wstring text_string,
   complete_height -= min_y;
 
   // Allocate memory for the complete string
-  std::vector<uint8_t> complete_string(complete_width * complete_height);
+  std::vector<float> complete_string(complete_width * complete_height);
   // Write all bitmaps into the complete string
   for (size_t c = 0; c < all_characters.bitmaps.size(); c++) {
     const auto x = all_characters.x_positions[c];
@@ -127,7 +129,7 @@ std::vector<uint8_t> Font::create_bitmap(std::wstring text_string,
         const auto bitmap_index = i + j * all_characters.bitmaps[c].pixel_width;
 
         complete_string[complete_index] =
-            all_characters.bitmaps[c].pixels[bitmap_index];
+            all_characters.bitmaps[c].pixels[bitmap_index] / 255.0f;
       }
     }
   }

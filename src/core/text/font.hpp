@@ -12,8 +12,10 @@ class Font {
 public:
   Font(std::filesystem::path font_file_name);
 
-  std::vector<uint8_t> create_bitmap(std::wstring text_string,
-                                     const float font_size);
+  std::vector<float> create_bitmap(std::wstring text_string,
+                                   const float font_size,
+                                   size_t &complete_width,
+                                   size_t &complete_height);
 
 private:
   struct FontBitmap {

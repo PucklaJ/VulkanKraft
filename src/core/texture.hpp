@@ -46,6 +46,11 @@ public:
       return *this;
     }
 
+    inline Builder &format(const vk::Format format) {
+      m_format = format;
+      return *this;
+    }
+
     Texture build(const vulkan::Context &context, const void *data);
 
   private:
@@ -57,9 +62,11 @@ public:
     vk::BorderColor m_border_color;
     uint32_t m_mip_levels;
     vk::SamplerMipmapMode m_mip_mode;
+    vk::Format m_format;
   };
 
   Texture(Texture &&rhs);
+  Texture &operator=(Texture &&rhs);
   ~Texture();
 
   inline vk::DescriptorImageInfo create_descriptor_image_info() const {
@@ -70,6 +77,8 @@ public:
     return ii;
   }
 
+  void rebuild(const Builder &builder, const void *data);
+
 private:
   Texture(const vulkan::Context &context, const Builder &builder,
           const void *data);
@@ -78,6 +87,8 @@ private:
   void _create_image_view(const Builder &builder);
   void _create_sampler(const Builder &builder);
   void _generate_mip_maps(const Builder &builder);
+
+  void _destroy();
 
   vk::Image m_image;
   vk::ImageView m_image_view;
