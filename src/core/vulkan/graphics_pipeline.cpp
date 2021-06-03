@@ -6,14 +6,15 @@
 namespace core {
 namespace vulkan {
 GraphicsPipeline::GraphicsPipeline(
-    const Context &context, vk::DescriptorSetLayout descriptor_set_layout,
+    const Context &context,
+    std::vector<vk::DescriptorSetLayout> descriptor_set_layouts,
     const std::vector<uint8_t> &vertex_code,
     const std::vector<uint8_t> &fragment_code,
     vk::VertexInputBindingDescription vertex_binding,
     std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
     const vk::SampleCountFlagBits msaa_samples)
     : m_context(context) {
-  _create_handle(std::move(descriptor_set_layout), vertex_code, fragment_code,
+  _create_handle(std::move(descriptor_set_layouts), vertex_code, fragment_code,
                  std::move(vertex_binding), std::move(vertex_attributes),
                  msaa_samples);
 }
@@ -39,7 +40,7 @@ vk::ShaderModule GraphicsPipeline::_create_shader_module(
 }
 
 void GraphicsPipeline::_create_handle(
-    vk::DescriptorSetLayout descriptor_set_layout,
+    std::vector<vk::DescriptorSetLayout> descriptor_set_layouts,
     const std::vector<uint8_t> &vertex_code,
     const std::vector<uint8_t> &fragment_code,
     vk::VertexInputBindingDescription vertex_binding,
@@ -117,8 +118,8 @@ void GraphicsPipeline::_create_handle(
   cb_i.blendConstants.fill(0.0f);
 
   vk::PipelineLayoutCreateInfo pl_i;
-  pl_i.setLayoutCount = 1;
-  pl_i.pSetLayouts = &descriptor_set_layout;
+  pl_i.setLayoutCount = static_cast<uint32_t>(descriptor_set_layouts.size());
+  pl_i.pSetLayouts = descriptor_set_layouts.data();
   pl_i.pushConstantRangeCount = 0;
 
   try {

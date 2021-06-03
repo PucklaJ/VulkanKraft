@@ -1,9 +1,11 @@
 #pragma once
 #include "vulkan/context.hpp"
+#include <set>
 
 namespace core {
 class Texture {
 public:
+  friend class Shader;
   class Builder {
   public:
     friend class Texture;
@@ -77,6 +79,17 @@ public:
     return ii;
   }
 
+  inline std::vector<vk::DescriptorSet> extract_dynamic_sets() {
+    return std::move(m_dynamic_sets);
+  }
+  inline void set_dynamic_sets(std::vector<vk::DescriptorSet> sets) {
+    m_dynamic_sets = std::move(sets);
+    m_dynamic_writes_to_perform.clear();
+    for (uint32_t i = 0; i < m_dynamic_sets.size(); i++) {
+      m_dynamic_writes_to_perform.emplace(i);
+    }
+  }
+
   void rebuild(const Builder &builder, const void *data);
 
 private:
@@ -87,6 +100,10 @@ private:
   void _create_image_view(const Builder &builder);
   void _create_sampler(const Builder &builder);
   void _generate_mip_maps(const Builder &builder);
+  void _create_descriptor_sets(const vk::DescriptorPool &pool,
+                               const vk::DescriptorSetLayout &layout,
+                               const uint32_t binding_point);
+  void _write_dynamic_set(const size_t index);
 
   void _destroy();
 
@@ -94,6 +111,9 @@ private:
   vk::ImageView m_image_view;
   vk::DeviceMemory m_memory;
   vk::Sampler m_sampler;
+  std::vector<vk::DescriptorSet> m_dynamic_sets;
+  uint32_t m_dynamic_binding_point;
+  std::set<uint32_t> m_dynamic_writes_to_perform;
 
   const vulkan::Context &m_context;
 };

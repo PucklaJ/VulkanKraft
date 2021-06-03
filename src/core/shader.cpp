@@ -46,10 +46,14 @@ Shader::Shader(Shader &&rhs)
     : m_pipeline(std::move(rhs.m_pipeline)),
       m_uniform_buffers(std::move(rhs.m_uniform_buffers)),
       m_descriptor_layout(std::move(rhs.m_descriptor_layout)),
+      m_dynamic_textures_layout(std::move(rhs.m_dynamic_textures_layout)),
       m_descriptor_pool(std::move(rhs.m_descriptor_pool)),
       m_descriptor_sets(std::move(rhs.m_descriptor_sets)),
+      m_min_dynamic_texture_binding_point(
+          rhs.m_min_dynamic_texture_binding_point),
       m_context(rhs.m_context) {
   rhs.m_uniform_buffers.clear();
+  rhs.m_dynamic_textures_layout.clear();
   rhs.m_descriptor_layout = VK_NULL_HANDLE;
   rhs.m_descriptor_pool = VK_NULL_HANDLE;
   rhs.m_descriptor_sets.clear();
@@ -61,6 +65,9 @@ Shader::~Shader() {
     m_context.get_device().destroyDescriptorPool(m_descriptor_pool);
   if (m_descriptor_layout)
     m_context.get_device().destroyDescriptorSetLayout(m_descriptor_layout);
+  for (auto &l : m_dynamic_textures_layout) {
+    m_context.get_device().destroyDescriptorSetLayout(l);
+  }
 }
 
 void Shader::set_texture(const Texture &texture, const size_t index) {
@@ -81,6 +88,22 @@ void Shader::set_texture(const Texture &texture, const size_t index) {
   for (size_t i = 0; i < m_descriptor_sets.size(); i++) {
     texture_write.image_indices.emplace(static_cast<uint32_t>(i));
   }
+}
+
+void Shader::bind_dynamic_texture(const vulkan::RenderCall &render_call,
+                                  Texture &texture, const size_t index) const {
+  if (m_min_dynamic_texture_binding_point == -1)
+    throw VulkanKraftException(
+        "tried to bind dynamic texture, but are none specified");
+
+  texture._create_descriptor_sets(m_descriptor_pool,
+                                  m_dynamic_textures_layout[index],
+                                  index + m_min_dynamic_texture_binding_point);
+  texture._write_dynamic_set(render_call.get_swap_chain_image_index());
+
+  render_call.bind_descriptor_set(
+      texture.m_dynamic_sets[render_call.get_swap_chain_image_index()],
+      m_pipeline->get_layout());
 }
 
 void Shader::bind(const vulkan::RenderCall &render_call) {
@@ -106,7 +129,7 @@ void Shader::bind(const vulkan::RenderCall &render_call) {
 
 Shader::Shader(const vulkan::Context &context, const Settings &settings,
                const Builder &builder)
-    : m_context(context) {
+    : m_min_dynamic_texture_binding_point(-1), m_context(context) {
   _create_graphics_pipeline(context, settings, builder);
   _create_descriptor_pool(context, builder);
   _create_uniform_buffers(context, builder);
@@ -118,35 +141,80 @@ void Shader::_create_graphics_pipeline(const vulkan::Context &context,
                                        const Builder &builder) {
   size_t binding_point{0};
 
-  std::vector<vk::DescriptorSetLayoutBinding> bindings(
-      builder.m_uniform_buffers.size() + builder.m_texture_count);
-  for (size_t i = 0; i < builder.m_uniform_buffers.size(); i++) {
-    bindings[i].binding = binding_point++;
-    bindings[i].descriptorType = vk::DescriptorType::eUniformBuffer;
-    bindings[i].descriptorCount = 1;
-    bindings[i].stageFlags = builder.m_uniform_buffers[i].shader_stage;
-    bindings[i].pImmutableSamplers = nullptr;
+  std::vector<std::vector<vk::DescriptorSetLayoutBinding>> all_bindings(
+      std::min(static_cast<size_t>(1),
+               builder.m_uniform_buffers.size() + builder.m_texture_count) +
+      builder.m_dynamic_textures.size());
+  size_t current_bindings = 0;
+  if (builder.m_uniform_buffers.size() + builder.m_texture_count > 0) {
+    auto &bindings = all_bindings[current_bindings];
+    bindings.resize(builder.m_uniform_buffers.size() + builder.m_texture_count);
+    for (size_t i = 0; i < builder.m_uniform_buffers.size(); i++) {
+      bindings[i].binding = binding_point++;
+      bindings[i].descriptorType = vk::DescriptorType::eUniformBuffer;
+      bindings[i].descriptorCount = 1;
+      bindings[i].stageFlags = builder.m_uniform_buffers[i].shader_stage;
+      bindings[i].pImmutableSamplers = nullptr;
+    }
+    for (size_t i = 0; i < builder.m_texture_count; i++, binding_point++) {
+      bindings[binding_point].binding = binding_point;
+      bindings[binding_point].descriptorType =
+          vk::DescriptorType::eCombinedImageSampler;
+      bindings[binding_point].descriptorCount = 1;
+      bindings[binding_point].stageFlags = vk::ShaderStageFlagBits::eFragment;
+      bindings[binding_point].pImmutableSamplers = nullptr;
+    }
+    current_bindings++;
   }
-  for (size_t i = 0; i < builder.m_texture_count; i++, binding_point++) {
-    bindings[binding_point].binding = binding_point;
-    bindings[binding_point].descriptorType =
-        vk::DescriptorType::eCombinedImageSampler;
-    bindings[binding_point].descriptorCount = 1;
-    bindings[binding_point].stageFlags = vk::ShaderStageFlagBits::eFragment;
-    bindings[binding_point].pImmutableSamplers = nullptr;
+  if (!builder.m_dynamic_textures.empty()) {
+    m_min_dynamic_texture_binding_point = binding_point;
+    for (size_t i = 0; i < builder.m_dynamic_textures.size();
+         i++, binding_point++, current_bindings++) {
+      auto &bindings = all_bindings[current_bindings];
+      bindings.resize(1);
+
+      bindings[0].binding = binding_point;
+      bindings[0].descriptorType = vk::DescriptorType::eCombinedImageSampler;
+      bindings[0].descriptorCount = 1;
+      bindings[0].stageFlags = vk::ShaderStageFlagBits::eFragment;
+      bindings[0].pImmutableSamplers = nullptr;
+    }
   }
 
-  vk::DescriptorSetLayoutCreateInfo li;
-  li.bindingCount = static_cast<uint32_t>(bindings.size());
-  li.pBindings = bindings.data();
+  current_bindings = 0;
+  if (builder.m_uniform_buffers.size() + builder.m_texture_count > 0) {
+    vk::DescriptorSetLayoutCreateInfo li;
+    li.bindingCount = static_cast<uint32_t>(all_bindings.front().size());
+    li.pBindings = all_bindings.front().data();
 
-  try {
-    m_descriptor_layout = m_context.get_device().createDescriptorSetLayout(li);
-  } catch (const std::runtime_error &e) {
-    throw VulkanKraftException(
-        std::string(
-            "failed to create descriptor set layout for core::Shader: ") +
-        e.what());
+    try {
+      m_descriptor_layout =
+          m_context.get_device().createDescriptorSetLayout(li);
+    } catch (const std::runtime_error &e) {
+      throw VulkanKraftException(
+          std::string(
+              "failed to create descriptor set layout for core::Shader: ") +
+          e.what());
+    }
+    current_bindings++;
+  }
+
+  for (size_t i = 0; i < builder.m_dynamic_textures.size();
+       i++, current_bindings++) {
+    const auto &bindings = all_bindings[current_bindings];
+    vk::DescriptorSetLayoutCreateInfo li;
+    li.bindingCount = static_cast<uint32_t>(bindings.size());
+    li.pBindings = bindings.data();
+
+    try {
+      m_dynamic_textures_layout.emplace_back(
+          m_context.get_device().createDescriptorSetLayout(li));
+    } catch (const std::runtime_error &e) {
+      throw VulkanKraftException(
+          std::string(
+              "failed to create descriptor set layout for core::Shader: ") +
+          e.what());
+    }
   }
 
   vk::VertexInputBindingDescription bind;
@@ -169,9 +237,17 @@ void Shader::_create_graphics_pipeline(const vulkan::Context &context,
                static_cast<uint32_t>(builder.m_vertex_attributes[i - 1].size));
   }
 
+  std::vector<vk::DescriptorSetLayout> all_layouts;
+  if (builder.m_uniform_buffers.size() + builder.m_texture_count > 0)
+    all_layouts.push_back(m_descriptor_layout);
+  all_layouts.reserve(all_layouts.size() + m_dynamic_textures_layout.size());
+  for (const auto &l : m_dynamic_textures_layout) {
+    all_layouts.push_back(l);
+  }
+
   try {
     m_pipeline = std::make_unique<vulkan::GraphicsPipeline>(
-        context, m_descriptor_layout, std::move(builder.m_vertex_code),
+        context, std::move(all_layouts), std::move(builder.m_vertex_code),
         std::move(builder.m_fragment_code), std::move(bind), std::move(atts),
         settings.msaa_samples);
   } catch (const VulkanKraftException &e) {
@@ -183,20 +259,27 @@ void Shader::_create_graphics_pipeline(const vulkan::Context &context,
 
 void Shader::_create_descriptor_pool(const vulkan::Context &context,
                                      const Builder &builder) {
-  if (builder.m_uniform_buffers.empty() && builder.m_texture_count == 0) {
+  if (builder.m_uniform_buffers.empty() && builder.m_texture_count == 0 &&
+      builder.m_dynamic_textures.empty()) {
     return;
   }
   std::vector<vk::DescriptorPoolSize> pool_sizes(
-      builder.m_uniform_buffers.size() + builder.m_texture_count);
-  for (size_t i = 0; i < builder.m_uniform_buffers.size(); i++) {
+      builder.m_uniform_buffers.size() + builder.m_texture_count +
+      builder.m_dynamic_textures.size());
+  size_t i;
+  for (i = 0; i < builder.m_uniform_buffers.size(); i++) {
     pool_sizes[i].type = vk::DescriptorType::eUniformBuffer;
     pool_sizes[i].descriptorCount =
         static_cast<uint32_t>(context.get_swap_chain_image_count());
   }
-  for (size_t i = 0; i < builder.m_texture_count; i++) {
-    pool_sizes[i + builder.m_uniform_buffers.size()].type =
-        vk::DescriptorType::eCombinedImageSampler;
-    pool_sizes[i + builder.m_uniform_buffers.size()].descriptorCount =
+  for (size_t j = 0; j < builder.m_texture_count; j++, i++) {
+    pool_sizes[i].type = vk::DescriptorType::eCombinedImageSampler;
+    pool_sizes[i].descriptorCount =
+        static_cast<uint32_t>(context.get_swap_chain_image_count());
+  }
+  for (size_t j = 0; j < builder.m_dynamic_textures.size(); j++, i++) {
+    pool_sizes[i].type = vk::DescriptorType::eCombinedImageSampler;
+    pool_sizes[i].descriptorCount =
         static_cast<uint32_t>(context.get_swap_chain_image_count());
   }
 
@@ -204,6 +287,10 @@ void Shader::_create_descriptor_pool(const vulkan::Context &context,
   pi.poolSizeCount = static_cast<uint32_t>(pool_sizes.size());
   pi.pPoolSizes = pool_sizes.data();
   pi.maxSets = static_cast<uint32_t>(m_context.get_swap_chain_image_count());
+  for (const auto &ms : builder.m_dynamic_textures) {
+    pi.maxSets +=
+        ms * static_cast<uint32_t>(m_context.get_swap_chain_image_count());
+  }
 
   try {
     m_descriptor_pool = m_context.get_device().createDescriptorPool(pi);

@@ -14,7 +14,7 @@ Shader Text::build_shader(const vulkan::Context &context,
                   .vertex("shaders_spv/text.vert.spv")
                   .fragment("shaders_spv/text.frag.spv")
                   .uniform_buffer(vk::ShaderStageFlagBits::eVertex, global)
-                  .texture()
+                  .dynamic_texture(3)
                   .build(context, settings));
 
   return shader;
@@ -32,7 +32,6 @@ Text::Text(const vulkan::Context &context, Shader &shader, Font &font,
                            sizeof(Mesh));
   }
   _build_buffers();
-  m_shader.set_texture(m_text_texture);
 }
 
 void Text::set_string(const std::wstring &string) {
@@ -42,7 +41,6 @@ void Text::set_string(const std::wstring &string) {
   m_string = string;
   m_text_texture = _build_texture();
   _build_buffers();
-  m_shader.set_texture(m_text_texture);
 }
 
 void Text::set_font_size(const float font_size) {
@@ -52,7 +50,6 @@ void Text::set_font_size(const float font_size) {
   m_font_size = font_size;
   m_text_texture = _build_texture();
   _build_buffers();
-  m_shader.set_texture(m_text_texture);
 }
 
 void Text::set_position(const glm::vec2 &position) {
@@ -69,6 +66,7 @@ void Text::render(const vulkan::RenderCall &render_call) {
         render_call.get_swap_chain_image_index());
   }
 
+  m_shader.bind_dynamic_texture(render_call, m_text_texture);
   m_buffers[render_call.get_swap_chain_image_index()].bind(render_call);
   render_call.render_vertices(6);
 }

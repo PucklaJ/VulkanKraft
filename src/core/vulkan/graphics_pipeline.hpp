@@ -8,7 +8,8 @@ namespace vulkan {
 class GraphicsPipeline {
 public:
   GraphicsPipeline(
-      const Context &context, vk::DescriptorSetLayout descriptor_set_layout,
+      const Context &context,
+      std::vector<vk::DescriptorSetLayout> descriptor_set_layouts,
       const std::vector<uint8_t> &vertex_code,
       const std::vector<uint8_t> &fragment_code,
       vk::VertexInputBindingDescription vertex_binding,
@@ -27,7 +28,7 @@ private:
                         const std::vector<uint8_t> &shader_code);
 
   void _create_handle(
-      vk::DescriptorSetLayout descriptor_set_layout,
+      std::vector<vk::DescriptorSetLayout> descriptor_set_layout,
       const std::vector<uint8_t> &vertex_code,
       const std::vector<uint8_t> &fragment_code,
       vk::VertexInputBindingDescription vertex_binding,

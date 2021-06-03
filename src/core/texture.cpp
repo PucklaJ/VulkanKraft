@@ -33,11 +33,17 @@ Texture::Texture(Texture &&rhs)
     : m_image(std::move(rhs.m_image)),
       m_image_view(std::move(rhs.m_image_view)),
       m_memory(std::move(rhs.m_memory)), m_sampler(std::move(rhs.m_sampler)),
+      m_dynamic_sets(std::move(rhs.m_dynamic_sets)),
+      m_dynamic_writes_to_perform(std::move(rhs.m_dynamic_writes_to_perform)),
+      m_dynamic_binding_point(rhs.m_dynamic_binding_point),
       m_context(rhs.m_context) {
+  rhs.m_dynamic_sets.clear();
+  rhs.m_dynamic_writes_to_perform.clear();
   rhs.m_image = VK_NULL_HANDLE;
   rhs.m_image_view = VK_NULL_HANDLE;
   rhs.m_memory = VK_NULL_HANDLE;
   rhs.m_sampler = VK_NULL_HANDLE;
+  rhs.m_dynamic_binding_point = -1;
 }
 
 Texture &Texture::operator=(Texture &&rhs) {
@@ -47,11 +53,17 @@ Texture &Texture::operator=(Texture &&rhs) {
   m_image_view = std::move(rhs.m_image_view);
   m_memory = std::move(rhs.m_memory);
   m_sampler = std::move(rhs.m_sampler);
+  m_dynamic_sets = std::move(rhs.m_dynamic_sets);
+  m_dynamic_writes_to_perform = std::move(rhs.m_dynamic_writes_to_perform);
+  m_dynamic_binding_point = rhs.m_dynamic_binding_point;
 
   rhs.m_image = VK_NULL_HANDLE;
   rhs.m_image_view = VK_NULL_HANDLE;
   rhs.m_memory = VK_NULL_HANDLE;
   rhs.m_sampler = VK_NULL_HANDLE;
+  rhs.m_dynamic_sets.clear();
+  rhs.m_dynamic_writes_to_perform.clear();
+  rhs.m_dynamic_binding_point = -1;
 
   return *this;
 }
@@ -71,7 +83,7 @@ void Texture::rebuild(const Texture::Builder &builder, const void *data) {
 
 Texture::Texture(const vulkan::Context &context,
                  const Texture::Builder &builder, const void *data)
-    : m_context(context) {
+    : m_dynamic_binding_point(-1), m_context(context) {
   _create_image(builder, data);
   if (builder.m_mip_levels > 1) {
     _generate_mip_maps(builder);
@@ -350,6 +362,54 @@ void Texture::_generate_mip_maps(const Builder &builder) {
                           nullptr, bar);
 
   m_context.end_single_time_graphics_commands(com_buf);
+}
+
+void Texture::_create_descriptor_sets(const vk::DescriptorPool &pool,
+                                      const vk::DescriptorSetLayout &layout,
+                                      const uint32_t binding_point) {
+  if (!m_dynamic_sets.empty())
+    return;
+
+  const std::vector<vk::DescriptorSetLayout> layouts(
+      m_context.get_swap_chain_image_count(), layout);
+
+  vk::DescriptorSetAllocateInfo ai;
+  ai.descriptorPool = pool;
+  ai.descriptorSetCount = static_cast<uint32_t>(layouts.size());
+  ai.pSetLayouts = layouts.data();
+  try {
+    m_dynamic_sets = m_context.get_device().allocateDescriptorSets(ai);
+  } catch (const std::runtime_error &e) {
+    throw VulkanKraftException(
+        std::string(
+            "failed to allocate dynamic descriptor sets of core::Texture: ") +
+        e.what());
+  }
+
+  m_dynamic_binding_point = binding_point;
+  m_dynamic_writes_to_perform.clear();
+  for (uint32_t i = 0; i < m_dynamic_sets.size(); i++) {
+    m_dynamic_writes_to_perform.emplace(i);
+  }
+}
+
+void Texture::_write_dynamic_set(const size_t index) {
+  if (m_dynamic_writes_to_perform.count(index) == 0) {
+    return;
+  }
+
+  const auto image_info(create_descriptor_image_info());
+  vk::WriteDescriptorSet write;
+  write.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+  write.descriptorCount = 1;
+  write.dstArrayElement = 0;
+  write.dstBinding = m_dynamic_binding_point;
+  write.dstSet = m_dynamic_sets[index];
+  write.pImageInfo = &image_info;
+
+  m_context.get_device().updateDescriptorSets(write, nullptr);
+
+  m_dynamic_writes_to_perform.erase(index);
 }
 
 void Texture::_destroy() {

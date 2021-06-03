@@ -53,6 +53,11 @@ public:
       return *this;
     }
 
+    inline Builder &dynamic_texture(const uint32_t max_sets) {
+      m_dynamic_textures.emplace_back(max_sets);
+      return *this;
+    }
+
   private:
     struct UniformBufferInfo {
       const std::vector<uint8_t> initial_state;
@@ -70,6 +75,7 @@ public:
     std::vector<UniformBufferInfo> m_uniform_buffers;
     std::vector<VertexAttributeInfo> m_vertex_attributes;
     size_t m_texture_count;
+    std::vector<uint32_t> m_dynamic_textures;
   };
 
   Shader(Shader &&rhs);
@@ -81,6 +87,8 @@ public:
     _update_uniform_buffer(render_call, &data, sizeof(T), index);
   }
   void set_texture(const Texture &texture, const size_t index = 0);
+  void bind_dynamic_texture(const vulkan::RenderCall &render_call,
+                            Texture &texture, const size_t index = 0) const;
 
   void bind(const vulkan::RenderCall &render_call);
 
@@ -110,10 +118,12 @@ private:
   std::unique_ptr<vulkan::GraphicsPipeline> m_pipeline;
   std::vector<std::vector<vulkan::Buffer>> m_uniform_buffers;
   vk::DescriptorSetLayout m_descriptor_layout;
+  std::vector<vk::DescriptorSetLayout> m_dynamic_textures_layout;
   vk::DescriptorPool m_descriptor_pool;
   std::vector<vk::DescriptorSet> m_descriptor_sets;
 
   std::map<size_t, TextureWrite> m_texture_writes_to_perform;
+  size_t m_min_dynamic_texture_binding_point;
 
   const vulkan::Context &m_context;
 };
