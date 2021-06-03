@@ -27,8 +27,9 @@ int main(int args, char *argv[]) {
 
     auto chunk_mesh_shader =
         chunk::Mesh::build_shader(context, settings, hodler);
-    auto text_shader = core::text::Text::build_shader(context, settings,
-                                                      fps_text.get_texture());
+    auto text_shader = core::text::Text::build_shader(context, settings);
+
+    text_shader.set_texture(fps_text.get_texture());
 
     Player player(glm::vec3(0.0f, 0.0f, 100.0f));
     chunk::Chunk chunk_chunk(context, glm::vec3(0.0f, 0.0f, 0.0f));

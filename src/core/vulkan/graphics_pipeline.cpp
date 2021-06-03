@@ -7,14 +7,15 @@ namespace core {
 namespace vulkan {
 GraphicsPipeline::GraphicsPipeline(
     const Context &context, vk::DescriptorSetLayout descriptor_set_layout,
-    std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
+    const std::vector<uint8_t> &vertex_code,
+    const std::vector<uint8_t> &fragment_code,
     vk::VertexInputBindingDescription vertex_binding,
     std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
     const vk::SampleCountFlagBits msaa_samples)
     : m_context(context) {
-  _create_handle(std::move(descriptor_set_layout), std::move(vertex_code),
-                 std::move(fragment_code), std::move(vertex_binding),
-                 std::move(vertex_attributes), msaa_samples);
+  _create_handle(std::move(descriptor_set_layout), vertex_code, fragment_code,
+                 std::move(vertex_binding), std::move(vertex_attributes),
+                 msaa_samples);
 }
 
 GraphicsPipeline::~GraphicsPipeline() { _destroy(); }
@@ -23,9 +24,8 @@ void GraphicsPipeline::bind(const RenderCall &render_call) const noexcept {
   render_call.bind_graphics_pipeline(m_handle);
 }
 
-vk::ShaderModule
-GraphicsPipeline::_create_shader_module(const vk::Device &device,
-                                        std::vector<uint8_t> shader_code) {
+vk::ShaderModule GraphicsPipeline::_create_shader_module(
+    const vk::Device &device, const std::vector<uint8_t> &shader_code) {
   vk::ShaderModuleCreateInfo si;
   si.codeSize = shader_code.size();
   si.pCode = reinterpret_cast<const uint32_t *>(shader_code.data());
@@ -40,13 +40,14 @@ GraphicsPipeline::_create_shader_module(const vk::Device &device,
 
 void GraphicsPipeline::_create_handle(
     vk::DescriptorSetLayout descriptor_set_layout,
-    std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
+    const std::vector<uint8_t> &vertex_code,
+    const std::vector<uint8_t> &fragment_code,
     vk::VertexInputBindingDescription vertex_binding,
     std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
     const vk::SampleCountFlagBits msaa_samples) {
   try {
     m_vertex_module =
-        _create_shader_module(m_context.get_device(), std::move(vertex_code));
+        _create_shader_module(m_context.get_device(), vertex_code);
   } catch (const VulkanKraftException &e) {
     throw VulkanKraftException(
         std::string("failed to create vertex shader module: ") + e.what());
@@ -54,7 +55,7 @@ void GraphicsPipeline::_create_handle(
 
   try {
     m_fragment_module =
-        _create_shader_module(m_context.get_device(), std::move(fragment_code));
+        _create_shader_module(m_context.get_device(), fragment_code);
   } catch (const VulkanKraftException &e) {
     throw VulkanKraftException(
         std::string("failed to create fragment shader module: ") + e.what());

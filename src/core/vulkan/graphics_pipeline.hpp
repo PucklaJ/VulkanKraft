@@ -9,7 +9,8 @@ class GraphicsPipeline {
 public:
   GraphicsPipeline(
       const Context &context, vk::DescriptorSetLayout descriptor_set_layout,
-      std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
+      const std::vector<uint8_t> &vertex_code,
+      const std::vector<uint8_t> &fragment_code,
       vk::VertexInputBindingDescription vertex_binding,
       std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
       const vk::SampleCountFlagBits msaa_samples);
@@ -23,11 +24,12 @@ private:
 
   static vk::ShaderModule
   _create_shader_module(const vk::Device &device,
-                        std::vector<uint8_t> shader_code);
+                        const std::vector<uint8_t> &shader_code);
 
   void _create_handle(
       vk::DescriptorSetLayout descriptor_set_layout,
-      std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
+      const std::vector<uint8_t> &vertex_code,
+      const std::vector<uint8_t> &fragment_code,
       vk::VertexInputBindingDescription vertex_binding,
       std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
       const vk::SampleCountFlagBits msaa_samples);

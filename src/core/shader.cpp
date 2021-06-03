@@ -3,7 +3,7 @@
 #include <fstream>
 
 namespace core {
-Shader::Builder::Builder() {}
+Shader::Builder::Builder() : m_texture_count(0) {}
 
 Shader Shader::Builder::build(const vulkan::Context &context,
                               const Settings &settings) {
@@ -22,9 +22,7 @@ Shader Shader::Builder::build(const vulkan::Context &context,
         "no vertex atrributes have been specified for core::Shader");
   }
 
-  return Shader(context, settings, std::move(m_vertex_code),
-                std::move(m_fragment_code), std::move(m_uniform_buffers),
-                std::move(m_vertex_attributes), std::move(m_textures));
+  return Shader(context, settings, *this);
 }
 
 std::vector<uint8_t>
@@ -65,48 +63,70 @@ Shader::~Shader() {
     m_context.get_device().destroyDescriptorSetLayout(m_descriptor_layout);
 }
 
+void Shader::set_texture(const Texture &texture, const size_t index) {
+  auto &texture_write = m_texture_writes_to_perform[index];
+
+  texture_write.image_info = texture.create_descriptor_image_info();
+
+  texture_write.write.dstBinding =
+      m_uniform_buffers.empty() ? index
+                                : (m_uniform_buffers.front().size() + index);
+  texture_write.write.descriptorCount = 1;
+  texture_write.write.pImageInfo = &texture_write.image_info;
+  texture_write.write.descriptorType =
+      vk::DescriptorType::eCombinedImageSampler;
+  texture_write.write.dstArrayElement = 0;
+
+  for (size_t i = 0; i < m_descriptor_sets.size(); i++) {
+    texture_write.image_indices.emplace(static_cast<uint32_t>(i));
+  }
+}
+
 void Shader::bind(const vulkan::RenderCall &render_call) {
   m_pipeline->bind(render_call);
-  if (!m_descriptor_sets.empty())
+  if (!m_descriptor_sets.empty()) {
+    for (auto &[i, tw] : m_texture_writes_to_perform) {
+      if (tw.image_indices.count(render_call.get_swap_chain_image_index()) !=
+          0) {
+        tw.write.dstSet =
+            m_descriptor_sets[render_call.get_swap_chain_image_index()];
+
+        m_context.get_device().updateDescriptorSets(tw.write, nullptr);
+
+        tw.image_indices.erase(render_call.get_swap_chain_image_index());
+      }
+    }
+
     render_call.bind_descriptor_set(
         m_descriptor_sets[render_call.get_swap_chain_image_index()],
         m_pipeline->get_layout());
+  }
 }
 
 Shader::Shader(const vulkan::Context &context, const Settings &settings,
-               std::vector<uint8_t> vertex_code,
-               std::vector<uint8_t> fragment_code,
-               std::vector<Builder::UniformBufferInfo> uniform_buffers,
-               std::vector<Builder::VertexAttributeInfo> vertex_attributes,
-               std::vector<const Texture *> textures)
+               const Builder &builder)
     : m_context(context) {
-  _create_graphics_pipeline(context, settings, std::move(vertex_code),
-                            std::move(fragment_code), uniform_buffers,
-                            std::move(vertex_attributes), textures);
-  _create_descriptor_pool(context, uniform_buffers, textures);
-  _create_uniform_buffers(context, uniform_buffers);
-  _create_descriptor_sets(context, std::move(uniform_buffers),
-                          std::move(textures));
+  _create_graphics_pipeline(context, settings, builder);
+  _create_descriptor_pool(context, builder);
+  _create_uniform_buffers(context, builder);
+  _create_descriptor_sets(context, builder);
 }
 
-void Shader::_create_graphics_pipeline(
-    const vulkan::Context &context, const Settings &settings,
-    std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
-    const std::vector<Builder::UniformBufferInfo> &uniform_buffers,
-    std::vector<Builder::VertexAttributeInfo> vertex_attributes,
-    const std::vector<const Texture *> &textures) {
+void Shader::_create_graphics_pipeline(const vulkan::Context &context,
+                                       const Settings &settings,
+                                       const Builder &builder) {
   size_t binding_point{0};
 
-  std::vector<vk::DescriptorSetLayoutBinding> bindings(uniform_buffers.size() +
-                                                       textures.size());
-  for (size_t i = 0; i < uniform_buffers.size(); i++) {
+  std::vector<vk::DescriptorSetLayoutBinding> bindings(
+      builder.m_uniform_buffers.size() + builder.m_texture_count);
+  for (size_t i = 0; i < builder.m_uniform_buffers.size(); i++) {
     bindings[i].binding = binding_point++;
     bindings[i].descriptorType = vk::DescriptorType::eUniformBuffer;
     bindings[i].descriptorCount = 1;
-    bindings[i].stageFlags = uniform_buffers[i].shader_stage;
+    bindings[i].stageFlags = builder.m_uniform_buffers[i].shader_stage;
     bindings[i].pImmutableSamplers = nullptr;
   }
-  for (size_t i = 0; i < textures.size(); i++, binding_point++) {
+  for (size_t i = 0; i < builder.m_texture_count; i++, binding_point++) {
     bindings[binding_point].binding = binding_point;
     bindings[binding_point].descriptorType =
         vk::DescriptorType::eCombinedImageSampler;
@@ -130,27 +150,28 @@ void Shader::_create_graphics_pipeline(
 
   vk::VertexInputBindingDescription bind;
   bind.binding = 0;
-  for (const auto &vi : vertex_attributes) {
+  for (const auto &vi : builder.m_vertex_attributes) {
     bind.stride += static_cast<uint32_t>(vi.size);
   }
   bind.inputRate = vk::VertexInputRate::eVertex;
 
   std::vector<vk::VertexInputAttributeDescription> atts(
-      vertex_attributes.size());
+      builder.m_vertex_attributes.size());
   for (size_t i = 0; i < atts.size(); i++) {
     atts[i].binding = 0;
     atts[i].location = static_cast<uint32_t>(i);
-    atts[i].format = vertex_attributes[i].format;
+    atts[i].format = builder.m_vertex_attributes[i].format;
     atts[i].offset =
-        i == 0 ? 0
-               : (atts[i - 1].offset +
-                  static_cast<uint32_t>(vertex_attributes[i - 1].size));
+        i == 0
+            ? 0
+            : (atts[i - 1].offset +
+               static_cast<uint32_t>(builder.m_vertex_attributes[i - 1].size));
   }
 
   try {
     m_pipeline = std::make_unique<vulkan::GraphicsPipeline>(
-        context, m_descriptor_layout, std::move(vertex_code),
-        std::move(fragment_code), std::move(bind), std::move(atts),
+        context, m_descriptor_layout, std::move(builder.m_vertex_code),
+        std::move(builder.m_fragment_code), std::move(bind), std::move(atts),
         settings.msaa_samples);
   } catch (const VulkanKraftException &e) {
     throw VulkanKraftException(
@@ -159,24 +180,22 @@ void Shader::_create_graphics_pipeline(
   }
 }
 
-void Shader::_create_descriptor_pool(
-    const vulkan::Context &context,
-    const std::vector<Builder::UniformBufferInfo> &uniform_buffers,
-    const std::vector<const Texture *> &textures) {
-  if (uniform_buffers.empty() && textures.empty()) {
+void Shader::_create_descriptor_pool(const vulkan::Context &context,
+                                     const Builder &builder) {
+  if (builder.m_uniform_buffers.empty() && builder.m_texture_count == 0) {
     return;
   }
-  std::vector<vk::DescriptorPoolSize> pool_sizes(uniform_buffers.size() +
-                                                 textures.size());
-  for (size_t i = 0; i < uniform_buffers.size(); i++) {
+  std::vector<vk::DescriptorPoolSize> pool_sizes(
+      builder.m_uniform_buffers.size() + builder.m_texture_count);
+  for (size_t i = 0; i < builder.m_uniform_buffers.size(); i++) {
     pool_sizes[i].type = vk::DescriptorType::eUniformBuffer;
     pool_sizes[i].descriptorCount =
         static_cast<uint32_t>(context.get_swap_chain_image_count());
   }
-  for (size_t i = 0; i < textures.size(); i++) {
-    pool_sizes[i + uniform_buffers.size()].type =
+  for (size_t i = 0; i < builder.m_texture_count; i++) {
+    pool_sizes[i + builder.m_uniform_buffers.size()].type =
         vk::DescriptorType::eCombinedImageSampler;
-    pool_sizes[i + uniform_buffers.size()].descriptorCount =
+    pool_sizes[i + builder.m_uniform_buffers.size()].descriptorCount =
         static_cast<uint32_t>(context.get_swap_chain_image_count());
   }
 
@@ -194,28 +213,25 @@ void Shader::_create_descriptor_pool(
   }
 }
 
-void Shader::_create_uniform_buffers(
-    const vulkan::Context &context,
-    const std::vector<Builder::UniformBufferInfo> &uniform_buffers) {
-  if (uniform_buffers.empty()) {
+void Shader::_create_uniform_buffers(const vulkan::Context &context,
+                                     const Builder &builder) {
+  if (builder.m_uniform_buffers.empty()) {
     return;
   }
   for (size_t i = 0; i < context.get_swap_chain_image_count(); i++) {
     auto &current_buffers = m_uniform_buffers.emplace_back();
-    for (size_t j = 0; j < uniform_buffers.size(); j++) {
-      current_buffers.emplace_back(context,
-                                   vk::BufferUsageFlagBits::eUniformBuffer,
-                                   uniform_buffers[j].initial_state.size(),
-                                   uniform_buffers[j].initial_state.data());
+    for (size_t j = 0; j < builder.m_uniform_buffers.size(); j++) {
+      current_buffers.emplace_back(
+          context, vk::BufferUsageFlagBits::eUniformBuffer,
+          builder.m_uniform_buffers[j].initial_state.size(),
+          builder.m_uniform_buffers[j].initial_state.data());
     }
   }
 }
 
-void Shader::_create_descriptor_sets(
-    const vulkan::Context &context,
-    std::vector<Builder::UniformBufferInfo> uniform_buffers,
-    std::vector<const Texture *> textures) {
-  if (uniform_buffers.empty() && textures.empty()) {
+void Shader::_create_descriptor_sets(const vulkan::Context &context,
+                                     const Builder &builder) {
+  if (builder.m_uniform_buffers.empty() && builder.m_texture_count == 0) {
     return;
   }
 
@@ -235,15 +251,15 @@ void Shader::_create_descriptor_sets(
 
   for (size_t i = 0; i < m_descriptor_sets.size(); i++) {
     std::vector<vk::WriteDescriptorSet> writes;
-    std::vector<vk::DescriptorBufferInfo> buffer_infos(uniform_buffers.size());
-    std::vector<vk::DescriptorImageInfo> image_infos(textures.size());
+    std::vector<vk::DescriptorBufferInfo> buffer_infos(
+        builder.m_uniform_buffers.size());
     size_t current_binding{0};
     for (size_t j = 0; j < m_uniform_buffers[i].size();
          j++, current_binding++) {
       vk::DescriptorBufferInfo bi;
       bi.buffer = m_uniform_buffers[i][j].get_handle();
       bi.offset = 0;
-      bi.range = uniform_buffers[j].initial_state.size();
+      bi.range = builder.m_uniform_buffers[j].initial_state.size();
       buffer_infos[j] = std::move(bi);
 
       vk::WriteDescriptorSet w;
@@ -256,20 +272,7 @@ void Shader::_create_descriptor_sets(
 
       writes.emplace_back(std::move(w));
     }
-    for (size_t j = 0; j < textures.size(); j++, current_binding++) {
-      auto ii(textures[j]->create_descriptor_image_info());
-      image_infos[j] = std::move(ii);
 
-      vk::WriteDescriptorSet w;
-      w.dstSet = m_descriptor_sets[i];
-      w.dstBinding = current_binding;
-      w.dstArrayElement = 0;
-      w.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-      w.descriptorCount = 1;
-      w.pImageInfo = &image_infos[j];
-
-      writes.emplace_back(std::move(w));
-    }
     m_context.get_device().updateDescriptorSets(writes, nullptr);
   }
 }

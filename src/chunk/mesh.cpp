@@ -26,14 +26,15 @@ Mesh::Vertex::Vertex(float x, float y, float z, float u, float v)
                      .build(context, texture_data);
   stbi_image_free(texture_data);
 
-  auto shader = ::core::Shader::Builder()
-                    .vertex_attribute<glm::vec3>()
-                    .vertex_attribute<glm::vec2>()
-                    .vertex("shaders_spv/chunk_mesh.vert.spv")
-                    .fragment("shaders_spv/chunk_mesh.frag.spv")
-                    .uniform_buffer(vk::ShaderStageFlagBits::eVertex, global)
-                    .texture(texture)
-                    .build(context, settings);
+  auto shader(::core::Shader::Builder()
+                  .vertex_attribute<glm::vec3>()
+                  .vertex_attribute<glm::vec2>()
+                  .vertex("shaders_spv/chunk_mesh.vert.spv")
+                  .fragment("shaders_spv/chunk_mesh.frag.spv")
+                  .uniform_buffer(vk::ShaderStageFlagBits::eVertex, global)
+                  .texture()
+                  .build(context, settings));
+  shader.set_texture(texture);
 
   resource_hodler.hodl_texture("chunk_mesh_texture", std::move(texture));
 

@@ -4,18 +4,20 @@
 namespace core {
 namespace text {
 Shader Text::build_shader(const vulkan::Context &context,
-                          const Settings &settings, const Texture &texture) {
+                          const Settings &settings) {
   GlobalUniform global;
   global.proj = glm::mat4(1.0f);
 
-  return Shader::Builder()
-      .vertex_attribute<glm::vec2>()
-      .vertex_attribute<glm::vec2>()
-      .vertex("shaders_spv/text.vert.spv")
-      .fragment("shaders_spv/text.frag.spv")
-      .uniform_buffer(vk::ShaderStageFlagBits::eVertex, global)
-      .texture(texture)
-      .build(context, settings);
+  auto shader(Shader::Builder()
+                  .vertex_attribute<glm::vec2>()
+                  .vertex_attribute<glm::vec2>()
+                  .vertex("shaders_spv/text.vert.spv")
+                  .fragment("shaders_spv/text.frag.spv")
+                  .uniform_buffer(vk::ShaderStageFlagBits::eVertex, global)
+                  .texture()
+                  .build(context, settings));
+
+  return shader;
 }
 
 Text::Text(const vulkan::Context &context, Font &font,

@@ -41,6 +41,8 @@ Texture::Texture(Texture &&rhs)
 }
 
 Texture &Texture::operator=(Texture &&rhs) {
+  _destroy();
+
   m_image = std::move(rhs.m_image);
   m_image_view = std::move(rhs.m_image_view);
   m_memory = std::move(rhs.m_memory);

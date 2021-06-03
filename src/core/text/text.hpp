@@ -27,7 +27,7 @@ public:
   typedef std::array<Vertex, 6> Mesh;
 
   static Shader build_shader(const vulkan::Context &context,
-                             const Settings &settings, const Texture &texture);
+                             const Settings &settings);
 
   Text(const vulkan::Context &context, Font &font, const std::wstring &string);
 

@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <optional>
+#include <set>
 #include <vector>
 
 namespace core {
@@ -47,8 +48,8 @@ public:
       return *this;
     }
 
-    inline Builder &texture(const Texture &texture) {
-      m_textures.push_back(&texture);
+    inline Builder &texture() {
+      m_texture_count++;
       return *this;
     }
 
@@ -68,7 +69,7 @@ public:
     std::vector<uint8_t> m_fragment_code;
     std::vector<UniformBufferInfo> m_uniform_buffers;
     std::vector<VertexAttributeInfo> m_vertex_attributes;
-    std::vector<const Texture *> m_textures;
+    size_t m_texture_count;
   };
 
   Shader(Shader &&rhs);
@@ -79,32 +80,29 @@ public:
                                     const T &data, const size_t index = 0) {
     _update_uniform_buffer(render_call, &data, sizeof(T), index);
   }
+  void set_texture(const Texture &texture, const size_t index = 0);
+
   void bind(const vulkan::RenderCall &render_call);
 
 private:
-  Shader(const vulkan::Context &context, const Settings &settings,
-         std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
-         std::vector<Builder::UniformBufferInfo> uniform_buffers,
-         std::vector<Builder::VertexAttributeInfo> vertex_attributes,
-         std::vector<const Texture *> textures);
+  struct TextureWrite {
+    std::set<uint32_t> image_indices;
+    vk::DescriptorImageInfo image_info;
+    vk::WriteDescriptorSet write;
+  };
 
-  void _create_graphics_pipeline(
-      const vulkan::Context &context, const Settings &settings,
-      std::vector<uint8_t> vertex_code, std::vector<uint8_t> fragment_code,
-      const std::vector<Builder::UniformBufferInfo> &uniform_buffers,
-      std::vector<Builder::VertexAttributeInfo> vertex_attributes,
-      const std::vector<const Texture *> &textures);
-  void _create_descriptor_pool(
-      const vulkan::Context &context,
-      const std::vector<Builder::UniformBufferInfo> &uniform_buffers,
-      const std::vector<const Texture *> &textures);
-  void _create_uniform_buffers(
-      const vulkan::Context &context,
-      const std::vector<Builder::UniformBufferInfo> &uniform_buffers);
-  void _create_descriptor_sets(
-      const vulkan::Context &context,
-      std::vector<Builder::UniformBufferInfo> uniform_buffers,
-      std::vector<const Texture *> textures);
+  Shader(const vulkan::Context &context, const Settings &settings,
+         const Builder &builder);
+
+  void _create_graphics_pipeline(const vulkan::Context &context,
+                                 const Settings &settings,
+                                 const Builder &builder);
+  void _create_descriptor_pool(const vulkan::Context &context,
+                               const Builder &builder);
+  void _create_uniform_buffers(const vulkan::Context &context,
+                               const Builder &builder);
+  void _create_descriptor_sets(const vulkan::Context &context,
+                               const Builder &builder);
   void _update_uniform_buffer(const vulkan::RenderCall &render_call,
                               const void *data, const size_t data_size,
                               const size_t index);
@@ -114,6 +112,8 @@ private:
   vk::DescriptorSetLayout m_descriptor_layout;
   vk::DescriptorPool m_descriptor_pool;
   std::vector<vk::DescriptorSet> m_descriptor_sets;
+
+  std::map<size_t, TextureWrite> m_texture_writes_to_perform;
 
   const vulkan::Context &m_context;
 };
