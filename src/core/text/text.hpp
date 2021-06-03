@@ -31,13 +31,12 @@ public:
   static Shader build_shader(const vulkan::Context &context,
                              const Settings &settings);
 
-  Text(const vulkan::Context &context, Font &font, const std::wstring &string);
+  Text(const vulkan::Context &context, Shader &shader, Font &font,
+       const std::wstring &string, const float font_size = 50.0f);
 
   void set_string(const std::wstring &string);
   void set_font_size(const float font_size);
   void render(const vulkan::RenderCall &render_call);
-
-  inline const Texture &get_texture() const { return m_text_texture; }
 
 private:
   struct BufferWrite {
@@ -49,6 +48,7 @@ private:
   void _build_buffers();
 
   const vulkan::Context &m_context;
+  Shader &m_shader;
 
   Font &m_font;
   std::wstring m_string;

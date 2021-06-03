@@ -20,28 +20,37 @@ Shader Text::build_shader(const vulkan::Context &context,
   return shader;
 }
 
-Text::Text(const vulkan::Context &context, Font &font,
-           const std::wstring &string)
-    : m_context(context), m_font(font), m_string(string), m_font_size(50.0f),
-      m_text_texture(_build_texture()) {
+Text::Text(const vulkan::Context &context, Shader &shader, Font &font,
+           const std::wstring &string, const float font_size)
+    : m_context(context), m_shader(shader), m_font(font), m_string(string),
+      m_font_size(font_size), m_text_texture(_build_texture()) {
   m_buffers.reserve(m_context.get_swap_chain_image_count());
   for (size_t i = 0; i < m_context.get_swap_chain_image_count(); i++) {
     m_buffers.emplace_back(m_context, vk::BufferUsageFlagBits::eVertexBuffer,
                            sizeof(Mesh));
   }
   _build_buffers();
+  m_shader.set_texture(m_text_texture);
 }
 
 void Text::set_string(const std::wstring &string) {
+  if (string == m_string)
+    return;
+
   m_string = string;
   m_text_texture = _build_texture();
   _build_buffers();
+  m_shader.set_texture(m_text_texture);
 }
 
 void Text::set_font_size(const float font_size) {
+  if (font_size == m_font_size)
+    return;
+
   m_font_size = font_size;
   m_text_texture = _build_texture();
   _build_buffers();
+  m_shader.set_texture(m_text_texture);
 }
 
 void Text::render(const vulkan::RenderCall &render_call) {

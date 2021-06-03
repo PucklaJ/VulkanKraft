@@ -31,9 +31,7 @@ int main(int args, char *argv[]) {
     auto text_shader = core::text::Text::build_shader(context, settings);
 
     core::text::Font font("/usr/share/fonts/TTF/DejaVuSans.ttf");
-    core::text::Text fps_text(context, font, L"60 FPS");
-
-    text_shader.set_texture(fps_text.get_texture());
+    core::text::Text fps_text(context, text_shader, font, L"60 FPS");
 
     Player player(glm::vec3(0.0f, 0.0f, 100.0f));
     chunk::Chunk chunk_chunk(context, glm::vec3(0.0f, 0.0f, 0.0f));
@@ -48,7 +46,6 @@ int main(int args, char *argv[]) {
                  << (1.0f / timer.get_delta_time());
       fps_stream << L" FPS";
       fps_text.set_string(fps_stream.str());
-      text_shader.set_texture(fps_text.get_texture());
 
       player.update(timer, window);
       window.reset_keys();
