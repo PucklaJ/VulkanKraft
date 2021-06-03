@@ -21,9 +21,11 @@ Shader Text::build_shader(const vulkan::Context &context,
 }
 
 Text::Text(const vulkan::Context &context, Shader &shader, Font &font,
-           const std::wstring &string, const float font_size)
+           const std::wstring &string, const glm::vec2 &position,
+           const float font_size)
     : m_context(context), m_shader(shader), m_font(font), m_string(string),
-      m_font_size(font_size), m_text_texture(_build_texture()) {
+      m_font_size(font_size), m_position(position),
+      m_text_texture(_build_texture()) {
   m_buffers.reserve(m_context.get_swap_chain_image_count());
   for (size_t i = 0; i < m_context.get_swap_chain_image_count(); i++) {
     m_buffers.emplace_back(m_context, vk::BufferUsageFlagBits::eVertexBuffer,
@@ -51,6 +53,11 @@ void Text::set_font_size(const float font_size) {
   m_text_texture = _build_texture();
   _build_buffers();
   m_shader.set_texture(m_text_texture);
+}
+
+void Text::set_position(const glm::vec2 &position) {
+  m_position = position;
+  _build_buffers();
 }
 
 void Text::render(const vulkan::RenderCall &render_call) {
@@ -82,12 +89,13 @@ void Text::_build_buffers() {
   const float w{static_cast<float>(m_texture_width)};
   const float h{static_cast<float>(m_texture_height)};
 
-  m_buffer_write_to_perform.mesh[0] = Vertex(0.0f, h, 0.0f, 1.0f);
-  m_buffer_write_to_perform.mesh[1] = Vertex(w, h, 1.0f, 1.0f);
-  m_buffer_write_to_perform.mesh[2] = Vertex(w, 0.0f, 1.0f, 0.0f);
-  m_buffer_write_to_perform.mesh[3] = Vertex(w, 0.0f, 1.0f, 0.0f);
-  m_buffer_write_to_perform.mesh[4] = Vertex(0.0f, 0.0f, 0.0f, 0.0f);
-  m_buffer_write_to_perform.mesh[5] = Vertex(0.0f, h, 0.0f, 1.0f);
+  m_buffer_write_to_perform.mesh[0] = Vertex(m_position, 0.0f, h, 0.0f, 1.0f);
+  m_buffer_write_to_perform.mesh[1] = Vertex(m_position, w, h, 1.0f, 1.0f);
+  m_buffer_write_to_perform.mesh[2] = Vertex(m_position, w, 0.0f, 1.0f, 0.0f);
+  m_buffer_write_to_perform.mesh[3] = Vertex(m_position, w, 0.0f, 1.0f, 0.0f);
+  m_buffer_write_to_perform.mesh[4] =
+      Vertex(m_position, 0.0f, 0.0f, 0.0f, 0.0f);
+  m_buffer_write_to_perform.mesh[5] = Vertex(m_position, 0.0f, h, 0.0f, 1.0f);
 
   m_buffer_write_to_perform.image_indices.clear();
   for (uint32_t i = 0; i < m_buffers.size(); i++) {
