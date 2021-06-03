@@ -6,6 +6,8 @@
 #include "font.hpp"
 #include <array>
 #include <memory>
+#include <optional>
+#include <set>
 
 namespace core {
 namespace text {
@@ -38,7 +40,13 @@ public:
   inline const Texture &get_texture() const { return m_text_texture; }
 
 private:
+  struct BufferWrite {
+    Mesh mesh;
+    std::set<uint32_t> image_indices;
+  };
+
   Texture _build_texture();
+  void _build_buffers();
 
   const vulkan::Context &m_context;
 
@@ -47,9 +55,10 @@ private:
   float m_font_size;
 
   Texture m_text_texture;
-  vulkan::Buffer m_buffer;
+  std::vector<vulkan::Buffer> m_buffers;
   uint32_t m_texture_width;
   uint32_t m_texture_height;
+  BufferWrite m_buffer_write_to_perform;
 };
 } // namespace text
 } // namespace core

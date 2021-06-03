@@ -17,6 +17,15 @@ Buffer::Buffer(const Context &context, vk::BufferUsageFlags usage,
   }
 }
 
+Buffer::Buffer(Buffer &&rhs)
+    : m_handle(std::move(rhs.m_handle)), m_memory(std::move(rhs.m_memory)),
+      m_usage(rhs.m_usage), m_buffer_size(rhs.m_buffer_size),
+      m_context(rhs.m_context) {
+  rhs.m_handle = VK_NULL_HANDLE;
+  rhs.m_memory = VK_NULL_HANDLE;
+  rhs.m_buffer_size = 0;
+}
+
 Buffer::~Buffer() { _destroy(); }
 
 void Buffer::set_data(const void *data, const size_t data_size,
@@ -140,10 +149,13 @@ void Buffer::_create(const vk::DeviceSize buffer_size) {
 }
 
 void Buffer::_destroy() {
-  m_context.get_device().waitIdle();
+  if (m_handle || m_memory)
+    m_context.get_device().waitIdle();
 
-  m_context.get_device().destroyBuffer(m_handle);
-  m_context.get_device().freeMemory(m_memory);
+  if (m_handle)
+    m_context.get_device().destroyBuffer(m_handle);
+  if (m_memory)
+    m_context.get_device().freeMemory(m_memory);
 }
 
 } // namespace vulkan

@@ -8,6 +8,7 @@ class Buffer {
 public:
   Buffer(const Context &context, vk::BufferUsageFlags usage,
          const size_t buffer_size, const void *data = nullptr);
+  Buffer(Buffer &&rhs);
   ~Buffer();
 
   void set_data(const void *data, const size_t data_size,

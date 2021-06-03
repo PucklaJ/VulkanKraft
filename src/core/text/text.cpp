@@ -23,34 +23,37 @@ Shader Text::build_shader(const vulkan::Context &context,
 Text::Text(const vulkan::Context &context, Font &font,
            const std::wstring &string)
     : m_context(context), m_font(font), m_string(string), m_font_size(50.0f),
-      m_text_texture(_build_texture()),
-      m_buffer(context, vk::BufferUsageFlagBits::eVertexBuffer, sizeof(Mesh)) {
-  const float w{m_texture_width};
-  const float h{m_texture_height};
-
-  Mesh mesh;
-  mesh[0] = Vertex(0.0f, h, 0.0f, 1.0f);
-  mesh[1] = Vertex(w, h, 1.0f, 1.0f);
-  mesh[2] = Vertex(w, 0.0f, 1.0f, 0.0f);
-  mesh[3] = Vertex(w, 0.0f, 1.0f, 0.0f);
-  mesh[4] = Vertex(0.0f, 0.0f, 0.0f, 0.0f);
-  mesh[5] = Vertex(0.0f, h, 0.0f, 1.0f);
-
-  m_buffer.set_data(&mesh, sizeof(mesh));
+      m_text_texture(_build_texture()) {
+  m_buffers.reserve(m_context.get_swap_chain_image_count());
+  for (size_t i = 0; i < m_context.get_swap_chain_image_count(); i++) {
+    m_buffers.emplace_back(m_context, vk::BufferUsageFlagBits::eVertexBuffer,
+                           sizeof(Mesh));
+  }
+  _build_buffers();
 }
 
 void Text::set_string(const std::wstring &string) {
   m_string = string;
   m_text_texture = _build_texture();
+  _build_buffers();
 }
 
 void Text::set_font_size(const float font_size) {
   m_font_size = font_size;
   m_text_texture = _build_texture();
+  _build_buffers();
 }
 
 void Text::render(const vulkan::RenderCall &render_call) {
-  m_buffer.bind(render_call);
+  if (m_buffer_write_to_perform.image_indices.count(
+          render_call.get_swap_chain_image_index()) != 0) {
+    m_buffers[render_call.get_swap_chain_image_index()].set_data(
+        &m_buffer_write_to_perform.mesh, sizeof(Mesh));
+    m_buffer_write_to_perform.image_indices.erase(
+        render_call.get_swap_chain_image_index());
+  }
+
+  m_buffers[render_call.get_swap_chain_image_index()].bind(render_call);
   render_call.render_vertices(6);
 }
 
@@ -64,6 +67,23 @@ Texture Text::_build_texture() {
       .dimensions(pixel_width, pixel_height)
       .format(vk::Format::eR32Sfloat)
       .build(m_context, pixels.data());
+}
+
+void Text::_build_buffers() {
+  const float w{static_cast<float>(m_texture_width)};
+  const float h{static_cast<float>(m_texture_height)};
+
+  m_buffer_write_to_perform.mesh[0] = Vertex(0.0f, h, 0.0f, 1.0f);
+  m_buffer_write_to_perform.mesh[1] = Vertex(w, h, 1.0f, 1.0f);
+  m_buffer_write_to_perform.mesh[2] = Vertex(w, 0.0f, 1.0f, 0.0f);
+  m_buffer_write_to_perform.mesh[3] = Vertex(w, 0.0f, 1.0f, 0.0f);
+  m_buffer_write_to_perform.mesh[4] = Vertex(0.0f, 0.0f, 0.0f, 0.0f);
+  m_buffer_write_to_perform.mesh[5] = Vertex(0.0f, h, 0.0f, 1.0f);
+
+  m_buffer_write_to_perform.image_indices.clear();
+  for (uint32_t i = 0; i < m_buffers.size(); i++) {
+    m_buffer_write_to_perform.image_indices.emplace(i);
+  }
 }
 } // namespace text
 } // namespace core

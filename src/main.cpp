@@ -26,12 +26,12 @@ int main(int args, char *argv[]) {
     core::vulkan::Context context(window, settings);
     core::ResourceHodler hodler(context);
 
-    core::text::Font font("/usr/share/fonts/TTF/DejaVuSans.ttf");
-    core::text::Text fps_text(context, font, L"60 FPS");
-
     auto chunk_mesh_shader =
         chunk::Mesh::build_shader(context, settings, hodler);
     auto text_shader = core::text::Text::build_shader(context, settings);
+
+    core::text::Font font("/usr/share/fonts/TTF/DejaVuSans.ttf");
+    core::text::Text fps_text(context, font, L"60 FPS");
 
     text_shader.set_texture(fps_text.get_texture());
 

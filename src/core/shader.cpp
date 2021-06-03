@@ -77,6 +77,7 @@ void Shader::set_texture(const Texture &texture, const size_t index) {
       vk::DescriptorType::eCombinedImageSampler;
   texture_write.write.dstArrayElement = 0;
 
+  texture_write.image_indices.clear();
   for (size_t i = 0; i < m_descriptor_sets.size(); i++) {
     texture_write.image_indices.emplace(static_cast<uint32_t>(i));
   }
