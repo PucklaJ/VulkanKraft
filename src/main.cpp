@@ -47,7 +47,7 @@ int main(int args, char *argv[]) {
       window.poll_events();
 
       std::wstringstream fps_stream;
-      fps_stream << std::setprecision(0) << std::fixed
+      fps_stream << std::setprecision(5) << std::fixed
                  << (1.0f / timer.get_delta_time());
       fps_stream << L" FPS";
       fps_text.set_string(fps_stream.str());

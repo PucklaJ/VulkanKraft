@@ -46,6 +46,8 @@ public:
   void render(const vulkan::RenderCall &render_call);
 
 private:
+  static constexpr uint32_t max_texts = 3;
+
   struct BufferWrite {
     Mesh mesh;
     std::set<uint32_t> image_indices;

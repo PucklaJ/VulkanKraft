@@ -103,7 +103,9 @@ void Shader::bind_dynamic_texture(const vulkan::RenderCall &render_call,
 
   render_call.bind_descriptor_set(
       texture.m_dynamic_sets[render_call.get_swap_chain_image_index()],
-      m_pipeline->get_layout());
+      m_pipeline->get_layout(),
+      index + std::min(m_min_dynamic_texture_binding_point,
+                       static_cast<size_t>(1)));
 }
 
 void Shader::bind(const vulkan::RenderCall &render_call) {
@@ -123,7 +125,7 @@ void Shader::bind(const vulkan::RenderCall &render_call) {
 
     render_call.bind_descriptor_set(
         m_descriptor_sets[render_call.get_swap_chain_image_index()],
-        m_pipeline->get_layout());
+        m_pipeline->get_layout(), 0);
   }
 }
 
@@ -199,6 +201,7 @@ void Shader::_create_graphics_pipeline(const vulkan::Context &context,
     current_bindings++;
   }
 
+  m_dynamic_textures_layout.resize(builder.m_dynamic_textures.size());
   for (size_t i = 0; i < builder.m_dynamic_textures.size();
        i++, current_bindings++) {
     const auto &bindings = all_bindings[current_bindings];
@@ -207,8 +210,8 @@ void Shader::_create_graphics_pipeline(const vulkan::Context &context,
     li.pBindings = bindings.data();
 
     try {
-      m_dynamic_textures_layout.emplace_back(
-          m_context.get_device().createDescriptorSetLayout(li));
+      auto l = m_context.get_device().createDescriptorSetLayout(li);
+      m_dynamic_textures_layout[i] = l;
     } catch (const std::runtime_error &e) {
       throw VulkanKraftException(
           std::string(
@@ -263,24 +266,24 @@ void Shader::_create_descriptor_pool(const vulkan::Context &context,
       builder.m_dynamic_textures.empty()) {
     return;
   }
-  std::vector<vk::DescriptorPoolSize> pool_sizes(
-      builder.m_uniform_buffers.size() + builder.m_texture_count +
-      builder.m_dynamic_textures.size());
-  size_t i;
-  for (i = 0; i < builder.m_uniform_buffers.size(); i++) {
-    pool_sizes[i].type = vk::DescriptorType::eUniformBuffer;
-    pool_sizes[i].descriptorCount =
-        static_cast<uint32_t>(context.get_swap_chain_image_count());
+  std::vector<vk::DescriptorPoolSize> pool_sizes;
+  pool_sizes.reserve(2);
+  {
+    auto &ps = pool_sizes.emplace_back();
+    ps.type = vk::DescriptorType::eUniformBuffer;
+    ps.descriptorCount =
+        static_cast<uint32_t>(context.get_swap_chain_image_count() *
+                              builder.m_uniform_buffers.size());
   }
-  for (size_t j = 0; j < builder.m_texture_count; j++, i++) {
-    pool_sizes[i].type = vk::DescriptorType::eCombinedImageSampler;
-    pool_sizes[i].descriptorCount =
-        static_cast<uint32_t>(context.get_swap_chain_image_count());
-  }
-  for (size_t j = 0; j < builder.m_dynamic_textures.size(); j++, i++) {
-    pool_sizes[i].type = vk::DescriptorType::eCombinedImageSampler;
-    pool_sizes[i].descriptorCount =
-        static_cast<uint32_t>(context.get_swap_chain_image_count());
+  {
+    auto &ps = pool_sizes.emplace_back();
+    ps.type = vk::DescriptorType::eCombinedImageSampler;
+    ps.descriptorCount = static_cast<uint32_t>(
+        context.get_swap_chain_image_count() * builder.m_texture_count);
+    for (const auto &ms : builder.m_dynamic_textures) {
+      ps.descriptorCount +=
+          static_cast<uint32_t>(context.get_swap_chain_image_count() * ms);
+    }
   }
 
   vk::DescriptorPoolCreateInfo pi;

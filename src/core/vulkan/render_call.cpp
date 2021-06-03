@@ -109,11 +109,11 @@ void RenderCall::bind_graphics_pipeline(
   m_graphics_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 }
 
-void RenderCall::bind_descriptor_set(
-    const vk::DescriptorSet &set,
-    const vk::PipelineLayout &layout) const noexcept {
+void RenderCall::bind_descriptor_set(const vk::DescriptorSet &set,
+                                     const vk::PipelineLayout &layout,
+                                     const uint32_t set_index) const noexcept {
   m_graphics_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout,
-                                       0, set, nullptr);
+                                       set_index, set, nullptr);
 }
 
 void RenderCall::bind_buffer(const vk::Buffer &buffer,

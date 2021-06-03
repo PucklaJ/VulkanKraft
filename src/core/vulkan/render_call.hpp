@@ -26,7 +26,8 @@ public:
 
   void bind_graphics_pipeline(const vk::Pipeline &pipeline) const noexcept;
   void bind_descriptor_set(const vk::DescriptorSet &set,
-                           const vk::PipelineLayout &layout) const noexcept;
+                           const vk::PipelineLayout &layout,
+                           const uint32_t set_index) const noexcept;
   void bind_buffer(const vk::Buffer &buffer, vk::BufferUsageFlags usage) const;
 
 private:

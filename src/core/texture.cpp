@@ -367,6 +367,7 @@ void Texture::_generate_mip_maps(const Builder &builder) {
 void Texture::_create_descriptor_sets(const vk::DescriptorPool &pool,
                                       const vk::DescriptorSetLayout &layout,
                                       const uint32_t binding_point) {
+  m_dynamic_binding_point = binding_point;
   if (!m_dynamic_sets.empty())
     return;
 
@@ -386,7 +387,6 @@ void Texture::_create_descriptor_sets(const vk::DescriptorPool &pool,
         e.what());
   }
 
-  m_dynamic_binding_point = binding_point;
   m_dynamic_writes_to_perform.clear();
   for (uint32_t i = 0; i < m_dynamic_sets.size(); i++) {
     m_dynamic_writes_to_perform.emplace(i);
