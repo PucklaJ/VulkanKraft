@@ -9,12 +9,16 @@
 #include "core/window.hpp"
 #include "player.hpp"
 #include <glm/gtx/transform.hpp>
+#include <iomanip>
+#include <sstream>
 
 int main(int args, char *argv[]) {
   core::Settings settings;
   core::FPSTimer timer(settings);
   chunk::Mesh::GlobalUniform chunk_mesh_global;
+  core::text::Text::GlobalUniform text_global;
   glm::mat4 projection_matrix;
+  glm::mat4 text_projection_matrix;
 
   try {
     core::Window window(settings.window_width, settings.window_height,
@@ -39,6 +43,13 @@ int main(int args, char *argv[]) {
       auto delta_timer(timer.begin_frame());
       window.poll_events();
 
+      std::wstringstream fps_stream;
+      fps_stream << std::setprecision(0) << std::fixed
+                 << (1.0f / timer.get_delta_time());
+      fps_stream << L" FPS";
+      fps_text.set_string(fps_stream.str());
+      text_shader.set_texture(fps_text.get_texture());
+
       player.update(timer, window);
       window.reset_keys();
 
@@ -51,9 +62,15 @@ int main(int args, char *argv[]) {
             static_cast<float>(width) / static_cast<float>(height),
             core::Settings::near_plane, core::Settings::far_plane);
         projection_matrix[1][1] *= -1.0f;
+
+        text_projection_matrix = glm::ortho(0.0f, static_cast<float>(width),
+                                            0.0f, static_cast<float>(height));
+
         chunk_mesh_global.proj_view =
             projection_matrix * player.create_view_matrix();
         chunk_mesh_shader.update_uniform_buffer(render_call, chunk_mesh_global);
+        text_global.proj = text_projection_matrix;
+        text_shader.update_uniform_buffer(render_call, text_global);
 
         chunk_mesh_shader.bind(render_call);
         chunk_chunk.render(render_call);

@@ -22,16 +22,19 @@ Shader Text::build_shader(const vulkan::Context &context,
 
 Text::Text(const vulkan::Context &context, Font &font,
            const std::wstring &string)
-    : m_context(context), m_font(font), m_string(string), m_font_size(300.0f),
+    : m_context(context), m_font(font), m_string(string), m_font_size(50.0f),
       m_text_texture(_build_texture()),
       m_buffer(context, vk::BufferUsageFlagBits::eVertexBuffer, sizeof(Mesh)) {
+  const float w{m_texture_width};
+  const float h{m_texture_height};
+
   Mesh mesh;
-  mesh[0] = Vertex(-0.5f, 0.5f, 0.0f, 1.0f);
-  mesh[1] = Vertex(0.5f, 0.5f, 1.0f, 1.0f);
-  mesh[2] = Vertex(0.5f, -0.5f, 1.0f, 0.0f);
-  mesh[3] = Vertex(0.5f, -0.5f, 1.0f, 0.0f);
-  mesh[4] = Vertex(-0.5f, -0.5f, 0.0f, 0.0f);
-  mesh[5] = Vertex(-0.5f, 0.5f, 0.0f, 1.0f);
+  mesh[0] = Vertex(0.0f, h, 0.0f, 1.0f);
+  mesh[1] = Vertex(w, h, 1.0f, 1.0f);
+  mesh[2] = Vertex(w, 0.0f, 1.0f, 0.0f);
+  mesh[3] = Vertex(w, 0.0f, 1.0f, 0.0f);
+  mesh[4] = Vertex(0.0f, 0.0f, 0.0f, 0.0f);
+  mesh[5] = Vertex(0.0f, h, 0.0f, 1.0f);
 
   m_buffer.set_data(&mesh, sizeof(mesh));
 }
@@ -55,7 +58,8 @@ Texture Text::_build_texture() {
   size_t pixel_width, pixel_height;
   const auto pixels(
       m_font.create_bitmap(m_string, m_font_size, pixel_width, pixel_height));
-
+  m_texture_width = pixel_width;
+  m_texture_height = pixel_height;
   return Texture::Builder()
       .dimensions(pixel_width, pixel_height)
       .format(vk::Format::eR32Sfloat)

@@ -48,6 +48,8 @@ private:
 
   Texture m_text_texture;
   vulkan::Buffer m_buffer;
+  uint32_t m_texture_width;
+  uint32_t m_texture_height;
 };
 } // namespace text
 } // namespace core
