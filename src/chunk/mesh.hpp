@@ -11,7 +11,7 @@ class Chunk;
 
 constexpr size_t block_width = 32;
 constexpr size_t block_depth = 32;
-constexpr size_t block_height = 256;
+constexpr size_t block_height = 32;
 
 class BlockArray {
 public:

@@ -88,8 +88,8 @@ void Mesh::generate(const Chunk *chunk, const glm::vec2 &pos) {
 
           _create_cube(vertices, indices,
                        glm::vec3(static_cast<float>(x) + pos.x + 0.5f,
-                                 static_cast<float>(y) + pos.y + 0.5f,
-                                 static_cast<float>(z) + 0.0f + 0.5f),
+                                 static_cast<float>(y) + 0.0f + 0.5f,
+                                 static_cast<float>(z) + pos.y + 0.5f),
                        front_face, back_face, left_face, right_face, top_face,
                        bot_face);
         }
