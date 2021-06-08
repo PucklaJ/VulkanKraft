@@ -30,13 +30,8 @@ int main(int args, char *argv[]) {
         chunk::Mesh::build_shader(context, settings, hodler);
     auto text_shader = core::text::Text::build_shader(context, settings);
 
-    core::text::Font font("/usr/share/fonts/TTF/DejaVuSans.ttf");
+    core::text::Font font("fonts/Mister Pixel Regular.otf");
     core::text::Text fps_text(context, text_shader, font, L"60 FPS");
-    core::text::Text hello_world(context, text_shader, font, L"Hello World",
-                                 glm::vec2(0.0f, fps_text.get_height()));
-    core::text::Text japanese(
-        context, text_shader, font, L"nihongo",
-        glm::vec2(0.0f, fps_text.get_height() + hello_world.get_height()));
 
     Player player(glm::vec3(0.0f, 0.0f, 100.0f));
     chunk::Chunk chunk_chunk(context, glm::vec3(0.0f, 0.0f, 0.0f));
@@ -47,7 +42,7 @@ int main(int args, char *argv[]) {
       window.poll_events();
 
       std::wstringstream fps_stream;
-      fps_stream << std::setprecision(5) << std::fixed
+      fps_stream << std::setprecision(0) << std::fixed
                  << (1.0f / timer.get_delta_time());
       fps_stream << L" FPS";
       fps_text.set_string(fps_stream.str());
@@ -79,8 +74,6 @@ int main(int args, char *argv[]) {
 
         text_shader.bind(render_call);
         fps_text.render(render_call);
-        hello_world.render(render_call);
-        japanese.render(render_call);
       }
       current_time += timer.get_delta_time();
     }
