@@ -1,4 +1,4 @@
-#include "chunk/chunk.hpp"
+#include "chunk/world.hpp"
 #include "core/exception.hpp"
 #include "core/fps_timer.hpp"
 #include "core/log.hpp"
@@ -34,7 +34,7 @@ int main(int args, char *argv[]) {
     core::text::Text fps_text(context, text_shader, font, L"60 FPS");
 
     Player player(glm::vec3(0.0f, 0.0f, 100.0f));
-    chunk::Chunk chunk_chunk(context, glm::vec3(0.0f, 0.0f, 0.0f));
+    chunk::World world(context, 2, 2);
 
     float current_time = 0.0f;
     while (!window.should_close()) {
@@ -70,7 +70,7 @@ int main(int args, char *argv[]) {
         text_shader.update_uniform_buffer(render_call, text_global);
 
         chunk_mesh_shader.bind(render_call);
-        chunk_chunk.render(render_call);
+        world.render(render_call);
 
         text_shader.bind(render_call);
         fps_text.render(render_call);
