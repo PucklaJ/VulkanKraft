@@ -27,6 +27,13 @@ World::World(const ::core::vulkan::Context &context, const size_t width,
   }
 }
 
+World::~World() {
+  for (auto &[pos, chunk] : m_chunks) {
+    chunk->destroy();
+    chunk.reset();
+  }
+}
+
 void World::render(const ::core::vulkan::RenderCall &render_call) {
   for (auto &[pos, chunk] : m_chunks) {
     chunk->render(render_call);

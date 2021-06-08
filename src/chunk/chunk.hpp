@@ -16,6 +16,8 @@ public:
   inline void set_left(std::shared_ptr<Chunk> c) { m_left = c; }
   inline void set_right(std::shared_ptr<Chunk> c) { m_right = c; }
 
+  void destroy();
+
 private:
   Mesh m_mesh;
   const glm::ivec2 m_position;

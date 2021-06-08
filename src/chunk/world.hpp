@@ -8,6 +8,7 @@ class World {
 public:
   World(const ::core::vulkan::Context &context, const size_t width,
         const size_t depth);
+  ~World();
 
   void render(const ::core::vulkan::RenderCall &render_call);
 
