@@ -3,6 +3,8 @@
 #ifndef STB_TRUETYPE_IMPLEMENTATION
 #include <stb_truetype.h>
 #endif
+#include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -18,20 +20,31 @@ public:
                                    size_t &complete_height);
 
 private:
-  struct FontBitmap {
+  class CharBitmap {
+  public:
+    CharBitmap(stbtt_fontinfo *font_info, const float scale,
+               const float x_shift, const wchar_t character);
+
     std::vector<uint8_t> pixels;
     size_t pixel_width;
     size_t pixel_height;
+    int x0;
+    int y0;
+    int advance;
   };
 
   struct StringBitmap {
-    std::vector<FontBitmap> bitmaps;
+    std::vector<CharBitmap *> bitmaps;
     std::vector<size_t> x_positions;
     std::vector<size_t> y_positions;
   };
 
   stbtt_fontinfo m_font_info;
   std::vector<uint8_t> m_font_file_buffer;
+
+  // Stores a CharBitmap for every character of every font size
+  std::map<std::pair<float, wchar_t>, std::unique_ptr<CharBitmap>>
+      m_bitmap_cache;
 };
 } // namespace text
 } // namespace core

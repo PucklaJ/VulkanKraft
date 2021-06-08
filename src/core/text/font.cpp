@@ -55,35 +55,29 @@ std::vector<float> Font::create_bitmap(std::wstring text_string,
       continue;
     }
 
-    // Get all metrics from the current character
-    int advance, lsb, x0, y0, x1, y1;
-    const auto x_shift = current_x - floorf(current_x);
-    stbtt_GetCodepointHMetrics(&m_font_info, text_string[i], &advance, &lsb);
-    stbtt_GetCodepointBitmapBoxSubpixel(&m_font_info, text_string[i], scale,
-                                        scale, x_shift, 0, &x0, &y0, &x1, &y1);
+    // Look for the character in the cache
+    const auto char_scale(std::make_pair(scale, text_string[i]));
+    if (m_bitmap_cache.find(char_scale) == m_bitmap_cache.end()) {
+      // Create a new one and store it in the cache
+      const auto x_shift{current_x - floorf(current_x)};
+      auto fb = std::make_unique<CharBitmap>(&m_font_info, scale, x_shift,
+                                             text_string[i]);
+      m_bitmap_cache.emplace(char_scale, std::move(fb));
+    }
 
-    // Allocate memory for the bitmap
-    FontBitmap fb;
-    fb.pixel_width = x1 - x0;
-    fb.pixel_height = y1 - y0;
-    fb.pixels.resize(fb.pixel_width * fb.pixel_height);
-    // Create the bitmap
-    stbtt_MakeCodepointBitmapSubpixel(
-        &m_font_info, fb.pixels.data(), fb.pixel_width, fb.pixel_height,
-        fb.pixel_width, scale, scale, x_shift, 0, text_string[i]);
-
+    const auto &fb = m_bitmap_cache[char_scale];
     // Insert the bitmap into all_characters
-    all_characters.bitmaps.emplace_back(std::move(fb));
+    all_characters.bitmaps.push_back(fb.get());
     all_characters.x_positions.emplace_back(
-        std::max(static_cast<int>(current_x + x0), 0));
+        std::max(static_cast<int>(current_x + fb->x0), 0));
     all_characters.y_positions.emplace_back(
-        std::max(static_cast<int>(current_ascent + y0), 0));
+        std::max(static_cast<int>(current_ascent + fb->y0), 0));
 
     // Advance the x position
-    if (current_x + x0 < 0) {
-      current_x -= x0;
+    if (current_x + fb->x0 < 0) {
+      current_x -= fb->x0;
     }
-    current_x += advance * scale;
+    current_x += fb->advance * scale;
     // Add kerning
     if (i != text_string.length() - 1) {
       current_x +=
@@ -98,9 +92,9 @@ std::vector<float> Font::create_bitmap(std::wstring text_string,
   // Get the max width and max height
   for (size_t i = 0; i < all_characters.bitmaps.size(); i++) {
     const auto new_height =
-        all_characters.y_positions[i] + all_characters.bitmaps[i].pixel_height;
+        all_characters.y_positions[i] + all_characters.bitmaps[i]->pixel_height;
     const auto new_width =
-        all_characters.x_positions[i] + all_characters.bitmaps[i].pixel_width;
+        all_characters.x_positions[i] + all_characters.bitmaps[i]->pixel_width;
 
     if (new_height > complete_height)
       complete_height = new_height;
@@ -119,22 +113,40 @@ std::vector<float> Font::create_bitmap(std::wstring text_string,
   for (size_t c = 0; c < all_characters.bitmaps.size(); c++) {
     const auto x = all_characters.x_positions[c];
     const auto y = all_characters.y_positions[c] - min_y;
-    for (size_t i = 0; i < all_characters.bitmaps[c].pixel_width; i++) {
-      for (size_t j = 0; j < all_characters.bitmaps[c].pixel_height; j++) {
+    for (size_t i = 0; i < all_characters.bitmaps[c]->pixel_width; i++) {
+      for (size_t j = 0; j < all_characters.bitmaps[c]->pixel_height; j++) {
         // Clip when y gets below 0
         if (static_cast<long>(j) + y < 0) {
           continue;
         }
         const auto complete_index = (i + x) + (j + y) * complete_width;
-        const auto bitmap_index = i + j * all_characters.bitmaps[c].pixel_width;
+        const auto bitmap_index =
+            i + j * all_characters.bitmaps[c]->pixel_width;
 
         complete_string[complete_index] =
-            all_characters.bitmaps[c].pixels[bitmap_index] / 255.0f;
+            all_characters.bitmaps[c]->pixels[bitmap_index] / 255.0f;
       }
     }
   }
 
   return complete_string;
 }
+
+Font::CharBitmap::CharBitmap(stbtt_fontinfo *font_info, const float scale,
+                             const float x_shift, const wchar_t character) {
+  int lsb, x1, y1;
+  stbtt_GetCodepointHMetrics(font_info, character, &advance, &lsb);
+  stbtt_GetCodepointBitmapBoxSubpixel(font_info, character, scale, scale,
+                                      x_shift, 0, &x0, &y0, &x1, &y1);
+
+  pixel_width = x1 - x0;
+  pixel_height = y1 - y0;
+  pixels.resize(pixel_width * pixel_height);
+
+  stbtt_MakeCodepointBitmapSubpixel(font_info, pixels.data(), pixel_width,
+                                    pixel_height, pixel_width, scale, scale,
+                                    x_shift, 0, character);
+}
+
 } // namespace text
 } // namespace core
