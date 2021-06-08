@@ -32,6 +32,8 @@ int main(int args, char *argv[]) {
 
     core::text::Font font("fonts/Mister Pixel Regular.otf");
     core::text::Text fps_text(context, text_shader, font, L"60 FPS");
+    core::text::Text position_text(context, text_shader, font, L"X",
+                                   glm::vec2(0.0f, fps_text.get_height() + 10));
 
     Player player(glm::vec3(0.0f, 0.0f, 100.0f));
     chunk::World world(context, 2, 2);
@@ -41,11 +43,25 @@ int main(int args, char *argv[]) {
       auto delta_timer(timer.begin_frame());
       window.poll_events();
 
-      std::wstringstream fps_stream;
-      fps_stream << std::setprecision(0) << std::fixed
-                 << (1.0f / timer.get_delta_time());
-      fps_stream << L" FPS";
-      fps_text.set_string(fps_stream.str());
+      {
+        std::wstringstream fps_stream;
+        fps_stream << std::setprecision(0) << std::fixed
+                   << (1.0f / timer.get_delta_time());
+        fps_stream << L" FPS";
+        fps_text.set_string(fps_stream.str());
+      }
+      {
+        constexpr auto float_width = 8;
+        std::wstringstream pos_stream;
+        pos_stream << std::fixed << std::setprecision(1);
+        pos_stream << "X:" << std::setw(float_width) << std::right
+                   << player.get_position().x << std::endl;
+        pos_stream << "Y:" << std::setw(float_width) << std::right
+                   << player.get_position().y << std::endl;
+        pos_stream << "Z:" << std::setw(float_width) << std::right
+                   << player.get_position().z << std::endl;
+        position_text.set_string(pos_stream.str());
+      }
 
       player.update(timer, window);
       window.reset_keys();
@@ -74,6 +90,7 @@ int main(int args, char *argv[]) {
 
         text_shader.bind(render_call);
         fps_text.render(render_call);
+        position_text.render(render_call);
       }
       current_time += timer.get_delta_time();
     }
