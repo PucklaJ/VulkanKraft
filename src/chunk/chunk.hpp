@@ -6,6 +6,8 @@
 namespace chunk {
 class Chunk : public BlockArray {
 public:
+  friend class Mesh;
+
   Chunk(const ::core::vulkan::Context &context, const glm::ivec2 &position);
 
   void generate();

@@ -197,4 +197,32 @@ void Mesh::_create_cube(std::vector<Mesh::Vertex> &vertices,
     indices.emplace_back(i + 15);
   }
 }
+
+void Mesh::_check_faces_of_block(const Chunk *chunk, const size_t x,
+                                 const size_t y, const size_t z,
+                                 bool &front_face, bool &back_face,
+                                 bool &right_face, bool &left_face,
+                                 bool &top_face, bool &bot_face) {
+  left_face = x == 0 || !chunk->get(x - 1, y, z);
+  right_face = x == block_width - 1 || !chunk->get(x + 1, y, z);
+
+  front_face = z == block_depth - 1 || !chunk->get(x, y, z + 1);
+  back_face = z == 0 || !chunk->get(x, y, z - 1);
+
+  top_face = y == block_height - 1 || !chunk->get(x, y + 1, z);
+  bot_face = y == 0 || !chunk->get(x, y - 1, z);
+
+  if (x == 0 && chunk->m_left) {
+    left_face = !chunk->m_left->get(block_width - 1, y, z);
+  }
+  if (z == 0 && chunk->m_front) {
+    back_face = !chunk->m_front->get(x, y, block_depth - 1);
+  }
+  if (x == block_width - 1 && chunk->m_right) {
+    right_face = !chunk->m_right->get(0, y, z);
+  }
+  if (z == block_depth - 1 && chunk->m_back) {
+    front_face = !chunk->m_back->get(x, y, 0);
+  }
+}
 }; // namespace chunk

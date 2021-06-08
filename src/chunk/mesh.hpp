@@ -66,21 +66,11 @@ private:
                const bool right_face = true, const bool top_face = true,
                const bool bot_face = true);
 
-  static inline void _check_faces_of_block(const BlockArray *blocks,
-                                           const size_t x, const size_t y,
-                                           const size_t z, bool &front_face,
-                                           bool &back_face, bool &right_face,
-                                           bool &left_face, bool &top_face,
-                                           bool &bot_face) {
-    left_face = x == 0 || !blocks->get(x - 1, y, z);
-    right_face = x == block_width - 1 || !blocks->get(x + 1, y, z);
-
-    front_face = z == block_depth - 1 || !blocks->get(x, y, z + 1);
-    back_face = z == 0 || !blocks->get(x, y, z - 1);
-
-    top_face = y == block_height - 1 || !blocks->get(x, y + 1, z);
-    bot_face = y == 0 || !blocks->get(x, y - 1, z);
-  }
+  static void _check_faces_of_block(const Chunk *chunk, const size_t x,
+                                    const size_t y, const size_t z,
+                                    bool &front_face, bool &back_face,
+                                    bool &right_face, bool &left_face,
+                                    bool &top_face, bool &bot_face);
 
   std::unique_ptr<::core::vulkan::Buffer> m_vertex_buffer;
   std::unique_ptr<::core::vulkan::Buffer> m_index_buffer;
