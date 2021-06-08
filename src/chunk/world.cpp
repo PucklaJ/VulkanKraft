@@ -1,4 +1,7 @@
 #include "world.hpp"
+#include "../core/exception.hpp"
+#include "../core/log.hpp"
+#include <sstream>
 
 namespace chunk {
 World::World(const ::core::vulkan::Context &context, const size_t width,
@@ -34,18 +37,111 @@ World::~World() {
   }
 }
 
+void World::place_block(const glm::ivec3 &position,
+                        const BlockArray::BlockType block) {
+  {
+    std::stringstream stream;
+    stream << "Placing block " << std::boolalpha << block << " at ";
+    stream << "(" << position.x << "; " << position.y << "; " << position.z
+           << ")";
+    ::core::Log::info(stream.str());
+  }
+  const auto chunk_pos(get_chunk_position(position));
+
+  auto chunk(_get_chunk(chunk_pos));
+  if (chunk) {
+    const glm::ivec3 chunk_block_position(
+        position.x - (*chunk)->get_position().x, position.y,
+        position.z - (*chunk)->get_position().y);
+
+    (*chunk)->set(chunk_block_position.x, chunk_block_position.y,
+                  chunk_block_position.z, block);
+    (*chunk)->generate_block_change(chunk_block_position);
+    return;
+  }
+
+  std::stringstream stream;
+  stream << "attempted to place block " << std::boolalpha << block
+         << " at position ";
+  stream << "(" << position.x << "; " << position.y << "; " << position.z
+         << ")";
+
+  throw ::core::VulkanKraftException(stream.str());
+}
+
+void World::destroy_block(const glm::ivec3 &position) {
+  {
+    std::stringstream stream;
+    stream << "Destroying block  at ";
+    stream << "(" << position.x << "; " << position.y << "; " << position.z
+           << ")";
+    ::core::Log::info(stream.str());
+  }
+
+  const auto chunk_pos(get_chunk_position(position));
+
+  auto chunk(_get_chunk(chunk_pos));
+  if (chunk) {
+    const glm::ivec3 chunk_block_position(
+        position.x - (*chunk)->get_position().x, position.y,
+        position.z - (*chunk)->get_position().y);
+
+    (*chunk)->set(chunk_block_position.x, chunk_block_position.y,
+                  chunk_block_position.z, false);
+    (*chunk)->generate_block_change(chunk_block_position);
+    return;
+  }
+
+  std::stringstream stream;
+  stream << "attempted to destroy block at position ";
+  stream << "(" << position.x << "; " << position.y << "; " << position.z
+         << ")";
+
+  throw ::core::VulkanKraftException(stream.str());
+}
+
+BlockArray::BlockType World::show_block(const glm::ivec3 &position) const {
+  const auto chunk_pos(get_chunk_position(position));
+
+  const auto chunk(_get_chunk(chunk_pos));
+  if (chunk) {
+    const glm::ivec3 chunk_block_position(
+        position.x - (*chunk)->get_position().x, position.y,
+        position.z - (*chunk)->get_position().y);
+
+    return (*chunk)->get(chunk_block_position.x, chunk_block_position.y,
+                         chunk_block_position.z);
+  }
+
+  std::stringstream stream;
+  stream << "attempted to show block at position ";
+  stream << "(" << position.x << "; " << position.y << "; " << position.z
+         << ")";
+
+  throw ::core::VulkanKraftException(stream.str());
+}
+
 void World::render(const ::core::vulkan::RenderCall &render_call) {
   for (auto &[pos, chunk] : m_chunks) {
     chunk->render(render_call);
   }
 }
 
-std::optional<std::shared_ptr<Chunk>> World::_get_chunk(const glm::ivec2 &pos) {
-  const auto p(std::make_pair(pos.x, pos.y));
-  if (m_chunks.find(p) == m_chunks.end()) {
+std::optional<std::shared_ptr<Chunk>>
+World::_get_chunk(const std::pair<int, int> &pos) {
+  if (m_chunks.find(pos) == m_chunks.end()) {
     return std::nullopt;
   }
 
-  return m_chunks[p];
+  return m_chunks[pos];
+}
+
+const std::optional<const std::shared_ptr<Chunk>>
+World::_get_chunk(const std::pair<int, int> &pos) const {
+  if (m_chunks.find(pos) == m_chunks.end()) {
+    return std::nullopt;
+  }
+
+  return m_chunks.at(pos);
 }
 } // namespace chunk

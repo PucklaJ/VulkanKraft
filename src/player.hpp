@@ -1,4 +1,5 @@
 #pragma once
+#include "chunk/world.hpp"
 #include "core/fps_timer.hpp"
 #include "core/window.hpp"
 #include <glm/glm.hpp>
@@ -11,7 +12,8 @@ public:
 
   glm::mat4 create_view_matrix() const;
 
-  void update(const core::FPSTimer &timer, core::Window &window);
+  void update(const core::FPSTimer &timer, core::Window &window,
+              chunk::World &world);
 
 private:
   static constexpr float eye_height = 1.8f;

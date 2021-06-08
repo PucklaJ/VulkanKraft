@@ -63,7 +63,7 @@ int main(int args, char *argv[]) {
         position_text.set_string(pos_stream.str());
       }
 
-      player.update(timer, window);
+      player.update(timer, window, world);
       window.reset_keys();
 
       if (const auto _render_call(context.render_begin()); _render_call) {

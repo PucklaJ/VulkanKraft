@@ -13,7 +13,8 @@ glm::mat4 Player::create_view_matrix() const {
                      glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
-void Player::update(const core::FPSTimer &timer, core::Window &window) {
+void Player::update(const core::FPSTimer &timer, core::Window &window,
+                    chunk::World &world) {
   // **** handle camera *****
   const auto cur_mouse_x = window.get_mouse().screen_position.x;
   const auto cur_mouse_y = window.get_mouse().screen_position.y;
@@ -59,6 +60,15 @@ void Player::update(const core::FPSTimer &timer, core::Window &window) {
         glm::vec3(0.0f, 1.0f, 0.0f) * -move_speed * timer.get_delta_time();
   }
   // **************************
+
+  if (window.key_just_pressed(GLFW_KEY_B)) {
+    const glm::ivec3 pos(0, 0, 63);
+    if (world.show_block(pos)) {
+      world.destroy_block(pos);
+    } else {
+      world.place_block(pos, true);
+    }
+  }
 }
 
 glm::vec3 Player::_get_look_direction() const {
