@@ -21,11 +21,13 @@ public:
   inline const glm::ivec2 &get_position() const { return m_position; }
 
 private:
-  static void _check_faces_of_block(const Chunk *chunk, const size_t x,
-                                    const size_t y, const size_t z,
-                                    bool &front_face, bool &back_face,
-                                    bool &right_face, bool &left_face,
-                                    bool &top_face, bool &bot_face);
+  static void _check_faces(const Chunk *chunk, const size_t x, const size_t y,
+                           const size_t z, bool &front_face, bool &back_face,
+                           bool &right_face, bool &left_face, bool &top_face,
+                           bool &bot_face);
+
+  void _check_faces_of_block(const glm::ivec3 &position);
+  void _check_neighboring_faces_of_block(const glm::ivec3 &position);
 
   Mesh m_mesh;
   const glm::ivec2 m_position;

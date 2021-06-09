@@ -62,7 +62,7 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
   // **************************
 
   if (window.key_just_pressed(GLFW_KEY_B)) {
-    const glm::ivec3 pos(0, 0, 63);
+    const glm::ivec3 pos(63, chunk::block_height - 1, 63);
     if (world.show_block(pos) == chunk::BlockType::GRASS) {
       world.destroy_block(pos);
     } else {
