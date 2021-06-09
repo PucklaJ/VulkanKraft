@@ -1,5 +1,5 @@
 set_project("VulkanKraft")
-add_requires("glfw", "glm", "stb")
+add_requires("glfw", "glm", "stb", "vulkan-hpp")
 
 rule("shader")
     set_extensions(".vert", ".frag", ".glsl")
@@ -42,8 +42,12 @@ add_rules("mode.debug", "mode.release")
 target("vulkankraft")
   set_kind("binary")
   set_languages("cxx17")
-  add_packages("glfw", "glm", "stb")
-  add_syslinks("vulkan")
+  add_packages("glfw", "glm", "stb", "vulkan-hpp")
+  if is_plat("windows") then
+    add_syslinks("C:\\VulkanSDK\\1.2.135.0\\Lib" .. (is_arch("x86") and "32" or "") .. "\\vulkan-1")
+  else
+    add_syslinks("vulkan")
+  end
   add_rules("shader")
 
   add_files("src/*.cpp", 
