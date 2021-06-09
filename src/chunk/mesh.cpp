@@ -1,7 +1,12 @@
 #include "mesh.hpp"
+#include "../core/log.hpp"
 #include "chunk.hpp"
 #include <array>
 #include <cstdlib>
+#ifndef NDEBUG
+#include <chrono>
+#include <sstream>
+#endif
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -67,6 +72,10 @@ void Mesh::render(const ::core::vulkan::RenderCall &render_call) {
 }
 
 void Mesh::generate(const Chunk *chunk, const glm::vec2 &pos) {
+#ifndef NDEBUG
+  const auto start_time(std::chrono::high_resolution_clock::now());
+#endif
+
   std::vector<Vertex> vertices;
   vertices.reserve(block_depth * block_width * block_height * 8);
   std::vector<uint32_t> indices;
@@ -99,6 +108,17 @@ void Mesh::generate(const Chunk *chunk, const glm::vec2 &pos) {
   m_vertex_buffer->set_data(vertices.data(), sizeof(Vertex) * vertices.size());
   m_index_buffer->set_data(indices.data(), sizeof(uint32_t) * indices.size());
   m_num_indices = indices.size();
+
+#ifndef NDEBUG
+  const auto end_time(std::chrono::high_resolution_clock::now());
+  std::stringstream stream;
+  stream << "Mesh Generation Time: "
+         << std::chrono::duration_cast<std::chrono::microseconds>(end_time -
+                                                                  start_time)
+                .count()
+         << " µs";
+  ::core::Log::info(stream.str());
+#endif
 }
 
 void Mesh::_create_cube(std::vector<Mesh::Vertex> &vertices,
