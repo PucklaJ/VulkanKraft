@@ -9,10 +9,9 @@ public:
   World(const ::core::vulkan::Context &context, const int width,
         const int depth);
 
-  void place_block(const glm::ivec3 &position,
-                   const BlockArray::BlockType block);
+  void place_block(const glm::ivec3 &position, const BlockType block);
   void destroy_block(const glm::ivec3 &position);
-  BlockArray::BlockType show_block(const glm::ivec3 &position) const;
+  BlockType show_block(const glm::ivec3 &position) const;
 
   void render(const ::core::vulkan::RenderCall &render_call);
 

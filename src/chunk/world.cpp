@@ -7,7 +7,7 @@ namespace chunk {
 World::World(const ::core::vulkan::Context &context, const int width,
              const int depth) {
   for (int x = 0; x < width / block_width; x++) {
-    for (int z = 0; z < depth / block_height; z++) {
+    for (int z = 0; z < depth / block_depth; z++) {
       const glm::ivec2 pos(x * block_width, z * block_depth);
       auto chunk = std::make_shared<Chunk>(context, pos);
       if (x != 0) {
@@ -30,8 +30,7 @@ World::World(const ::core::vulkan::Context &context, const int width,
   }
 }
 
-void World::place_block(const glm::ivec3 &position,
-                        const BlockArray::BlockType block) {
+void World::place_block(const glm::ivec3 &position, const BlockType block) {
   {
     std::stringstream stream;
     stream << "Placing block " << std::boolalpha << block << " at ";
@@ -80,7 +79,7 @@ void World::destroy_block(const glm::ivec3 &position) {
         position.z - (*chunk)->get_position().y);
 
     (*chunk)->set(chunk_block_position.x, chunk_block_position.y,
-                  chunk_block_position.z, false);
+                  chunk_block_position.z, BlockType::AIR);
     (*chunk)->generate_block_change(chunk_block_position);
     return;
   }
@@ -93,7 +92,7 @@ void World::destroy_block(const glm::ivec3 &position) {
   throw ::core::VulkanKraftException(stream.str());
 }
 
-BlockArray::BlockType World::show_block(const glm::ivec3 &position) const {
+BlockType World::show_block(const glm::ivec3 &position) const {
   const auto chunk_pos(get_chunk_position(position));
 
   const auto chunk(_get_chunk(chunk_pos));

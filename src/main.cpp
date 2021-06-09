@@ -15,7 +15,7 @@
 int main(int args, char *argv[]) {
   core::Settings settings;
   core::FPSTimer timer(settings);
-  chunk::Mesh::GlobalUniform chunk_mesh_global;
+  chunk::GlobalUniform chunk_global;
   core::text::Text::GlobalUniform text_global;
   glm::mat4 projection_matrix;
   glm::mat4 text_projection_matrix;
@@ -26,8 +26,7 @@ int main(int args, char *argv[]) {
     core::vulkan::Context context(window, settings);
     core::ResourceHodler hodler(context);
 
-    auto chunk_mesh_shader =
-        chunk::Mesh::build_shader(context, settings, hodler);
+    auto chunk_shader = chunk::Mesh::build_shader(context, settings, hodler);
     auto text_shader = core::text::Text::build_shader(context, settings);
 
     core::text::Font font("fonts/Mister Pixel Regular.otf");
@@ -79,13 +78,13 @@ int main(int args, char *argv[]) {
         text_projection_matrix = glm::ortho(0.0f, static_cast<float>(width),
                                             0.0f, static_cast<float>(height));
 
-        chunk_mesh_global.proj_view =
+        chunk_global.proj_view =
             projection_matrix * player.create_view_matrix();
-        chunk_mesh_shader.update_uniform_buffer(render_call, chunk_mesh_global);
+        chunk_shader.update_uniform_buffer(render_call, chunk_global);
         text_global.proj = text_projection_matrix;
         text_shader.update_uniform_buffer(render_call, text_global);
 
-        chunk_mesh_shader.bind(render_call);
+        chunk_shader.bind(render_call);
         world.render(render_call);
 
         text_shader.bind(render_call);
