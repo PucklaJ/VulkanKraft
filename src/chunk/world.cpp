@@ -11,29 +11,25 @@ World::World(const ::core::vulkan::Context &context, const size_t width,
       const glm::ivec2 pos(x * block_width, z * block_depth);
       auto chunk = std::make_shared<Chunk>(context, pos);
       if (x != 0) {
-        auto left = m_chunks[std::make_pair(static_cast<int>(x - 1), static_cast<int>(z))];
+        auto left = m_chunks[std::make_pair(static_cast<int>(x - 1),
+                                            static_cast<int>(z))];
         left->set_right(chunk);
         chunk->set_left(left);
       }
       if (z != 0) {
-        auto front = m_chunks[std::make_pair(static_cast<int>(x), static_cast<int>(z - 1))];
+        auto front = m_chunks[std::make_pair(static_cast<int>(x),
+                                             static_cast<int>(z - 1))];
         front->set_back(chunk);
         chunk->set_front(front);
       }
 
-      m_chunks.emplace(std::make_pair(static_cast<int>(x), static_cast<int>(z)), std::move(chunk));
+      m_chunks.emplace(std::make_pair(static_cast<int>(x), static_cast<int>(z)),
+                       std::move(chunk));
     }
   }
 
   for (auto &[pos, chunk] : m_chunks) {
     chunk->generate();
-  }
-}
-
-World::~World() {
-  for (auto &[pos, chunk] : m_chunks) {
-    chunk->destroy();
-    chunk.reset();
   }
 }
 

@@ -20,15 +20,13 @@ public:
   inline void set_right(std::shared_ptr<Chunk> c) { m_right = c; }
   inline const glm::ivec2 &get_position() const { return m_position; }
 
-  void destroy();
-
 private:
   Mesh m_mesh;
   const glm::ivec2 m_position;
 
-  std::shared_ptr<Chunk> m_front;
-  std::shared_ptr<Chunk> m_back;
-  std::shared_ptr<Chunk> m_left;
-  std::shared_ptr<Chunk> m_right;
+  std::weak_ptr<Chunk> m_front;
+  std::weak_ptr<Chunk> m_back;
+  std::weak_ptr<Chunk> m_left;
+  std::weak_ptr<Chunk> m_right;
 };
 } // namespace chunk

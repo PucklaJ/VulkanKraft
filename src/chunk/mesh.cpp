@@ -212,17 +212,17 @@ void Mesh::_check_faces_of_block(const Chunk *chunk, const size_t x,
   top_face = y == block_height - 1 || !chunk->get(x, y + 1, z);
   bot_face = y == 0 || !chunk->get(x, y - 1, z);
 
-  if (x == 0 && chunk->m_left) {
-    left_face = !chunk->m_left->get(block_width - 1, y, z);
+  if (auto left(chunk->m_left.lock()); x == 0 && left) {
+    left_face = !left->get(block_width - 1, y, z);
   }
-  if (z == 0 && chunk->m_front) {
-    back_face = !chunk->m_front->get(x, y, block_depth - 1);
+  if (auto front(chunk->m_front.lock()); z == 0 && front) {
+    back_face = !front->get(x, y, block_depth - 1);
   }
-  if (x == block_width - 1 && chunk->m_right) {
-    right_face = !chunk->m_right->get(0, y, z);
+  if (auto right(chunk->m_right.lock()); x == block_width - 1 && right) {
+    right_face = !right->get(0, y, z);
   }
-  if (z == block_depth - 1 && chunk->m_back) {
-    front_face = !chunk->m_back->get(x, y, 0);
+  if (auto back(chunk->m_back.lock()); z == block_depth - 1 && back) {
+    front_face = !back->get(x, y, 0);
   }
 }
 }; // namespace chunk
