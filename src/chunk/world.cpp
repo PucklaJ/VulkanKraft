@@ -4,27 +4,24 @@
 #include <sstream>
 
 namespace chunk {
-World::World(const ::core::vulkan::Context &context, const size_t width,
-             const size_t depth) {
-  for (size_t x = 0; x < width; x++) {
-    for (size_t z = 0; z < depth; z++) {
+World::World(const ::core::vulkan::Context &context, const int width,
+             const int depth) {
+  for (int x = 0; x < width / block_width; x++) {
+    for (int z = 0; z < depth / block_height; z++) {
       const glm::ivec2 pos(x * block_width, z * block_depth);
       auto chunk = std::make_shared<Chunk>(context, pos);
       if (x != 0) {
-        auto left = m_chunks[std::make_pair(static_cast<int>(x - 1),
-                                            static_cast<int>(z))];
+        auto left = m_chunks[std::make_pair(x - 1, z)];
         left->set_right(chunk);
         chunk->set_left(left);
       }
       if (z != 0) {
-        auto front = m_chunks[std::make_pair(static_cast<int>(x),
-                                             static_cast<int>(z - 1))];
+        auto front = m_chunks[std::make_pair(x, z - 1)];
         front->set_back(chunk);
         chunk->set_front(front);
       }
 
-      m_chunks.emplace(std::make_pair(static_cast<int>(x), static_cast<int>(z)),
-                       std::move(chunk));
+      m_chunks.emplace(std::make_pair(x, z), std::move(chunk));
     }
   }
 

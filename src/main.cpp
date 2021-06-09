@@ -36,7 +36,7 @@ int main(int args, char *argv[]) {
                                    glm::vec2(0.0f, fps_text.get_height() + 10));
 
     Player player(glm::vec3(0.0f, 0.0f, 100.0f));
-    chunk::World world(context, 2, 2);
+    chunk::World world(context, 64, 64);
 
     float current_time = 0.0f;
     while (!window.should_close()) {
