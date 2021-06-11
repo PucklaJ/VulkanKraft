@@ -78,26 +78,28 @@ public:
   void clear();
 
   inline BlockType get(const size_t x, const size_t y, const size_t z) const {
-    return m_array[x][z][y].type;
+    return m_array[_index(x, y, z)].type;
   }
 
   inline Block &get_block(const size_t x, const size_t y, const size_t z) {
-    return m_array[x][z][y];
+    return m_array[_index(x, y, z)];
   }
 
   inline const Block &get_block(const size_t x, const size_t y,
                                 const size_t z) const {
-    return m_array[x][z][y];
+    return m_array[_index(x, y, z)];
   }
 
   inline void set(const size_t x, const size_t y, const size_t z,
                   const BlockType value) {
-    m_array[x][z][y].type = value;
+    m_array[_index(x, y, z)].type = value;
   }
 
-protected:
-  std::array<std::array<std::array<Block, block_height>, block_depth>,
-             block_width>
-      m_array;
+private:
+  static inline size_t _index(const size_t x, const size_t y, const size_t z) {
+    return x + z * block_width + y * (block_width * block_depth);
+  }
+
+  std::array<Block, block_width * block_depth * block_height> m_array;
 };
 } // namespace chunk

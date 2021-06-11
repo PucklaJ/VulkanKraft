@@ -181,12 +181,8 @@ void Block::_create_cube(std::vector<Vertex> &vertices,
 }
 
 void BlockArray::fill(const BlockType value) {
-  for (auto &x : m_array) {
-    for (auto &z : x) {
-      for (auto &y : z) {
-        y.type = value;
-      }
-    }
+  for (auto &b : m_array) {
+    b.type = value;
   }
 }
 
