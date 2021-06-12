@@ -1,4 +1,5 @@
 #pragma once
+#include "../core/math.hpp"
 #include <array>
 #include <glm/glm.hpp>
 #include <vector>
@@ -51,6 +52,7 @@ public:
 
   void generate(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices,
                 const glm::vec3 &position) const;
+  ::core::math::AABB to_aabb(const glm::vec3 &position) const;
 
   BlockType type;
 

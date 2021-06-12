@@ -1,6 +1,8 @@
 #include "world.hpp"
 #include "../core/exception.hpp"
 #include "../core/log.hpp"
+#include <limits>
+#include <set>
 #include <sstream>
 
 namespace chunk {
@@ -111,6 +113,86 @@ BlockType World::show_block(const glm::ivec3 &position) const {
          << ")";
 
   throw ::core::VulkanKraftException(stream.str());
+}
+
+std::optional<glm::ivec3>
+World::raycast_block(const ::core::math::Ray &ray) const {
+  // Get chunk of ray
+  const std::pair chunk_pos(static_cast<int>(ray.origin.x) / block_width,
+                            static_cast<int>(ray.origin.z) / block_depth);
+
+  const auto _ray_chunk = _get_chunk(chunk_pos);
+  if (!_ray_chunk) {
+    return std::nullopt;
+  }
+  const auto ray_chunk = *_ray_chunk;
+
+  // Raycast ray chunk and neighbouring
+  std::set<std::shared_ptr<Chunk>> ray_chunks = {
+      ray_chunk, ray_chunk->get_front(), ray_chunk->get_back(),
+      ray_chunk->get_left(), ray_chunk->get_right()};
+  if (auto left = ray_chunk->get_left(); left) {
+    ray_chunks.emplace(left->get_front());
+    ray_chunks.emplace(left->get_back());
+  }
+  if (auto right = ray_chunk->get_right(); right) {
+    ray_chunks.emplace(right->get_front());
+    ray_chunks.emplace(right->get_back());
+  }
+
+  auto t_min{std::numeric_limits<float>::max()};
+  glm::vec3 chunk_world_pos;
+  glm::ivec3 block_world_pos;
+  chunk_world_pos.y = 0.0f;
+
+  for (const auto &c : ray_chunks) {
+    if (!c)
+      continue;
+
+    const auto aabb(c->to_aabb());
+    if (ray.cast(aabb) >= 0.0f) {
+      chunk_world_pos.x = static_cast<float>(c->get_position().x);
+      chunk_world_pos.z = static_cast<float>(c->get_position().y);
+
+      // Loop over all blocks of chunk
+      for (int x = 0; x < block_width; x++) {
+        for (int y = 0; y < block_height; y++) {
+          for (int z = 0; z < block_depth; z++) {
+            const auto &b = c->get_block(x, y, z);
+            if (b.type != BlockType::AIR) {
+              const glm::vec3 block_pos(
+                  chunk_world_pos.x + static_cast<float>(x),
+                  static_cast<float>(y),
+                  chunk_world_pos.z + static_cast<float>(z));
+
+              if (abs(ray.origin.x - block_pos.x) > raycast_distance ||
+                  abs(ray.origin.y - block_pos.y) > raycast_distance ||
+                  abs(ray.origin.z - block_pos.z) > raycast_distance) {
+                continue;
+              }
+
+              const auto t{ray.cast(b.to_aabb(block_pos))};
+
+              if (t >= 0.0f && t < t_min) {
+                t_min = t;
+
+                block_world_pos.x = static_cast<int>(block_pos.x);
+                block_world_pos.y = y;
+                block_world_pos.z = static_cast<int>(block_pos.z);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // If we intersected with any block
+  if (t_min != std::numeric_limits<float>::max()) {
+    return block_world_pos;
+  }
+
+  return std::nullopt;
 }
 
 void World::render(const ::core::vulkan::RenderCall &render_call) {

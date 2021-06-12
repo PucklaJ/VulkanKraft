@@ -31,10 +31,17 @@ int main(int args, char *argv[]) {
 
     core::text::Font font("fonts/Mister Pixel Regular.otf");
     core::text::Text fps_text(context, text_shader, font, L"60 FPS");
-    core::text::Text position_text(context, text_shader, font, L"X",
+    core::text::Text position_text(context, text_shader, font, L"X\nY\nZ\n",
                                    glm::vec2(0.0f, fps_text.get_height() + 10));
+    core::text::Text look_text(context, text_shader, font, L"Look",
+                               glm::vec2(0.0f, fps_text.get_height() + 10 +
+                                                   position_text.get_height() +
+                                                   10));
+    core::text::Text cross_hair(
+        context, text_shader, font, L".",
+        glm::vec2(settings.window_width / 2, settings.window_height / 2));
 
-    Player player(glm::vec3(0.0f, 0.0f, 100.0f));
+    Player player(glm::vec3(64.0f, 128.0f, 64.0f));
     chunk::World world(context, 80, 80);
 
     float current_time = 0.0f;
@@ -60,6 +67,20 @@ int main(int args, char *argv[]) {
         pos_stream << "Z:" << std::setw(float_width) << std::right
                    << player.get_position().z << std::endl;
         position_text.set_string(pos_stream.str());
+      }
+      {
+        const auto look_dir(player.get_look_direction());
+        constexpr auto float_width = 8;
+        std::wstringstream stream;
+        stream << "Look" << std::endl;
+        stream << std::fixed << std::setprecision(3);
+        stream << "X:" << std::setw(float_width) << std::right << look_dir.x
+               << std::endl;
+        stream << "Y:" << std::setw(float_width) << std::right << look_dir.y
+               << std::endl;
+        stream << "Z:" << std::setw(float_width) << std::right << look_dir.z
+               << std::endl;
+        look_text.set_string(stream.str());
       }
 
       player.update(timer, window, world);
@@ -90,6 +111,8 @@ int main(int args, char *argv[]) {
         text_shader.bind(render_call);
         fps_text.render(render_call);
         position_text.render(render_call);
+        look_text.render(render_call);
+        cross_hair.render(render_call);
       }
       current_time += timer.get_delta_time();
     }

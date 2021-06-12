@@ -12,10 +12,13 @@ public:
   void place_block(const glm::ivec3 &position, const BlockType block);
   void destroy_block(const glm::ivec3 &position);
   BlockType show_block(const glm::ivec3 &position) const;
+  std::optional<glm::ivec3> raycast_block(const ::core::math::Ray &ray) const;
 
   void render(const ::core::vulkan::RenderCall &render_call);
 
 private:
+  static constexpr int raycast_distance = 10;
+
   static inline std::pair<int, int>
   get_chunk_position(const glm::ivec3 &block_position) {
     return std::pair(block_position.x / block_width,

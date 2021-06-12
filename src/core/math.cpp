@@ -12,8 +12,10 @@ float Ray::cast(const AABB &aabb) const {
   const auto t5{(aabb.min.z - origin.z) / direction.z};
   const auto t6{(aabb.max.z - origin.z) / direction.z};
 
+  // biggest min value
   const auto t_min{
       std::max(std::max(std::min(t1, t2), std::min(t3, t4)), std::min(t5, t6))};
+  // smallest max value
   const auto t_max{
       std::min(std::min(std::max(t1, t2), std::max(t3, t4)), std::max(t5, t6))};
 

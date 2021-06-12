@@ -50,6 +50,20 @@ void Chunk::generate_block_change(const glm::ivec3 &position) {
   generate();
 }
 
+::core::math::AABB Chunk::to_aabb() const {
+  ::core::math::AABB aabb;
+
+  aabb.min.x = static_cast<float>(m_position.x);
+  aabb.min.y = 0.0f;
+  aabb.min.z = static_cast<float>(m_position.y);
+
+  aabb.max.x = aabb.min.x + static_cast<float>(block_width);
+  aabb.max.y = static_cast<float>(block_height);
+  aabb.max.z = aabb.min.z + static_cast<float>(block_depth);
+
+  return aabb;
+}
+
 void Chunk::render(const ::core::vulkan::RenderCall &render_call) {
   m_mesh.render(render_call);
 }

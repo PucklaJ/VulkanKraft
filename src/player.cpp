@@ -1,4 +1,6 @@
 #include "player.hpp"
+#include "core/exception.hpp"
+#include "core/log.hpp"
 #include <glm/gtx/transform.hpp>
 
 Player::Player(const glm::vec3 &position)
@@ -6,7 +8,7 @@ Player::Player(const glm::vec3 &position)
       m_last_mouse_y(0.0f) {}
 
 glm::mat4 Player::create_view_matrix() const {
-  const auto eye_position(m_position + glm::vec3(0.0f, eye_height, 0.0f));
+  const auto eye_position(_get_eye_position());
   const auto look_direction(_get_look_direction());
 
   return glm::lookAt(eye_position, eye_position + look_direction,
@@ -28,14 +30,6 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
   m_last_mouse_x = cur_mouse_x;
   m_last_mouse_y = cur_mouse_y;
   // **************************
-
-  if (window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_LEFT)) {
-    window.lock_cursor();
-  }
-
-  if (window.key_just_pressed(GLFW_KEY_ESCAPE)) {
-    window.release_cursor();
-  }
 
   // **** handle movement *****
   constexpr auto move_speed = 20.0f;
@@ -69,6 +63,33 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
       world.place_block(pos, chunk::BlockType::GRASS);
     }
   }
+
+  if (window.cursor_is_locked()) {
+    if ((window.key_is_pressed(GLFW_KEY_LEFT_SHIFT) &&
+         window.get_mouse().button_is_pressed(GLFW_MOUSE_BUTTON_LEFT)) ||
+        window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_LEFT)) {
+      const core::math::Ray ray{_get_eye_position(), look_direction};
+      const auto _block(world.raycast_block(ray));
+      if (_block) {
+        const auto block = *_block;
+
+        try {
+          world.destroy_block(block);
+        } catch (const core::VulkanKraftException &e) {
+          core::Log::warning(std::string("failed to destroy block: ") +
+                             e.what());
+        }
+      }
+    }
+  }
+
+  if (window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_LEFT)) {
+    window.lock_cursor();
+  }
+
+  if (window.key_just_pressed(GLFW_KEY_ESCAPE)) {
+    window.release_cursor();
+  }
 }
 
 glm::vec3 Player::_get_look_direction() const {
@@ -82,4 +103,8 @@ glm::vec3 Player::_get_look_direction() const {
   look_direction =
       glm::rotate(m_rotation.y, x_axis) * glm::vec4(look_direction, 1.0f);
   return look_direction;
+}
+
+glm::vec3 Player::_get_eye_position() const {
+  return m_position + glm::vec3(0.0f, eye_height, 0.0f);
 }

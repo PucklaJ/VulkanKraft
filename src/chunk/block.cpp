@@ -15,6 +15,16 @@ void Block::generate(std::vector<Vertex> &vertices,
                m_faces[bot_face_index]);
 }
 
+::core::math::AABB Block::to_aabb(const glm::vec3 &p) const {
+  ::core::math::AABB aabb;
+
+  aabb.min = p;
+
+  aabb.max = aabb.min + glm::vec3(1.0f, 1.0f, 1.0f);
+
+  return aabb;
+}
+
 void Block::_create_cube(std::vector<Vertex> &vertices,
                          std::vector<uint32_t> &indices, const glm::vec3 &p,
                          const bool front_face, const bool back_face,

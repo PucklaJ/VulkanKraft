@@ -1,4 +1,5 @@
 #pragma once
+#include "../core/math.hpp"
 #include "mesh.hpp"
 #include <array>
 #include <memory>
@@ -12,12 +13,26 @@ public:
 
   void generate();
   void generate_block_change(const glm::ivec3 &position);
+  ::core::math::AABB to_aabb() const;
   void render(const ::core::vulkan::RenderCall &render_call);
 
   inline void set_front(std::shared_ptr<Chunk> c) { m_front = c; }
   inline void set_back(std::shared_ptr<Chunk> c) { m_back = c; }
   inline void set_left(std::shared_ptr<Chunk> c) { m_left = c; }
   inline void set_right(std::shared_ptr<Chunk> c) { m_right = c; }
+
+  inline std::shared_ptr<Chunk> get_front() { return m_front.lock(); }
+  inline std::shared_ptr<Chunk> get_back() { return m_back.lock(); }
+  inline std::shared_ptr<Chunk> get_left() { return m_left.lock(); }
+  inline std::shared_ptr<Chunk> get_right() { return m_right.lock(); }
+  inline const std::shared_ptr<Chunk> get_front() const {
+    return m_front.lock();
+  }
+  inline const std::shared_ptr<Chunk> get_back() const { return m_back.lock(); }
+  inline const std::shared_ptr<Chunk> get_left() const { return m_left.lock(); }
+  inline const std::shared_ptr<Chunk> get_right() const {
+    return m_right.lock();
+  }
   inline const glm::ivec2 &get_position() const { return m_position; }
 
 private:

@@ -9,6 +9,7 @@ public:
   Player(const glm::vec3 &position);
 
   inline const glm::vec3 &get_position() const { return m_position; }
+  inline glm::vec3 get_look_direction() const { return _get_look_direction(); }
 
   glm::mat4 create_view_matrix() const;
 
@@ -19,6 +20,7 @@ private:
   static constexpr float eye_height = 1.8f;
 
   glm::vec3 _get_look_direction() const;
+  glm::vec3 _get_eye_position() const;
 
   glm::vec3 m_position;
   glm::vec2 m_rotation;
