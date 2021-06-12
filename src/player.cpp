@@ -55,15 +55,6 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
   }
   // **************************
 
-  if (window.key_just_pressed(GLFW_KEY_B)) {
-    const glm::ivec3 pos(63, chunk::block_height - 1, 63);
-    if (world.show_block(pos) == chunk::BlockType::GRASS) {
-      world.destroy_block(pos);
-    } else {
-      world.place_block(pos, chunk::BlockType::GRASS);
-    }
-  }
-
   if (window.cursor_is_locked() || window.key_just_pressed(GLFW_KEY_N)) {
     if ((window.key_is_pressed(GLFW_KEY_LEFT_SHIFT) &&
          window.get_mouse().button_is_pressed(GLFW_MOUSE_BUTTON_LEFT)) ||

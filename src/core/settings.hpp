@@ -6,7 +6,7 @@ class Settings {
 public:
   static constexpr char window_title[] = "VulkanKraft";
   static constexpr float near_plane = 0.01f;
-  static constexpr float far_plane = 100.0f;
+  static constexpr float far_plane = 1000.0f;
 
   Settings();
 

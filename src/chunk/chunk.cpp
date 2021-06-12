@@ -13,11 +13,11 @@ Chunk::Chunk(const ::core::vulkan::Context &context, const glm::ivec2 &position)
   }
 }
 
-void Chunk::generate() {
+void Chunk::generate(const bool multi_thread) {
   if (m_first_generated) {
     update_faces();
   }
-  m_mesh.generate(this, m_position);
+  m_mesh.generate(this, m_position, multi_thread);
 }
 
 void Chunk::generate_block_change(const glm::ivec3 &position) {
@@ -26,23 +26,23 @@ void Chunk::generate_block_change(const glm::ivec3 &position) {
   if (auto left(m_left.lock()); position.x == 0 && left) {
     left->_check_faces_of_block(
         glm::ivec3(block_width - 1, position.y, position.z));
-    left->generate();
+    left->generate(false);
   }
   if (auto right(m_right.lock()); position.x == block_width - 1 && right) {
     right->_check_faces_of_block(glm::ivec3(0, position.y, position.z));
-    right->generate();
+    right->generate(false);
   }
   if (auto front(m_front.lock()); position.z == 0 && front) {
     front->_check_faces_of_block(
         glm::ivec3(position.x, position.y, block_depth - 1));
-    front->generate();
+    front->generate(false);
   }
   if (auto back(m_back.lock()); position.z == block_depth - 1 && back) {
     back->_check_faces_of_block(glm::ivec3(position.x, position.y, 0));
-    back->generate();
+    back->generate(false);
   }
 
-  generate();
+  generate(false);
 }
 
 ::core::math::AABB Chunk::to_aabb() const {

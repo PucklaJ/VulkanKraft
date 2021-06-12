@@ -11,7 +11,7 @@ public:
 
   Chunk(const ::core::vulkan::Context &context, const glm::ivec2 &position);
 
-  void generate();
+  void generate(const bool multi_thread = true);
   void generate_block_change(const glm::ivec3 &position);
   ::core::math::AABB to_aabb() const;
   void update_faces();

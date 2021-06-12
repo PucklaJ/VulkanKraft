@@ -236,14 +236,14 @@ void World::update(const glm::vec3 &_center_position,
     const auto chunk_pos(get_chunk_position(chunk->get_position()));
     m_chunks.emplace(get_chunk_position(chunk->get_position()), chunk);
     chunks_to_update.emplace_back(chunk);
-    if (!_chunks_to_update_contains(chunks_to_update, chunk->get_front()))
-      chunks_to_update.emplace_back(chunk->get_front());
-    if (!_chunks_to_update_contains(chunks_to_update, chunk->get_back()))
-      chunks_to_update.emplace_back(chunk->get_back());
-    if (!_chunks_to_update_contains(chunks_to_update, chunk->get_left()))
-      chunks_to_update.emplace_back(chunk->get_left());
-    if (!_chunks_to_update_contains(chunks_to_update, chunk->get_right()))
-      chunks_to_update.emplace_back(chunk->get_right());
+    // if (!_chunks_to_update_contains(chunks_to_update, chunk->get_front()))
+    //   chunks_to_update.emplace_back(chunk->get_front());
+    // if (!_chunks_to_update_contains(chunks_to_update, chunk->get_back()))
+    //   chunks_to_update.emplace_back(chunk->get_back());
+    // if (!_chunks_to_update_contains(chunks_to_update, chunk->get_left()))
+    //   chunks_to_update.emplace_back(chunk->get_left());
+    // if (!_chunks_to_update_contains(chunks_to_update, chunk->get_right()))
+    //   chunks_to_update.emplace_back(chunk->get_right());
   }
   chunks_to_add.clear();
 

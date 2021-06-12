@@ -46,7 +46,7 @@ target("vulkankraft")
   if is_plat("windows") then
     add_syslinks("C:\\VulkanSDK\\1.2.135.0\\Lib" .. (is_arch("x86") and "32" or "") .. "\\vulkan-1")
   else
-    add_syslinks("vulkan")
+    add_syslinks("vulkan", "pthread")
   end
   add_rules("shader")
 
