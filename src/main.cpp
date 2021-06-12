@@ -41,7 +41,7 @@ int main(int args, char *argv[]) {
         context, text_shader, font, L".",
         glm::vec2(settings.window_width / 2, settings.window_height / 2));
 
-    Player player(glm::vec3(64.0f, 128.0f, 64.0f));
+    Player player(glm::vec3(64.0f, 70.0f, 64.0f));
     chunk::World world(context, 80, 80);
 
     float current_time = 0.0f;

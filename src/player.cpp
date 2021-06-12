@@ -69,7 +69,8 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
          window.get_mouse().button_is_pressed(GLFW_MOUSE_BUTTON_LEFT)) ||
         window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_LEFT)) {
       const core::math::Ray ray{_get_eye_position(), look_direction};
-      const auto _block(world.raycast_block(ray));
+      core::math::Ray::Face face;
+      const auto _block(world.raycast_block(ray, face));
       if (_block) {
         const auto block = *_block;
 
@@ -78,6 +79,41 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
         } catch (const core::VulkanKraftException &e) {
           core::Log::warning(std::string("failed to destroy block: ") +
                              e.what());
+        }
+      }
+    } else if (window.get_mouse().button_just_pressed(
+                   GLFW_MOUSE_BUTTON_RIGHT)) {
+      const core::math::Ray ray{_get_eye_position(), look_direction};
+      core::math::Ray::Face face;
+      const auto _block(world.raycast_block(ray, face));
+      if (_block) {
+        auto block = *_block;
+
+        switch (face) {
+        case core::math::Ray::Face::FRONT:
+          block.z -= 1;
+          break;
+        case core::math::Ray::Face::BACK:
+          block.z += 1;
+          break;
+        case core::math::Ray::Face::LEFT:
+          block.x -= 1;
+          break;
+        case core::math::Ray::Face::RIGHT:
+          block.x += 1;
+          break;
+        case core::math::Ray::Face::TOP:
+          block.y += 1;
+          break;
+        case core::math::Ray::Face::BOTTOM:
+          block.y -= 1;
+          break;
+        }
+
+        try {
+          world.place_block(block, chunk::BlockType::GRASS);
+        } catch (const core::VulkanKraftException &e) {
+          core::Log::warning(std::string("failed to place block: ") + e.what());
         }
       }
     }

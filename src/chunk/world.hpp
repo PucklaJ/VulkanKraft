@@ -12,7 +12,8 @@ public:
   void place_block(const glm::ivec3 &position, const BlockType block);
   void destroy_block(const glm::ivec3 &position);
   BlockType show_block(const glm::ivec3 &position) const;
-  std::optional<glm::ivec3> raycast_block(const ::core::math::Ray &ray) const;
+  std::optional<glm::ivec3> raycast_block(const ::core::math::Ray &ray,
+                                          ::core::math::Ray::Face &face) const;
 
   void render(const ::core::vulkan::RenderCall &render_call);
 

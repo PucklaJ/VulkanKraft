@@ -40,6 +40,12 @@ void World::place_block(const glm::ivec3 &position, const BlockType block) {
            << ")";
     ::core::Log::info(stream.str());
   }
+
+  if (position.y >= block_height) {
+    throw core::VulkanKraftException(std::to_string(position.y) +
+                                     " is above height limit");
+  }
+
   const auto chunk_pos(get_chunk_position(position));
 
   auto chunk(_get_chunk(chunk_pos));
@@ -116,7 +122,8 @@ BlockType World::show_block(const glm::ivec3 &position) const {
 }
 
 std::optional<glm::ivec3>
-World::raycast_block(const ::core::math::Ray &ray) const {
+World::raycast_block(const ::core::math::Ray &ray,
+                     ::core::math::Ray::Face &face) const {
   // Get chunk of ray
   const std::pair chunk_pos(static_cast<int>(ray.origin.x) / block_width,
                             static_cast<int>(ray.origin.z) / block_depth);
@@ -143,6 +150,8 @@ World::raycast_block(const ::core::math::Ray &ray) const {
   auto t_min{std::numeric_limits<float>::max()};
   glm::vec3 chunk_world_pos;
   glm::ivec3 block_world_pos;
+  ::core::math::Ray::Face ray_face;
+
   chunk_world_pos.y = 0.0f;
 
   for (const auto &c : ray_chunks) {
@@ -150,7 +159,7 @@ World::raycast_block(const ::core::math::Ray &ray) const {
       continue;
 
     const auto aabb(c->to_aabb());
-    if (ray.cast(aabb) >= 0.0f) {
+    if (ray.cast(aabb, ray_face) >= 0.0f) {
       chunk_world_pos.x = static_cast<float>(c->get_position().x);
       chunk_world_pos.z = static_cast<float>(c->get_position().y);
 
@@ -171,7 +180,7 @@ World::raycast_block(const ::core::math::Ray &ray) const {
                 continue;
               }
 
-              const auto t{ray.cast(b.to_aabb(block_pos))};
+              const auto t{ray.cast(b.to_aabb(block_pos), ray_face)};
 
               if (t >= 0.0f && t < t_min) {
                 t_min = t;
@@ -179,6 +188,7 @@ World::raycast_block(const ::core::math::Ray &ray) const {
                 block_world_pos.x = static_cast<int>(block_pos.x);
                 block_world_pos.y = y;
                 block_world_pos.z = static_cast<int>(block_pos.z);
+                face = ray_face;
               }
             }
           }

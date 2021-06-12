@@ -11,7 +11,16 @@ public:
 
 class Ray {
 public:
-  float cast(const AABB &aabb) const;
+  enum Face {
+    FRONT,
+    BACK,
+    LEFT,
+    RIGHT,
+    TOP,
+    BOTTOM,
+  };
+
+  float cast(const AABB &aabb, Face &face) const;
 
   glm::vec3 origin;
   glm::vec3 direction;
