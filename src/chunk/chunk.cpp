@@ -91,17 +91,17 @@ void Chunk::_check_faces(const Chunk *chunk, const size_t x, const size_t y,
   top_face = y == block_height - 1 || !chunk->get(x, y + 1, z);
   bot_face = y == 0 || !chunk->get(x, y - 1, z);
 
-  if (auto left(chunk->m_left.lock()); x == 0 && left) {
-    left_face = !left->get(block_width - 1, y, z);
+  if (auto left(chunk->m_left.lock()); x == 0) {
+    left_face = left && !left->get(block_width - 1, y, z);
   }
-  if (auto front(chunk->m_front.lock()); z == 0 && front) {
-    back_face = !front->get(x, y, block_depth - 1);
+  if (auto front(chunk->m_front.lock()); z == 0) {
+    back_face = front && !front->get(x, y, block_depth - 1);
   }
-  if (auto right(chunk->m_right.lock()); x == block_width - 1 && right) {
-    right_face = !right->get(0, y, z);
+  if (auto right(chunk->m_right.lock()); x == block_width - 1) {
+    right_face = right && !right->get(0, y, z);
   }
-  if (auto back(chunk->m_back.lock()); z == block_depth - 1 && back) {
-    front_face = !back->get(x, y, 0);
+  if (auto back(chunk->m_back.lock()); z == block_depth - 1) {
+    front_face = back && !back->get(x, y, 0);
   }
 }
 
