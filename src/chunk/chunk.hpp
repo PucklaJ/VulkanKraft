@@ -14,6 +14,7 @@ public:
   void generate();
   void generate_block_change(const glm::ivec3 &position);
   ::core::math::AABB to_aabb() const;
+  void update_faces();
   void render(const ::core::vulkan::RenderCall &render_call);
 
   inline void set_front(std::shared_ptr<Chunk> c) { m_front = c; }

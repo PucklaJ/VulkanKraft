@@ -4,7 +4,9 @@ namespace chunk {
 Vertex::Vertex(float x, float y, float z, float u, float v)
     : position(x, y, z), uv(u, v) {}
 
-Block::Block() { std::fill(m_faces.begin(), m_faces.end(), false); }
+Block::Block() : type(BlockType::AIR) {
+  std::fill(m_faces.begin(), m_faces.end(), false);
+}
 
 void Block::generate(std::vector<Vertex> &vertices,
                      std::vector<uint32_t> &indices,

@@ -15,18 +15,7 @@ Chunk::Chunk(const ::core::vulkan::Context &context, const glm::ivec2 &position)
 
 void Chunk::generate() {
   if (m_first_generated) {
-    for (size_t x = 0; x < block_width; x++) {
-      for (size_t y = 0; y < block_height; y++) {
-        for (size_t z = 0; z < block_depth; z++) {
-          auto &block = get_block(x, y, z);
-          _check_faces(this, x, y, z, block.front_face(), block.back_face(),
-                       block.right_face(), block.left_face(), block.top_face(),
-                       block.bot_face());
-        }
-      }
-    }
-
-    m_first_generated = false;
+    update_faces();
   }
   m_mesh.generate(this, m_position);
 }
@@ -68,6 +57,21 @@ void Chunk::generate_block_change(const glm::ivec3 &position) {
   aabb.max.z = aabb.min.z + static_cast<float>(block_depth);
 
   return aabb;
+}
+
+void Chunk::update_faces() {
+  for (size_t x = 0; x < block_width; x++) {
+    for (size_t y = 0; y < block_height; y++) {
+      for (size_t z = 0; z < block_depth; z++) {
+        auto &block = get_block(x, y, z);
+        _check_faces(this, x, y, z, block.front_face(), block.back_face(),
+                     block.right_face(), block.left_face(), block.top_face(),
+                     block.bot_face());
+      }
+    }
+  }
+
+  m_first_generated = false;
 }
 
 void Chunk::render(const ::core::vulkan::RenderCall &render_call) {

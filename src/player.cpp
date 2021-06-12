@@ -64,10 +64,11 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
     }
   }
 
-  if (window.cursor_is_locked()) {
+  if (window.cursor_is_locked() || window.key_just_pressed(GLFW_KEY_N)) {
     if ((window.key_is_pressed(GLFW_KEY_LEFT_SHIFT) &&
          window.get_mouse().button_is_pressed(GLFW_MOUSE_BUTTON_LEFT)) ||
-        window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_LEFT)) {
+        window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_LEFT) ||
+        window.key_just_pressed(GLFW_KEY_N)) {
       const core::math::Ray ray{_get_eye_position(), look_direction};
       core::math::Ray::Face face;
       const auto _block(world.raycast_block(ray, face));

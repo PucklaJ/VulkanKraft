@@ -41,8 +41,8 @@ int main(int args, char *argv[]) {
         context, text_shader, font, L".",
         glm::vec2(settings.window_width / 2, settings.window_height / 2));
 
-    Player player(glm::vec3(64.0f, 70.0f, 64.0f));
-    chunk::World world(context, 80, 80);
+    Player player(glm::vec3(8.0f, 70.0f, 8.0f));
+    chunk::World world(context);
 
     float current_time = 0.0f;
     while (!window.should_close()) {
@@ -84,6 +84,8 @@ int main(int args, char *argv[]) {
       }
 
       player.update(timer, window, world);
+      world.update(player.get_position(), settings.render_distance);
+
       window.reset_keys();
 
       if (const auto _render_call(context.render_begin()); _render_call) {

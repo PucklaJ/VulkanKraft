@@ -15,5 +15,6 @@ public:
   uint32_t window_width;
   uint32_t window_height;
   float field_of_view;
+  int render_distance;
 };
 } // namespace core
