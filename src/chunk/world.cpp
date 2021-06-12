@@ -1,6 +1,7 @@
 #include "world.hpp"
 #include "../core/exception.hpp"
 #include "../core/log.hpp"
+#include <chrono>
 #include <limits>
 #include <set>
 #include <sstream>
@@ -192,9 +193,24 @@ void World::update(const glm::vec3 &_center_position,
     }
   }
 
-  for (const auto &pos : chunks_to_remove) {
-    auto &chunk = m_chunks[pos];
-    m_chunks.erase(pos);
+  if (!chunks_to_remove.empty()) {
+#ifndef NDEBUG
+    const auto start_time = std::chrono::high_resolution_clock::now();
+#endif
+    for (const auto &pos : chunks_to_remove) {
+      auto &chunk = m_chunks[pos];
+      m_chunks.erase(pos);
+    }
+#ifndef NDEBUG
+    const auto end_time = std::chrono::high_resolution_clock::now();
+    std::stringstream stream;
+    stream << "Chunk Remove Time: "
+           << std::chrono::duration_cast<std::chrono::microseconds>(end_time -
+                                                                    start_time)
+                  .count()
+           << " µs";
+    ::core::Log::info(stream.str());
+#endif
   }
 
   std::vector<std::weak_ptr<Chunk>> chunks_to_update;
@@ -204,6 +220,10 @@ void World::update(const glm::vec3 &_center_position,
     m_chunks.emplace(center_position, chunk);
     chunks_to_update.emplace_back(chunk);
   }
+
+#ifndef NDEBUG
+  const auto add_start_time = std::chrono::high_resolution_clock::now();
+#endif
 
   // Loop over all chunks and check if neighbors should be added
   std::vector<std::shared_ptr<Chunk>> chunks_to_add;
@@ -245,15 +265,52 @@ void World::update(const glm::vec3 &_center_position,
     // if (!_chunks_to_update_contains(chunks_to_update, chunk->get_right()))
     //   chunks_to_update.emplace_back(chunk->get_right());
   }
-  chunks_to_add.clear();
-
-  // Update neighbouring chunks
-  for (auto &_chunk : chunks_to_update) {
-    if (auto chunk = _chunk.lock(); chunk) {
-      chunk->update_faces();
-      chunk->generate();
+#ifndef NDEBUG
+  if (!chunks_to_add.empty()) {
+    const auto add_end_time = std::chrono::high_resolution_clock::now();
+    {
+      std::stringstream stream;
+      stream << "Add Chunk Time: "
+             << std::chrono::duration_cast<std::chrono::microseconds>(
+                    add_end_time - add_start_time)
+                    .count()
+             << " µs";
+      ::core::Log::info(stream.str());
     }
   }
+
+  if (!chunks_to_update.empty()) {
+    const auto gen_start_time = std::chrono::high_resolution_clock::now();
+#endif
+
+    chunks_to_add.clear();
+
+    std::vector<std::thread> update_threads;
+    // Update neighbouring chunks
+    for (auto &_chunk : chunks_to_update) {
+      if (auto chunk = _chunk.lock(); chunk) {
+        update_threads.emplace_back([chunk]() {
+          chunk->update_faces();
+          chunk->generate();
+        });
+      }
+    }
+    for (auto &t : update_threads) {
+      t.join();
+    }
+#ifndef NDEBUG
+    const auto gen_end_time = std::chrono::high_resolution_clock::now();
+    {
+      std::stringstream stream;
+      stream << "Gen Chunk Time: "
+             << std::chrono::duration_cast<std::chrono::microseconds>(
+                    gen_end_time - gen_start_time)
+                    .count()
+             << " µs";
+      ::core::Log::info(stream.str());
+    }
+  }
+#endif
 }
 
 void World::render(const ::core::vulkan::RenderCall &render_call) {

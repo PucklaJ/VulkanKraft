@@ -87,6 +87,9 @@ void Mesh::render(const ::core::vulkan::RenderCall &render_call) {
 void Mesh::generate(Chunk *chunk, const glm::vec2 &pos,
                     const bool multi_thread) {
   if (m_generating && m_generate_thread) {
+#ifndef NDEBUG
+    ::core::Log::info("waiting for generate thread ...");
+#endif
     m_generate_thread->join();
     m_generate_thread.reset();
   }
