@@ -77,6 +77,7 @@ private:
 class BlockArray {
 public:
   void fill(const BlockType value = BlockType::GRASS);
+  void half_fill(const BlockType value = BlockType::GRASS);
   void clear();
 
   inline BlockType get(const size_t x, const size_t y, const size_t z) const {
@@ -96,6 +97,12 @@ public:
                   const BlockType value) {
     m_array[_index(x, y, z)].type = value;
   }
+
+  std::array<uint8_t, block_width * block_depth * block_height>
+  to_stored_blocks() const;
+  void from_stored_blocks(
+      const std::array<uint8_t, block_width * block_depth * block_height>
+          &stored_blocks);
 
 private:
   static inline size_t _index(const size_t x, const size_t y, const size_t z) {

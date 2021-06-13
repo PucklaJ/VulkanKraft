@@ -198,5 +198,47 @@ void BlockArray::fill(const BlockType value) {
   }
 }
 
+void BlockArray::half_fill(const BlockType value) {
+  for (int x = 0; x < block_width; x++) {
+    for (int z = 0; z < block_depth; z++) {
+      for (int y = 0; y < block_height / 2; y++) {
+        set(x, y, z, value);
+      }
+    }
+  }
+}
+
 void BlockArray::clear() { fill(BlockType::AIR); }
+
+std::array<uint8_t, block_width * block_depth * block_height>
+BlockArray::to_stored_blocks() const {
+  std::array<uint8_t, block_width * block_depth * block_height> stored_blocks;
+
+  for (int x = 0; x < block_width; x++) {
+    for (int z = 0; z < block_depth; z++) {
+      for (int y = 0; y < block_height; y++) {
+        stored_blocks[x + z * block_width + y * (block_width * block_depth)] =
+            static_cast<uint8_t>(get(x, y, z));
+      }
+    }
+  }
+
+  return stored_blocks;
+}
+
+void BlockArray::from_stored_blocks(
+    const std::array<uint8_t, block_width * block_depth * block_height>
+        &stored_blocks) {
+  for (int x = 0; x < block_width; x++) {
+    for (int z = 0; z < block_depth; z++) {
+      for (int y = 0; y < block_height; y++) {
+        set(x, y, z,
+            static_cast<BlockType>(
+                stored_blocks[x + z * block_width +
+                              y * (block_width * block_depth)]));
+      }
+    }
+  }
+}
+
 } // namespace chunk

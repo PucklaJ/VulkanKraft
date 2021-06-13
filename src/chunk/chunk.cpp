@@ -7,15 +7,7 @@
 namespace chunk {
 Chunk::Chunk(const ::core::vulkan::Context &context, const glm::ivec2 &position)
     : m_mesh(context), m_position(position), m_needs_face_update(false),
-      m_vertices_ready(false), m_generating(false) {
-  for (int x = 0; x < block_width; x++) {
-    for (int z = 0; z < block_depth; z++) {
-      for (int y = 0; y < block_height / 2; y++) {
-        set(x, y, z, BlockType::GRASS);
-      }
-    }
-  }
-}
+      m_vertices_ready(false), m_generating(false) {}
 
 Chunk::~Chunk() {
   if (m_generating) {

@@ -363,6 +363,10 @@ void World::_update() {
         std::lock_guard lk(m_chunks_mutex);
         for (const auto &pos : chunks_to_remove) {
           auto &chunk = m_chunks[pos];
+
+          auto stored_blocks(chunk->to_stored_blocks());
+          m_stored_blocks[pos] = stored_blocks;
+
           m_chunks_to_delete.emplace_back(chunk);
           m_chunks.erase(pos);
         }
@@ -385,6 +389,12 @@ void World::_update() {
       if (m_chunks.empty()) {
         auto chunk = std::make_shared<Chunk>(
             m_context, get_world_position(center_position));
+        if (m_stored_blocks.find(center_position) != m_stored_blocks.end()) {
+          chunk->from_stored_blocks(m_stored_blocks.at(center_position));
+        } else {
+          chunk->half_fill();
+        }
+
         m_chunks.emplace(center_position, chunk);
         chunks_to_update.emplace_back(chunk);
       }
@@ -430,6 +440,14 @@ void World::_update() {
         add_new_chunks = true;
 #endif
         const auto chunk_pos(get_chunk_position(chunk->get_position()));
+
+        if (m_stored_blocks.find(chunk_pos) != m_stored_blocks.end()) {
+          auto stored_blocks(m_stored_blocks.at(chunk_pos));
+          chunk->from_stored_blocks(stored_blocks);
+        } else {
+          chunk->half_fill();
+        }
+
         m_chunks.emplace(get_chunk_position(chunk->get_position()), chunk);
         chunks_to_update.emplace_back(chunk);
         // if (!_chunks_to_update_contains(chunks_to_update,

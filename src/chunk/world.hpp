@@ -80,6 +80,10 @@ private:
   std::mutex m_chunks_mutex;
   std::mutex m_center_position_mutex;
 
+  std::map<std::pair<int, int>,
+           std::array<uint8_t, block_width * block_height * block_depth>>
+      m_stored_blocks;
+
   const ::core::vulkan::Context &m_context;
 };
 } // namespace chunk
