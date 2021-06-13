@@ -12,9 +12,9 @@ FPSTimer::DeltaTimer::~DeltaTimer() {
   m_parent._end_frame();
 }
 
-FPSTimer::FPSTimer(const Settings &settings)
-    : m_delta_time(0.0f),
-      m_min_delta_time(1.0f / static_cast<float>(settings.max_fps)) {}
+FPSTimer::FPSTimer(const size_t max_fps)
+    : m_delta_time(0.0f), m_min_delta_time(1.0f / static_cast<float>(max_fps)) {
+}
 
 FPSTimer::DeltaTimer FPSTimer::begin_frame() {
   return FPSTimer::DeltaTimer(*this);

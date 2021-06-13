@@ -49,6 +49,9 @@ Mesh::Mesh(const ::core::vulkan::Context &context)
     : m_num_indices(-1), m_context(context) {}
 
 void Mesh::render(const ::core::vulkan::RenderCall &render_call) {
+  if (!m_vertex_buffer)
+    return;
+
   m_vertex_buffer->bind(render_call);
   m_index_buffer->bind(render_call);
   render_call.render_indices(m_num_indices);

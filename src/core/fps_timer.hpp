@@ -16,7 +16,7 @@ public:
 
   friend class DeltaTimer;
 
-  FPSTimer(const Settings &settings);
+  FPSTimer(const size_t max_fps);
 
   inline const float &get_delta_time() const { return m_delta_time; }
 

@@ -14,7 +14,7 @@
 
 int main(int args, char *argv[]) {
   core::Settings settings;
-  core::FPSTimer timer(settings);
+  core::FPSTimer timer(settings.max_fps);
   chunk::GlobalUniform chunk_global;
   core::text::Text::GlobalUniform text_global;
   glm::mat4 projection_matrix;
@@ -43,6 +43,10 @@ int main(int args, char *argv[]) {
 
     Player player(glm::vec3(8.0f, 70.0f, 8.0f));
     chunk::World world(context);
+
+    world.set_center_position(player.get_position());
+    world.set_render_distance(settings.render_distance);
+    world.start_update_thread();
 
     float current_time = 0.0f;
     while (!window.should_close()) {
@@ -84,7 +88,7 @@ int main(int args, char *argv[]) {
       }
 
       player.update(timer, window, world);
-      world.update(player.get_position(), settings.render_distance);
+      world.set_center_position(player.get_position());
 
       window.reset_keys();
 

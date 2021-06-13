@@ -54,6 +54,7 @@ private:
   std::atomic<bool> m_needs_face_update;
   std::unique_ptr<std::thread> m_generate_thread;
   std::atomic<bool> m_vertices_ready;
+  std::atomic<bool> m_generating;
 
   std::weak_ptr<Chunk> m_front;
   std::weak_ptr<Chunk> m_back;

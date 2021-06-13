@@ -1,5 +1,6 @@
 #include "world.hpp"
 #include "../core/exception.hpp"
+#include "../core/fps_timer.hpp"
 #include "../core/log.hpp"
 #include <chrono>
 #include <limits>
@@ -9,7 +10,15 @@
 namespace chunk {
 World::World(const ::core::vulkan::Context &context) : m_context(context) {}
 
+World::~World() {
+  m_running = false;
+  if (m_chunk_update_thread)
+    m_chunk_update_thread->join();
+}
+
 void World::place_block(const glm::ivec3 &position, const BlockType block) {
+  std::lock_guard lk(m_chunks_mutex);
+
   {
     std::stringstream stream;
     stream << "Placing block " << std::boolalpha << block << " at ";
@@ -47,6 +56,8 @@ void World::place_block(const glm::ivec3 &position, const BlockType block) {
 }
 
 void World::destroy_block(const glm::ivec3 &position) {
+  std::lock_guard lk(m_chunks_mutex);
+
   {
     std::stringstream stream;
     stream << "Destroying block  at ";
@@ -77,7 +88,9 @@ void World::destroy_block(const glm::ivec3 &position) {
   throw ::core::VulkanKraftException(stream.str());
 }
 
-BlockType World::show_block(const glm::ivec3 &position) const {
+BlockType World::show_block(const glm::ivec3 &position) {
+  std::lock_guard lk(m_chunks_mutex);
+
   const auto chunk_pos(get_chunk_position(position));
 
   const auto chunk(_get_chunk(chunk_pos));
@@ -98,9 +111,10 @@ BlockType World::show_block(const glm::ivec3 &position) const {
   throw ::core::VulkanKraftException(stream.str());
 }
 
-std::optional<glm::ivec3>
-World::raycast_block(const ::core::math::Ray &ray,
-                     ::core::math::Ray::Face &face) const {
+std::optional<glm::ivec3> World::raycast_block(const ::core::math::Ray &ray,
+                                               ::core::math::Ray::Face &face) {
+  std::lock_guard lk(m_chunks_mutex);
+
   // Get chunk of ray
   const auto chunk_pos(get_chunk_position(ray.origin));
 
@@ -181,155 +195,20 @@ World::raycast_block(const ::core::math::Ray &ray,
   return std::nullopt;
 }
 
-void World::update(const glm::vec3 &_center_position,
-                   const int render_distance) {
-#ifndef NDEBUG
-  const auto update_start_time = std::chrono::high_resolution_clock::now();
-#endif
-  const auto center_position(get_chunk_position(_center_position));
-  // First remove all chunks that are too far away
-  std::set<std::pair<int, int>> chunks_to_remove;
-  for (const auto &[pos, chunk] : m_chunks) {
-    if (abs(pos.first - center_position.first) > render_distance ||
-        abs(pos.second - center_position.second) > render_distance) {
-      chunks_to_remove.emplace(pos);
-    }
-  }
-
-  if (!chunks_to_remove.empty()) {
-#ifndef NDEBUG
-    const auto start_time = std::chrono::high_resolution_clock::now();
-#endif
-    for (const auto &pos : chunks_to_remove) {
-      auto &chunk = m_chunks[pos];
-      m_chunks.erase(pos);
-    }
-#ifndef NDEBUG
-    const auto end_time = std::chrono::high_resolution_clock::now();
-    std::stringstream stream;
-    stream << "Chunk Remove Time: "
-           << std::chrono::duration_cast<std::chrono::microseconds>(end_time -
-                                                                    start_time)
-                  .count()
-           << " µs";
-    ::core::Log::info(stream.str());
-#endif
-  }
-
-  std::vector<std::weak_ptr<Chunk>> chunks_to_update;
-  if (m_chunks.empty()) {
-    auto chunk =
-        std::make_shared<Chunk>(m_context, get_world_position(center_position));
-    m_chunks.emplace(center_position, chunk);
-    chunks_to_update.emplace_back(chunk);
-  }
-
-#ifndef NDEBUG
-  const auto add_start_time = std::chrono::high_resolution_clock::now();
-#endif
-
-  // Loop over all chunks and check if neighbors should be added
-  std::vector<std::shared_ptr<Chunk>> chunks_to_add;
-  for (const auto &[pos, chunk] : m_chunks) {
-    if (!chunk->get_right()) {
-      // right
-      chunks_to_add.emplace_back(_check_if_add_neighbour(
-          pos, chunk, center_position, 1, 0, render_distance));
-    }
-    if (!chunk->get_left()) {
-      // left
-      chunks_to_add.emplace_back(_check_if_add_neighbour(
-          pos, chunk, center_position, -1, 0, render_distance));
-    }
-    if (!chunk->get_front()) {
-      // front
-      chunks_to_add.emplace_back(_check_if_add_neighbour(
-          pos, chunk, center_position, 0, -1, render_distance));
-    }
-    if (!chunk->get_back()) {
-      // back
-      chunks_to_add.emplace_back(_check_if_add_neighbour(
-          pos, chunk, center_position, 0, 1, render_distance));
-    }
-  }
-#ifndef NDEBUG
-  bool add_new_chunks = false;
-#endif
-
-  for (auto &chunk : chunks_to_add) {
-    if (!chunk)
-      continue;
-#ifndef NDEBUG
-    add_new_chunks = true;
-#endif
-    const auto chunk_pos(get_chunk_position(chunk->get_position()));
-    m_chunks.emplace(get_chunk_position(chunk->get_position()), chunk);
-    chunks_to_update.emplace_back(chunk);
-    // if (!_chunks_to_update_contains(chunks_to_update, chunk->get_front()))
-    //   chunks_to_update.emplace_back(chunk->get_front());
-    // if (!_chunks_to_update_contains(chunks_to_update, chunk->get_back()))
-    //   chunks_to_update.emplace_back(chunk->get_back());
-    // if (!_chunks_to_update_contains(chunks_to_update, chunk->get_left()))
-    //   chunks_to_update.emplace_back(chunk->get_left());
-    // if (!_chunks_to_update_contains(chunks_to_update, chunk->get_right()))
-    //   chunks_to_update.emplace_back(chunk->get_right());
-  }
-#ifndef NDEBUG
-  if (add_new_chunks) {
-    const auto add_end_time = std::chrono::high_resolution_clock::now();
-    {
-      std::stringstream stream;
-      stream << "Add Chunk Time: "
-             << std::chrono::duration_cast<std::chrono::microseconds>(
-                    add_end_time - add_start_time)
-                    .count()
-             << " µs";
-      ::core::Log::info(stream.str());
-    }
-  }
-
-  if (!chunks_to_update.empty()) {
-    const auto gen_start_time = std::chrono::high_resolution_clock::now();
-#endif
-
-    chunks_to_add.clear();
-
-    // Update neighbouring chunks
-    for (auto &_chunk : chunks_to_update) {
-      if (auto chunk = _chunk.lock(); chunk) {
-        chunk->needs_face_update();
-        chunk->generate();
-      }
-    }
-
-#ifndef NDEBUG
-    const auto gen_end_time = std::chrono::high_resolution_clock::now();
-    {
-      std::stringstream stream;
-      stream << "Gen Chunk Time: "
-             << std::chrono::duration_cast<std::chrono::microseconds>(
-                    gen_end_time - gen_start_time)
-                    .count()
-             << " µs";
-      ::core::Log::info(stream.str());
-    }
-    {
-      std::stringstream stream;
-      stream << "Update Time: "
-             << std::chrono::duration_cast<std::chrono::microseconds>(
-                    gen_end_time - update_start_time)
-                    .count()
-             << " µs";
-      ::core::Log::warning(stream.str());
-    }
-  }
-#endif
-}
-
 void World::render(const ::core::vulkan::RenderCall &render_call) {
+  std::lock_guard lk(m_chunks_mutex);
+
+  m_chunks_to_delete.clear();
+
   for (auto &[pos, chunk] : m_chunks) {
     chunk->render(render_call);
   }
+}
+
+void World::start_update_thread() {
+  m_running = true;
+  m_chunk_update_thread =
+      std::make_unique<std::thread>(std::bind(&World::_update, this));
 }
 
 bool World::_chunks_to_update_contains(
@@ -370,13 +249,12 @@ World::_get_chunk(const std::pair<int, int> &pos) const {
 
 std::shared_ptr<Chunk> World::_check_if_add_neighbour(
     std::pair<int, int> pos, std::shared_ptr<Chunk> chunk,
-    const std::pair<int, int> &center_position, const int x, const int y,
-    const int render_distance) {
+    const std::pair<int, int> &center_position, const int x, const int y) {
   pos.first += x;
   pos.second += y;
 
-  if (abs(pos.first - center_position.first) > render_distance ||
-      abs(pos.second - center_position.second) > render_distance) {
+  if (abs(pos.first - center_position.first) > m_render_distance ||
+      abs(pos.second - center_position.second) > m_render_distance) {
     return nullptr;
   }
 
@@ -449,5 +327,173 @@ std::shared_ptr<Chunk> World::_check_if_add_neighbour(
   }
 
   return new_chunk;
+}
+
+void World::_update() {
+  ::core::FPSTimer timer(update_wait_fps);
+
+  while (m_running) {
+    auto delta_timer(timer.begin_frame());
+
+#ifndef NDEBUG
+    const auto update_start_time = std::chrono::high_resolution_clock::now();
+#endif
+
+    m_center_position_mutex.lock();
+    const auto center_position(get_chunk_position(m_center_position));
+    m_center_position_mutex.unlock();
+
+    // First remove all chunks that are too far away
+    std::set<std::pair<int, int>> chunks_to_remove;
+    {
+      std::lock_guard lk(m_chunks_mutex);
+      for (const auto &[pos, chunk] : m_chunks) {
+        if (abs(pos.first - center_position.first) > m_render_distance ||
+            abs(pos.second - center_position.second) > m_render_distance) {
+          chunks_to_remove.emplace(pos);
+        }
+      }
+    }
+
+    if (!chunks_to_remove.empty()) {
+#ifndef NDEBUG
+      const auto start_time = std::chrono::high_resolution_clock::now();
+#endif
+      {
+        std::lock_guard lk(m_chunks_mutex);
+        for (const auto &pos : chunks_to_remove) {
+          auto &chunk = m_chunks[pos];
+          m_chunks_to_delete.emplace_back(chunk);
+          m_chunks.erase(pos);
+        }
+      }
+#ifndef NDEBUG
+      const auto end_time = std::chrono::high_resolution_clock::now();
+      std::stringstream stream;
+      stream << "Chunk Remove Time: "
+             << std::chrono::duration_cast<std::chrono::microseconds>(
+                    end_time - start_time)
+                    .count()
+             << " µs";
+      ::core::Log::info(stream.str());
+#endif
+    }
+
+    std::vector<std::weak_ptr<Chunk>> chunks_to_update;
+    {
+      std::lock_guard lk(m_chunks_mutex);
+      if (m_chunks.empty()) {
+        auto chunk = std::make_shared<Chunk>(
+            m_context, get_world_position(center_position));
+        m_chunks.emplace(center_position, chunk);
+        chunks_to_update.emplace_back(chunk);
+      }
+    }
+
+#ifndef NDEBUG
+    const auto add_start_time = std::chrono::high_resolution_clock::now();
+#endif
+
+    // Loop over all chunks and check if neighbors should be added
+    std::vector<std::shared_ptr<Chunk>> chunks_to_add;
+    for (const auto &[pos, chunk] : m_chunks) {
+      if (!chunk->get_right()) {
+        // right
+        chunks_to_add.emplace_back(
+            _check_if_add_neighbour(pos, chunk, center_position, 1, 0));
+      }
+      if (!chunk->get_left()) {
+        // left
+        chunks_to_add.emplace_back(
+            _check_if_add_neighbour(pos, chunk, center_position, -1, 0));
+      }
+      if (!chunk->get_front()) {
+        // front
+        chunks_to_add.emplace_back(
+            _check_if_add_neighbour(pos, chunk, center_position, 0, -1));
+      }
+      if (!chunk->get_back()) {
+        // back
+        chunks_to_add.emplace_back(
+            _check_if_add_neighbour(pos, chunk, center_position, 0, 1));
+      }
+    }
+#ifndef NDEBUG
+    bool add_new_chunks = false;
+#endif
+    {
+      std::lock_guard lk(m_chunks_mutex);
+      for (auto &chunk : chunks_to_add) {
+        if (!chunk)
+          continue;
+#ifndef NDEBUG
+        add_new_chunks = true;
+#endif
+        const auto chunk_pos(get_chunk_position(chunk->get_position()));
+        m_chunks.emplace(get_chunk_position(chunk->get_position()), chunk);
+        chunks_to_update.emplace_back(chunk);
+        // if (!_chunks_to_update_contains(chunks_to_update,
+        // chunk->get_front()))
+        //   chunks_to_update.emplace_back(chunk->get_front());
+        // if (!_chunks_to_update_contains(chunks_to_update, chunk->get_back()))
+        //   chunks_to_update.emplace_back(chunk->get_back());
+        // if (!_chunks_to_update_contains(chunks_to_update, chunk->get_left()))
+        //   chunks_to_update.emplace_back(chunk->get_left());
+        // if (!_chunks_to_update_contains(chunks_to_update,
+        // chunk->get_right()))
+        //   chunks_to_update.emplace_back(chunk->get_right());
+      }
+    }
+#ifndef NDEBUG
+    if (add_new_chunks) {
+      const auto add_end_time = std::chrono::high_resolution_clock::now();
+      {
+        std::stringstream stream;
+        stream << "Add Chunk Time: "
+               << std::chrono::duration_cast<std::chrono::microseconds>(
+                      add_end_time - add_start_time)
+                      .count()
+               << " µs";
+        ::core::Log::info(stream.str());
+      }
+    }
+
+    if (!chunks_to_update.empty()) {
+      const auto gen_start_time = std::chrono::high_resolution_clock::now();
+#endif
+
+      chunks_to_add.clear();
+
+      // Update neighbouring chunks
+      for (auto &_chunk : chunks_to_update) {
+        if (auto chunk = _chunk.lock(); chunk) {
+          chunk->needs_face_update();
+          chunk->generate();
+        }
+      }
+
+#ifndef NDEBUG
+      const auto gen_end_time = std::chrono::high_resolution_clock::now();
+      {
+        std::stringstream stream;
+        stream << "Gen Chunk Time: "
+               << std::chrono::duration_cast<std::chrono::microseconds>(
+                      gen_end_time - gen_start_time)
+                      .count()
+               << " µs";
+        ::core::Log::info(stream.str());
+      }
+      {
+        std::stringstream stream;
+        stream << "Update Time: "
+               << std::chrono::duration_cast<std::chrono::microseconds>(
+                      gen_end_time - update_start_time)
+                      .count()
+               << " µs";
+        ::core::Log::warning(stream.str());
+      }
+    }
+#endif
+  }
 }
 } // namespace chunk
