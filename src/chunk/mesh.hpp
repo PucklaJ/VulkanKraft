@@ -3,10 +3,8 @@
 #include "../core/shader.hpp"
 #include "../core/vulkan/buffer.hpp"
 #include "block.hpp"
-#include <atomic>
 #include <glm/glm.hpp>
 #include <memory>
-#include <thread>
 
 namespace chunk {
 
@@ -19,12 +17,12 @@ public:
                                      ::core::ResourceHodler &resource_hodler);
 
   Mesh(const ::core::vulkan::Context &context);
-  ~Mesh();
 
   void render(const ::core::vulkan::RenderCall &render_call);
 
-  void generate(Chunk *chunk, const glm::vec2 &pos,
-                const bool multi_thread = true);
+  void generate_vertices(Chunk *chunk, const glm::vec2 &pos);
+
+  void load_buffer();
 
 private:
   std::unique_ptr<::core::vulkan::Buffer> m_vertex_buffer;
@@ -33,8 +31,6 @@ private:
 
   std::vector<Vertex> m_vertices;
   std::vector<uint32_t> m_indices;
-  std::atomic<bool> m_vertices_ready;
-  bool m_generating;
-  std::unique_ptr<std::thread> m_generate_thread;
+  const ::core::vulkan::Context &m_context;
 };
 } // namespace chunk

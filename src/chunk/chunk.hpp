@@ -2,7 +2,9 @@
 #include "../core/math.hpp"
 #include "mesh.hpp"
 #include <array>
+#include <atomic>
 #include <memory>
+#include <thread>
 
 namespace chunk {
 class Chunk : public BlockArray {
@@ -10,6 +12,7 @@ public:
   friend class Mesh;
 
   Chunk(const ::core::vulkan::Context &context, const glm::ivec2 &position);
+  ~Chunk();
 
   void generate(const bool multi_thread = true);
   void generate_block_change(const glm::ivec3 &position);
@@ -21,6 +24,7 @@ public:
   inline void set_back(std::shared_ptr<Chunk> c) { m_back = c; }
   inline void set_left(std::shared_ptr<Chunk> c) { m_left = c; }
   inline void set_right(std::shared_ptr<Chunk> c) { m_right = c; }
+  inline void needs_face_update() { m_needs_face_update = true; }
 
   inline std::shared_ptr<Chunk> get_front() { return m_front.lock(); }
   inline std::shared_ptr<Chunk> get_back() { return m_back.lock(); }
@@ -47,7 +51,9 @@ private:
 
   Mesh m_mesh;
   const glm::ivec2 m_position;
-  bool m_first_generated;
+  std::atomic<bool> m_needs_face_update;
+  std::unique_ptr<std::thread> m_generate_thread;
+  std::atomic<bool> m_vertices_ready;
 
   std::weak_ptr<Chunk> m_front;
   std::weak_ptr<Chunk> m_back;

@@ -183,6 +183,9 @@ World::raycast_block(const ::core::math::Ray &ray,
 
 void World::update(const glm::vec3 &_center_position,
                    const int render_distance) {
+#ifndef NDEBUG
+  const auto update_start_time = std::chrono::high_resolution_clock::now();
+#endif
   const auto center_position(get_chunk_position(_center_position));
   // First remove all chunks that are too far away
   std::set<std::pair<int, int>> chunks_to_remove;
@@ -249,10 +252,16 @@ void World::update(const glm::vec3 &_center_position,
           pos, chunk, center_position, 0, 1, render_distance));
     }
   }
+#ifndef NDEBUG
+  bool add_new_chunks = false;
+#endif
 
   for (auto &chunk : chunks_to_add) {
     if (!chunk)
       continue;
+#ifndef NDEBUG
+    add_new_chunks = true;
+#endif
     const auto chunk_pos(get_chunk_position(chunk->get_position()));
     m_chunks.emplace(get_chunk_position(chunk->get_position()), chunk);
     chunks_to_update.emplace_back(chunk);
@@ -266,7 +275,7 @@ void World::update(const glm::vec3 &_center_position,
     //   chunks_to_update.emplace_back(chunk->get_right());
   }
 #ifndef NDEBUG
-  if (!chunks_to_add.empty()) {
+  if (add_new_chunks) {
     const auto add_end_time = std::chrono::high_resolution_clock::now();
     {
       std::stringstream stream;
@@ -285,19 +294,14 @@ void World::update(const glm::vec3 &_center_position,
 
     chunks_to_add.clear();
 
-    std::vector<std::thread> update_threads;
     // Update neighbouring chunks
     for (auto &_chunk : chunks_to_update) {
       if (auto chunk = _chunk.lock(); chunk) {
-        update_threads.emplace_back([chunk]() {
-          chunk->update_faces();
-          chunk->generate();
-        });
+        chunk->needs_face_update();
+        chunk->generate();
       }
     }
-    for (auto &t : update_threads) {
-      t.join();
-    }
+
 #ifndef NDEBUG
     const auto gen_end_time = std::chrono::high_resolution_clock::now();
     {
@@ -308,6 +312,15 @@ void World::update(const glm::vec3 &_center_position,
                     .count()
              << " µs";
       ::core::Log::info(stream.str());
+    }
+    {
+      std::stringstream stream;
+      stream << "Update Time: "
+             << std::chrono::duration_cast<std::chrono::microseconds>(
+                    gen_end_time - update_start_time)
+                    .count()
+             << " µs";
+      ::core::Log::warning(stream.str());
     }
   }
 #endif
