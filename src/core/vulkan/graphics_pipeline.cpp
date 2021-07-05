@@ -12,11 +12,11 @@ GraphicsPipeline::GraphicsPipeline(
     const std::vector<uint8_t> &fragment_code,
     vk::VertexInputBindingDescription vertex_binding,
     std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
-    const vk::SampleCountFlagBits msaa_samples)
+    const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending)
     : m_context(context) {
   _create_handle(std::move(descriptor_set_layouts), vertex_code, fragment_code,
                  std::move(vertex_binding), std::move(vertex_attributes),
-                 msaa_samples);
+                 msaa_samples, alpha_blending);
 }
 
 GraphicsPipeline::~GraphicsPipeline() { _destroy(); }
@@ -45,7 +45,7 @@ void GraphicsPipeline::_create_handle(
     const std::vector<uint8_t> &fragment_code,
     vk::VertexInputBindingDescription vertex_binding,
     std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
-    const vk::SampleCountFlagBits msaa_samples) {
+    const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending) {
   try {
     m_vertex_module =
         _create_shader_module(m_context.get_device(), vertex_code);
@@ -108,7 +108,17 @@ void GraphicsPipeline::_create_handle(
   col_blend_at.colorWriteMask =
       vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
       vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
-  col_blend_at.blendEnable = VK_FALSE;
+  if (alpha_blending) {
+    col_blend_at.blendEnable = VK_TRUE;
+    col_blend_at.srcColorBlendFactor = vk::BlendFactor::eSrcAlpha;
+    col_blend_at.dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha;
+    col_blend_at.colorBlendOp = vk::BlendOp::eAdd;
+    col_blend_at.srcAlphaBlendFactor = vk::BlendFactor::eOne;
+    col_blend_at.dstAlphaBlendFactor = vk::BlendFactor::eZero;
+    col_blend_at.alphaBlendOp = vk::BlendOp::eAdd;
+  } else {
+    col_blend_at.blendEnable = VK_FALSE;
+  }
 
   vk::PipelineColorBlendStateCreateInfo cb_i;
   cb_i.logicOpEnable = VK_FALSE;

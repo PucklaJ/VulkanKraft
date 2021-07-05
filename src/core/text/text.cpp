@@ -15,6 +15,7 @@ Shader Text::build_shader(const vulkan::Context &context,
                   .fragment("shaders_spv/text.frag.spv")
                   .uniform_buffer(vk::ShaderStageFlagBits::eVertex, global)
                   .dynamic_texture(max_texts)
+                  .alpha_blending()
                   .build(context, settings));
 
   return shader;

@@ -14,7 +14,7 @@ public:
       const std::vector<uint8_t> &fragment_code,
       vk::VertexInputBindingDescription vertex_binding,
       std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
-      const vk::SampleCountFlagBits msaa_samples);
+      const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending);
   ~GraphicsPipeline();
 
   void bind(const RenderCall &render_call) const noexcept;
@@ -33,7 +33,7 @@ private:
       const std::vector<uint8_t> &fragment_code,
       vk::VertexInputBindingDescription vertex_binding,
       std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
-      const vk::SampleCountFlagBits msaa_samples);
+      const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending);
   void _destroy();
 
   vk::Pipeline m_handle;

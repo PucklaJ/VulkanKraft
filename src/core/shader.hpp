@@ -58,6 +58,11 @@ public:
       return *this;
     }
 
+    inline Builder &alpha_blending() {
+      m_alpha_blending = true;
+      return *this;
+    }
+
   private:
     struct UniformBufferInfo {
       const std::vector<uint8_t> initial_state;
@@ -76,6 +81,7 @@ public:
     std::vector<VertexAttributeInfo> m_vertex_attributes;
     size_t m_texture_count;
     std::vector<uint32_t> m_dynamic_textures;
+    bool m_alpha_blending;
   };
 
   Shader(Shader &&rhs);

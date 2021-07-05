@@ -3,7 +3,7 @@
 #include <fstream>
 
 namespace core {
-Shader::Builder::Builder() : m_texture_count(0) {}
+Shader::Builder::Builder() : m_texture_count(0), m_alpha_blending(false) {}
 
 Shader Shader::Builder::build(const vulkan::Context &context,
                               const Settings &settings) {
@@ -252,7 +252,7 @@ void Shader::_create_graphics_pipeline(const vulkan::Context &context,
     m_pipeline = std::make_unique<vulkan::GraphicsPipeline>(
         context, std::move(all_layouts), std::move(builder.m_vertex_code),
         std::move(builder.m_fragment_code), std::move(bind), std::move(atts),
-        settings.msaa_samples);
+        settings.msaa_samples, builder.m_alpha_blending);
   } catch (const VulkanKraftException &e) {
     throw VulkanKraftException(
         std::string("failed to create graphics pipeline of core::Shader: ") +
