@@ -34,6 +34,7 @@ Shader::Shader(Shader &&rhs)
       m_dynamic_textures_layout(std::move(rhs.m_dynamic_textures_layout)),
       m_descriptor_pool(std::move(rhs.m_descriptor_pool)),
       m_descriptor_sets(std::move(rhs.m_descriptor_sets)),
+      m_texture_writes_to_perform(std::move(rhs.m_texture_writes_to_perform)),
       m_min_dynamic_texture_binding_point(
           rhs.m_min_dynamic_texture_binding_point),
       m_context(rhs.m_context) {
@@ -42,6 +43,7 @@ Shader::Shader(Shader &&rhs)
   rhs.m_descriptor_layout = VK_NULL_HANDLE;
   rhs.m_descriptor_pool = VK_NULL_HANDLE;
   rhs.m_descriptor_sets.clear();
+  rhs.m_texture_writes_to_perform.clear();
 }
 
 Shader::~Shader() {

@@ -6,24 +6,6 @@
 
 namespace core {
 namespace text {
-Shader Text::build_shader(const vulkan::Context &context,
-                          const Settings &settings) {
-  GlobalUniform global;
-  global.proj = glm::mat4(1.0f);
-
-  auto shader(Shader::Builder()
-                  .vertex_attribute<glm::vec2>()
-                  .vertex_attribute<glm::vec2>()
-                  .vertex(text_vert_spv)
-                  .fragment(text_frag_spv)
-                  .uniform_buffer(vk::ShaderStageFlagBits::eVertex, global)
-                  .dynamic_texture(max_texts)
-                  .alpha_blending()
-                  .build(context, settings));
-
-  return shader;
-}
-
 Text::Text(const vulkan::Context &context, Shader &shader, Font &font,
            const std::wstring &string, const glm::vec2 &position,
            const float font_size)

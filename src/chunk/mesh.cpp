@@ -7,46 +7,12 @@
 #include <chrono>
 #include <sstream>
 #endif
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
 
 #include <shaders/chunk_mesh_frag.hpp>
 #include <shaders/chunk_mesh_vert.hpp>
 #include <textures/block.hpp>
 
 namespace chunk {
-
-::core::Shader Mesh::build_shader(const ::core::vulkan::Context &context,
-                                  const ::core::Settings &settings,
-                                  ::core::ResourceHodler &resource_hodler) {
-  GlobalUniform global;
-  global.proj_view = glm::mat4(1.0f);
-
-  int texture_width, texture_height, texture_channels;
-  void *texture_data = stbi_load_from_memory(
-      reinterpret_cast<stbi_uc const *>(block_png.data()), block_png.size(),
-      &texture_width, &texture_height, &texture_channels, STBI_rgb_alpha);
-  auto texture = ::core::Texture::Builder()
-                     .dimensions(texture_width, texture_height)
-                     .filter(vk::Filter::eNearest)
-                     .mip_maps()
-                     .build(context, texture_data);
-  stbi_image_free(texture_data);
-
-  auto shader(::core::Shader::Builder()
-                  .vertex_attribute<glm::vec3>()
-                  .vertex_attribute<glm::vec2>()
-                  .vertex(chunk_mesh_vert_spv)
-                  .fragment(chunk_mesh_frag_spv)
-                  .uniform_buffer(vk::ShaderStageFlagBits::eVertex, global)
-                  .texture()
-                  .build(context, settings));
-  shader.set_texture(texture);
-
-  resource_hodler.hodl_texture("chunk_mesh_texture", std::move(texture));
-
-  return shader;
-}
 
 Mesh::Mesh(const ::core::vulkan::Context &context)
     : m_num_indices(-1), m_context(context) {}

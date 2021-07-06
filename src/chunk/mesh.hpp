@@ -12,10 +12,6 @@ class Chunk;
 
 class Mesh {
 public:
-  static ::core::Shader build_shader(const ::core::vulkan::Context &context,
-                                     const ::core::Settings &settings,
-                                     ::core::ResourceHodler &resource_hodler);
-
   Mesh(const ::core::vulkan::Context &context);
 
   void render(const ::core::vulkan::RenderCall &render_call);

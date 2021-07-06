@@ -26,21 +26,24 @@ int main(int args, char *argv[]) {
     core::Window window(settings.window_width, settings.window_height,
                         core::Settings::window_title);
     core::vulkan::Context context(window, settings);
-    core::ResourceHodler hodler(context);
+    core::ResourceHodler hodler(context, settings);
 
-    auto chunk_shader = chunk::Mesh::build_shader(context, settings, hodler);
-    auto text_shader = core::text::Text::build_shader(context, settings);
+    auto &chunk_shader =
+        hodler.get_shader(core::ResourceHodler::chunk_mesh_shader_name);
+    auto &text_shader =
+        hodler.get_shader(core::ResourceHodler::text_shader_name);
 
-    core::text::Font font(MisterPixelRegular_otf.data());
-    core::text::Text fps_text(context, text_shader, font, L"60 FPS");
-    core::text::Text position_text(context, text_shader, font, L"X\nY\nZ\n",
+    auto &debug_font = hodler.get_font(core::ResourceHodler::debug_font_name);
+    core::text::Text fps_text(context, text_shader, debug_font, L"60 FPS");
+    core::text::Text position_text(context, text_shader, debug_font,
+                                   L"X\nY\nZ\n",
                                    glm::vec2(0.0f, fps_text.get_height() + 10));
-    core::text::Text look_text(context, text_shader, font, L"Look",
+    core::text::Text look_text(context, text_shader, debug_font, L"Look",
                                glm::vec2(0.0f, fps_text.get_height() + 10 +
                                                    position_text.get_height() +
                                                    10));
     core::text::Text cross_hair(
-        context, text_shader, font, L".",
+        context, text_shader, debug_font, L".",
         glm::vec2(settings.window_width / 2, settings.window_height / 2));
 
     Player player(glm::vec3(8.0f, 70.0f, 8.0f));

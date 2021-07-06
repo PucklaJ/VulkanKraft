@@ -14,6 +14,8 @@ namespace core {
 namespace text {
 class Text {
 public:
+  static constexpr uint32_t max_texts = 20;
+
   struct GlobalUniform {
     glm::mat4 proj;
   };
@@ -29,9 +31,6 @@ public:
   };
   typedef std::array<Vertex, 6> Mesh;
 
-  static Shader build_shader(const vulkan::Context &context,
-                             const Settings &settings);
-
   Text(const vulkan::Context &context, Shader &shader, Font &font,
        const std::wstring &string, const glm::vec2 &position = glm::vec2(),
        const float font_size = 50.0f);
@@ -46,8 +45,6 @@ public:
   void render(const vulkan::RenderCall &render_call);
 
 private:
-  static constexpr uint32_t max_texts = 20;
-
   struct BufferWrite {
     Mesh mesh;
     std::set<uint32_t> image_indices;
