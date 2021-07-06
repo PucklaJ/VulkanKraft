@@ -13,6 +13,7 @@ namespace text {
 class Font {
 public:
   Font(std::filesystem::path font_file_name);
+  Font(const uint8_t *font_file_buffer);
 
   std::vector<float> create_bitmap(std::wstring text_string,
                                    const float font_size,

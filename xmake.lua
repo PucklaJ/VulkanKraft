@@ -48,7 +48,20 @@ rule("texture")
 
     batchcmds:add_depfiles(sourcefile_png, hpp_gen)
   end)
+
+rule("font")
+  set_extensions(".otf", ".ttf")
+  on_buildcmd_file(function(target, batchcmds, sourcefile_ttf, opt)
+    local hpp_gen = path.join("build", target:plat(), target:arch(), "release", "hpp_gen" .. (target:is_plat("windows") and ".exe" or ""))
+    assert(os.exists(hpp_gen), "hpp_gen has not been built yet!")
+
+    batchcmds:show_progress(opt.progress, "${color.build.object}generating.hpp %s", sourcefile_ttf)
+    batchcmds:vrunv(hpp_gen, {sourcefile_ttf, path.join(os.scriptdir(), "resources/fonts")})
+
+    batchcmds:add_depfiles(sourcefile_ttf, hpp_gen)
+  end)
 rule_end()
+
 
 
 target("hpp_gen")
@@ -70,7 +83,7 @@ target("vulkankraft")
     add_syslinks("vulkan", "pthread")
   end
   add_includedirs("resources")
-  add_rules("shader", "texture")
+  add_rules("shader", "texture", "font")
 
   add_files("src/*.cpp", 
             "src/core/*.cpp",
@@ -83,4 +96,5 @@ target("vulkankraft")
                   "src/core/text/*.hpp",
                   "src/chunk/*.hpp")
   add_files("shaders/*",
-            "textures/*")
+            "textures/*",
+            "fonts/*")

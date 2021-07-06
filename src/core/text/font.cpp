@@ -26,6 +26,14 @@ Font::Font(std::filesystem::path font_file_name) {
   }
 }
 
+Font::Font(const uint8_t *font_file_buffer) {
+  if (stbtt_InitFont(&m_font_info,
+                     reinterpret_cast<const unsigned char *>(font_file_buffer),
+                     0) == 0) {
+    throw VulkanKraftException("Failed to initialise font from memory");
+  }
+}
+
 std::vector<float> Font::create_bitmap(std::wstring text_string,
                                        const float font_size,
                                        size_t &complete_width,

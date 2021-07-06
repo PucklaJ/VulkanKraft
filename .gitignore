@@ -1,5 +1,6 @@
 .*
 !.gitignore
+resources
 
 # xmake
 build

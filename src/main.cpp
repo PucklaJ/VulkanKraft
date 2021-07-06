@@ -12,6 +12,8 @@
 #include <iomanip>
 #include <sstream>
 
+#include <fonts/MisterPixelRegular.hpp>
+
 int main(int args, char *argv[]) {
   core::Settings settings;
   core::FPSTimer timer(settings.max_fps);
@@ -29,7 +31,7 @@ int main(int args, char *argv[]) {
     auto chunk_shader = chunk::Mesh::build_shader(context, settings, hodler);
     auto text_shader = core::text::Text::build_shader(context, settings);
 
-    core::text::Font font("fonts/Mister Pixel Regular.otf");
+    core::text::Font font(MisterPixelRegular_otf.data());
     core::text::Text fps_text(context, text_shader, font, L"60 FPS");
     core::text::Text position_text(context, text_shader, font, L"X\nY\nZ\n",
                                    glm::vec2(0.0f, fps_text.get_height() + 10));
