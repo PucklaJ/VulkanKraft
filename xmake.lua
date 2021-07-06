@@ -36,19 +36,41 @@ rule("shader")
 
             batchcmds:add_depfiles(sourcefile_glsl)
     end)
+
+rule("texture")
+  set_extensions(".png")
+  on_buildcmd_file(function(target, batchcmds, sourcefile_png, opt)
+    local hpp_gen = path.join("build", target:plat(), target:arch(), "release", "hpp_gen" .. (target:is_plat("windows") and ".exe" or ""))
+    assert(os.exists(hpp_gen), "hpp_gen has not been built yet!")
+
+    batchcmds:show_progress(opt.progress, "${color.build.object}generating.hpp %s", sourcefile_png)
+    batchcmds:vrunv(hpp_gen, {sourcefile_png, path.join(os.scriptdir(), "resources/textures")})
+
+    batchcmds:add_depfiles(sourcefile_png, hpp_gen)
+  end)
 rule_end()
+
+
+target("hpp_gen")
+  set_kind("binary")
+  set_languages("cxx17")
+  add_rules("mode.release")
+  add_files("cmd/hpp_gen/main.cpp")
+target_end()
 
 add_rules("mode.debug", "mode.release")
 target("vulkankraft")
   set_kind("binary")
   set_languages("cxx17")
+  add_deps("hpp_gen")
   add_packages("glfw", "glm", "stb", "vulkan-hpp")
   if is_plat("windows") then
     add_syslinks("C:\\VulkanSDK\\1.2.135.0\\Lib" .. (is_arch("x86") and "32" or "") .. "\\vulkan-1")
   else
     add_syslinks("vulkan", "pthread")
   end
-  add_rules("shader")
+  add_includedirs("resources")
+  add_rules("shader", "texture")
 
   add_files("src/*.cpp", 
             "src/core/*.cpp",
@@ -60,4 +82,5 @@ target("vulkankraft")
                   "src/core/vulkan/*.hpp",
                   "src/core/text/*.hpp",
                   "src/chunk/*.hpp")
-  add_files("shaders/*.vert", "shaders/*.frag")
+  add_files("shaders/*",
+            "textures/*")

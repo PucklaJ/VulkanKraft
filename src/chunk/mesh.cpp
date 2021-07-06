@@ -10,6 +10,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <textures/block.hpp>
+
 namespace chunk {
 
 ::core::Shader Mesh::build_shader(const ::core::vulkan::Context &context,
@@ -19,10 +21,9 @@ namespace chunk {
   global.proj_view = glm::mat4(1.0f);
 
   int texture_width, texture_height, texture_channels;
-  constexpr char texture_file_name[] = "textures/block.png";
-  void *texture_data =
-      stbi_load(texture_file_name, &texture_width, &texture_height,
-                &texture_channels, STBI_rgb_alpha);
+  void *texture_data = stbi_load_from_memory(
+      reinterpret_cast<stbi_uc const *>(block_png.data()), block_png.size(),
+      &texture_width, &texture_height, &texture_channels, STBI_rgb_alpha);
   auto texture = ::core::Texture::Builder()
                      .dimensions(texture_width, texture_height)
                      .filter(vk::Filter::eNearest)
