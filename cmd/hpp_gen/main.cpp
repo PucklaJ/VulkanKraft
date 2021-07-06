@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <vector>
@@ -6,8 +7,15 @@ int main(int args, char *argv[]) {
   // Arguments
   const std::filesystem::path sourcefile(argv[1]), output_directory(argv[2]);
 
-  std::filesystem::path destination_file(output_directory /
-                                         sourcefile.filename());
+  auto source_file_name(sourcefile.filename().string());
+  const auto source_ext_pos{source_file_name.find_last_of('.')};
+  for (auto i = source_file_name.find_first_of('.');
+       i != std::string::npos && i != source_ext_pos;
+       i = source_file_name.find_first_of('.')) {
+    source_file_name.replace(i, 1, "_");
+  }
+
+  std::filesystem::path destination_file(output_directory / source_file_name);
   destination_file.replace_extension("hpp");
   std::filesystem::create_directories(destination_file.parent_path());
 
@@ -41,6 +49,11 @@ int main(int args, char *argv[]) {
     dst_file << static_cast<uint32_t>(data) << ", ";
   }
   dst_file << "};" << std::endl;
+
+  if (args == 4) {
+    src_file.close();
+    return remove(sourcefile.c_str());
+  }
 
   return 0;
 }

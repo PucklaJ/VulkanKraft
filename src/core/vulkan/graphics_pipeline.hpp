@@ -5,13 +5,18 @@
 
 namespace core {
 namespace vulkan {
+
+struct SPVData {
+  const uint8_t *data;
+  size_t size;
+};
+
 class GraphicsPipeline {
 public:
   GraphicsPipeline(
       const Context &context,
       std::vector<vk::DescriptorSetLayout> descriptor_set_layouts,
-      const std::vector<uint8_t> &vertex_code,
-      const std::vector<uint8_t> &fragment_code,
+      const SPVData &vertex_code, const SPVData &fragment_code,
       vk::VertexInputBindingDescription vertex_binding,
       std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
       const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending);
@@ -23,14 +28,12 @@ public:
 private:
   static constexpr char _shader_function_name[] = "main";
 
-  static vk::ShaderModule
-  _create_shader_module(const vk::Device &device,
-                        const std::vector<uint8_t> &shader_code);
+  static vk::ShaderModule _create_shader_module(const vk::Device &device,
+                                                const SPVData &shader_code);
 
   void _create_handle(
       std::vector<vk::DescriptorSetLayout> descriptor_set_layout,
-      const std::vector<uint8_t> &vertex_code,
-      const std::vector<uint8_t> &fragment_code,
+      const SPVData &vertex_code, const SPVData &fragment_code,
       vk::VertexInputBindingDescription vertex_binding,
       std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
       const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending);

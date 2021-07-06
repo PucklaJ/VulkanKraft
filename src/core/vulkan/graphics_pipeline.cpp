@@ -8,8 +8,7 @@ namespace vulkan {
 GraphicsPipeline::GraphicsPipeline(
     const Context &context,
     std::vector<vk::DescriptorSetLayout> descriptor_set_layouts,
-    const std::vector<uint8_t> &vertex_code,
-    const std::vector<uint8_t> &fragment_code,
+    const SPVData &vertex_code, const SPVData &fragment_code,
     vk::VertexInputBindingDescription vertex_binding,
     std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
     const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending)
@@ -25,11 +24,12 @@ void GraphicsPipeline::bind(const RenderCall &render_call) const noexcept {
   render_call.bind_graphics_pipeline(m_handle);
 }
 
-vk::ShaderModule GraphicsPipeline::_create_shader_module(
-    const vk::Device &device, const std::vector<uint8_t> &shader_code) {
+vk::ShaderModule
+GraphicsPipeline::_create_shader_module(const vk::Device &device,
+                                        const SPVData &shader_code) {
   vk::ShaderModuleCreateInfo si;
-  si.codeSize = shader_code.size();
-  si.pCode = reinterpret_cast<const uint32_t *>(shader_code.data());
+  si.codeSize = shader_code.size;
+  si.pCode = reinterpret_cast<const uint32_t *>(shader_code.data);
 
   try {
     return device.createShaderModule(si);
@@ -41,8 +41,7 @@ vk::ShaderModule GraphicsPipeline::_create_shader_module(
 
 void GraphicsPipeline::_create_handle(
     std::vector<vk::DescriptorSetLayout> descriptor_set_layouts,
-    const std::vector<uint8_t> &vertex_code,
-    const std::vector<uint8_t> &fragment_code,
+    const SPVData &vertex_code, const SPVData &fragment_code,
     vk::VertexInputBindingDescription vertex_binding,
     std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
     const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending) {

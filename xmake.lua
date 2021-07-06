@@ -6,7 +6,9 @@ rule("shader")
     on_buildcmd_file(function(target, batchcmds, sourcefile_glsl, opt)
             import("lib.detect.find_tool")
             local glslc = assert(find_tool("glslc"), "glslc not found!")
-            
+            local hpp_gen = path.join("build", target:plat(), target:arch(), "release", "hpp_gen" .. (target:is_plat("windows") and ".exe" or ""))
+            assert(os.exists(hpp_gen), "hpp_gen has not been built yet!")
+
             local flags = {}
             local shader_stage
             if path.extension(sourcefile_glsl) == ".glsl" then
@@ -33,8 +35,9 @@ rule("shader")
             batchcmds:show_progress(opt.progress, "${color.build.object}compiling.glsl %s", sourcefile_glsl)
             batchcmds:mkdir("shaders_spv")
             batchcmds:vrunv(glslc.program, flags)
+            batchcmds:vrunv(hpp_gen, {spv_file, path.join(os.scriptdir(), "resources/shaders"), "true"})
 
-            batchcmds:add_depfiles(sourcefile_glsl)
+            batchcmds:add_depfiles(sourcefile_glsl, hpp_gen)
     end)
 
 rule("texture")

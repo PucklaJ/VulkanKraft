@@ -1,6 +1,9 @@
 #include "text.hpp"
 #include <iostream>
 
+#include <shaders/text_frag.hpp>
+#include <shaders/text_vert.hpp>
+
 namespace core {
 namespace text {
 Shader Text::build_shader(const vulkan::Context &context,
@@ -11,8 +14,8 @@ Shader Text::build_shader(const vulkan::Context &context,
   auto shader(Shader::Builder()
                   .vertex_attribute<glm::vec2>()
                   .vertex_attribute<glm::vec2>()
-                  .vertex("shaders_spv/text.vert.spv")
-                  .fragment("shaders_spv/text.frag.spv")
+                  .vertex(text_vert_spv)
+                  .fragment(text_frag_spv)
                   .uniform_buffer(vk::ShaderStageFlagBits::eVertex, global)
                   .dynamic_texture(max_texts)
                   .alpha_blending()

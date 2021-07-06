@@ -10,6 +10,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <shaders/chunk_mesh_frag.hpp>
+#include <shaders/chunk_mesh_vert.hpp>
 #include <textures/block.hpp>
 
 namespace chunk {
@@ -34,8 +36,8 @@ namespace chunk {
   auto shader(::core::Shader::Builder()
                   .vertex_attribute<glm::vec3>()
                   .vertex_attribute<glm::vec2>()
-                  .vertex("shaders_spv/chunk_mesh.vert.spv")
-                  .fragment("shaders_spv/chunk_mesh.frag.spv")
+                  .vertex(chunk_mesh_vert_spv)
+                  .fragment(chunk_mesh_frag_spv)
                   .uniform_buffer(vk::ShaderStageFlagBits::eVertex, global)
                   .texture()
                   .build(context, settings));

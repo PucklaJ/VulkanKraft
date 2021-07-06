@@ -23,12 +23,14 @@ public:
 
     Shader build(const vulkan::Context &context, const Settings &settings);
 
-    inline Builder &vertex(std::filesystem::path vertex_path) {
-      m_vertex_code = _read_spv_file(std::move(vertex_path));
+    template <size_t S>
+    inline Builder &vertex(const std::array<uint8_t, S> &spv_data) {
+      m_vertex_code = {spv_data.data(), S};
       return *this;
     }
-    inline Builder &fragment(std::filesystem::path fragment_path) {
-      m_fragment_code = _read_spv_file(std::move(fragment_path));
+    template <size_t S>
+    inline Builder &fragment(const std::array<uint8_t, S> &spv_data) {
+      m_fragment_code = {spv_data.data(), S};
       return *this;
     }
     template <typename T>
@@ -73,10 +75,8 @@ public:
       const size_t size;
     };
 
-    static std::vector<uint8_t> _read_spv_file(std::filesystem::path file_name);
-
-    std::vector<uint8_t> m_vertex_code;
-    std::vector<uint8_t> m_fragment_code;
+    vulkan::SPVData m_vertex_code;
+    vulkan::SPVData m_fragment_code;
     std::vector<UniformBufferInfo> m_uniform_buffers;
     std::vector<VertexAttributeInfo> m_vertex_attributes;
     size_t m_texture_count;

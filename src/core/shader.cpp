@@ -3,16 +3,18 @@
 #include <fstream>
 
 namespace core {
-Shader::Builder::Builder() : m_texture_count(0), m_alpha_blending(false) {}
+Shader::Builder::Builder()
+    : m_texture_count(0),
+      m_alpha_blending(false), m_vertex_code{0, 0}, m_fragment_code{0, 0} {}
 
 Shader Shader::Builder::build(const vulkan::Context &context,
                               const Settings &settings) {
-  if (m_vertex_code.empty()) {
+  if (!m_vertex_code.data) {
     throw VulkanKraftException(
         "no vertex shader has been provided for core::Shader");
   }
 
-  if (m_fragment_code.empty()) {
+  if (!m_fragment_code.data) {
     throw VulkanKraftException(
         "no fragment shader has been provided for core::Shader");
   }
@@ -23,23 +25,6 @@ Shader Shader::Builder::build(const vulkan::Context &context,
   }
 
   return Shader(context, settings, *this);
-}
-
-std::vector<uint8_t>
-Shader::Builder::_read_spv_file(std::filesystem::path file_name) {
-  std::ifstream file;
-  file.open(file_name, std::ios_base::ate | std::ios_base::binary);
-  if (file.fail()) {
-    throw VulkanKraftException("failed to open shader file " +
-                               file_name.string());
-  }
-
-  const auto file_size{file.tellg()};
-  file.seekg(0);
-  std::vector<uint8_t> data(static_cast<size_t>(file_size));
-  file.read(reinterpret_cast<char *>(data.data()), file_size);
-
-  return data;
 }
 
 Shader::Shader(Shader &&rhs)
