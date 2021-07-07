@@ -26,7 +26,8 @@ void Mesh::render(const ::core::vulkan::RenderCall &render_call) {
   render_call.render_indices(m_num_indices);
 }
 
-void Mesh::generate_vertices(Chunk *chunk, const glm::vec2 &pos) {
+void Mesh::generate_vertices(const block::Server &block_server, Chunk *chunk,
+                             const glm::vec2 &pos) {
 #ifndef NDEBUG
   const auto start_time(std::chrono::high_resolution_clock::now());
 #endif
@@ -43,8 +44,8 @@ void Mesh::generate_vertices(Chunk *chunk, const glm::vec2 &pos) {
     for (size_t z = 0; z < block_depth; z++) {
       for (size_t y = 0; y < block_height; y++) {
         if (auto &block = chunk->get_block(x, y, z);
-            block.type != BlockType::AIR) {
-          block.generate(m_vertices, m_indices,
+            block.type != block::Type::AIR) {
+          block.generate(block_server, m_vertices, m_indices,
                          glm::vec3(static_cast<float>(x) + pos.x + 0.5f,
                                    static_cast<float>(y) + 0.0f + 0.5f,
                                    static_cast<float>(z) + pos.y + 0.5f));

@@ -14,8 +14,10 @@ public:
   Chunk(const ::core::vulkan::Context &context, const glm::ivec2 &position);
   ~Chunk();
 
-  void generate(const bool multi_thread = true);
-  void generate_block_change(const glm::ivec3 &position);
+  void generate(const block::Server &block_server,
+                const bool multi_thread = true);
+  void generate_block_change(const block::Server &block_server,
+                             const glm::ivec3 &position);
   ::core::math::AABB to_aabb() const;
   void update_faces();
   void render(const ::core::vulkan::RenderCall &render_call);

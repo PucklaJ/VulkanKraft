@@ -16,7 +16,8 @@ Chunk::~Chunk() {
   }
 }
 
-void Chunk::generate(const bool multi_thread) {
+void Chunk::generate(const block::Server &block_server,
+                     const bool multi_thread) {
   if (m_generating) {
     m_generate_thread->join();
     m_generate_thread.reset();
@@ -27,7 +28,7 @@ void Chunk::generate(const bool multi_thread) {
       update_faces();
       m_needs_face_update = false;
     }
-    m_mesh.generate_vertices(this, m_position);
+    m_mesh.generate_vertices(block_server, this, m_position);
     m_mesh.load_buffer();
     return;
   }
@@ -40,7 +41,7 @@ void Chunk::generate(const bool multi_thread) {
       m_needs_face_update = false;
     }
 
-    m_mesh.generate_vertices(this, m_position);
+    m_mesh.generate_vertices(block_server, this, m_position);
 
     m_vertices_ready = true;
   });
@@ -48,29 +49,30 @@ void Chunk::generate(const bool multi_thread) {
   m_generating = true;
 }
 
-void Chunk::generate_block_change(const glm::ivec3 &position) {
+void Chunk::generate_block_change(const block::Server &block_server,
+                                  const glm::ivec3 &position) {
   _check_neighboring_faces_of_block(position);
 
   if (auto left(m_left.lock()); position.x == 0 && left) {
     left->_check_faces_of_block(
         glm::ivec3(block_width - 1, position.y, position.z));
-    left->generate(false);
+    left->generate(block_server, false);
   }
   if (auto right(m_right.lock()); position.x == block_width - 1 && right) {
     right->_check_faces_of_block(glm::ivec3(0, position.y, position.z));
-    right->generate(false);
+    right->generate(block_server, false);
   }
   if (auto front(m_front.lock()); position.z == 0 && front) {
     front->_check_faces_of_block(
         glm::ivec3(position.x, position.y, block_depth - 1));
-    front->generate(false);
+    front->generate(block_server, false);
   }
   if (auto back(m_back.lock()); position.z == block_depth - 1 && back) {
     back->_check_faces_of_block(glm::ivec3(position.x, position.y, 0));
-    back->generate(false);
+    back->generate(block_server, false);
   }
 
-  generate(false);
+  generate(block_server, false);
 }
 
 ::core::math::AABB Chunk::to_aabb() const {

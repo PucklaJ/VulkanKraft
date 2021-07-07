@@ -27,6 +27,7 @@ int main(int args, char *argv[]) {
                         core::Settings::window_title);
     core::vulkan::Context context(window, settings);
     core::ResourceHodler hodler(context, settings);
+    block::Server block_server;
 
     auto &chunk_shader =
         hodler.get_shader(core::ResourceHodler::chunk_mesh_shader_name);
@@ -47,7 +48,7 @@ int main(int args, char *argv[]) {
         glm::vec2(settings.window_width / 2, settings.window_height / 2));
 
     Player player(glm::vec3(8.0f, 70.0f, 8.0f));
-    chunk::World world(context);
+    chunk::World world(context, block_server);
 
     world.set_center_position(player.get_position());
     world.set_render_distance(settings.render_distance);

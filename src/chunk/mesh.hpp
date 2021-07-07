@@ -1,4 +1,5 @@
 #pragma once
+#include "../block/server.hpp"
 #include "../core/resource_hodler.hpp"
 #include "../core/shader.hpp"
 #include "../core/vulkan/buffer.hpp"
@@ -16,7 +17,8 @@ public:
 
   void render(const ::core::vulkan::RenderCall &render_call);
 
-  void generate_vertices(Chunk *chunk, const glm::vec2 &pos);
+  void generate_vertices(const block::Server &block_server, Chunk *chunk,
+                         const glm::vec2 &pos);
 
   void load_buffer();
 

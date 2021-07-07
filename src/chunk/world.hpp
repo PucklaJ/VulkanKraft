@@ -8,12 +8,13 @@
 namespace chunk {
 class World {
 public:
-  World(const ::core::vulkan::Context &context);
+  World(const ::core::vulkan::Context &context,
+        const block::Server &block_server);
   ~World();
 
-  void place_block(const glm::ivec3 &position, const BlockType block);
+  void place_block(const glm::ivec3 &position, const block::Type block);
   void destroy_block(const glm::ivec3 &position);
-  BlockType show_block(const glm::ivec3 &position);
+  block::Type show_block(const glm::ivec3 &position);
   std::optional<glm::ivec3> raycast_block(const ::core::math::Ray &ray,
                                           ::core::math::Ray::Face &face);
 
@@ -85,5 +86,6 @@ private:
       m_stored_blocks;
 
   const ::core::vulkan::Context &m_context;
+  const block::Server &m_block_server;
 };
 } // namespace chunk

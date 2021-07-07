@@ -103,7 +103,7 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
         }
 
         try {
-          world.place_block(block, chunk::BlockType::GRASS);
+          world.place_block(block, block::Type::GRASS);
         } catch (const core::VulkanKraftException &e) {
           core::Log::warning(std::string("failed to place block: ") + e.what());
         }

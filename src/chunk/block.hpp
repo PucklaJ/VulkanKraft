@@ -1,4 +1,6 @@
 #pragma once
+#include "../block/server.hpp"
+#include "../block/type.hpp"
 #include "../core/math.hpp"
 #include <array>
 #include <glm/glm.hpp>
@@ -19,11 +21,6 @@ public:
 };
 struct GlobalUniform {
   glm::mat4 proj_view;
-};
-
-enum BlockType {
-  AIR,
-  GRASS,
 };
 
 class Block {
@@ -50,11 +47,12 @@ public:
   constexpr inline bool &top_face() { return m_faces[top_face_index]; }
   constexpr inline bool &bot_face() { return m_faces[bot_face_index]; }
 
-  void generate(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices,
+  void generate(const block::Server &block_server,
+                std::vector<Vertex> &vertices, std::vector<uint32_t> &indices,
                 const glm::vec3 &position) const;
   ::core::math::AABB to_aabb(const glm::vec3 &position) const;
 
-  BlockType type;
+  block::Type type;
 
 private:
   static constexpr size_t front_face_index = 0;
@@ -66,21 +64,22 @@ private:
 
   static void
   _create_cube(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices,
-               const glm::vec3 &position, const bool front_face = true,
-               const bool back_face = true, const bool left_face = true,
-               const bool right_face = true, const bool top_face = true,
-               const bool bot_face = true);
+               const glm::vec3 &position,
+               const block::Server::TextureCoordinates &tex_coords,
+               const bool front_face = true, const bool back_face = true,
+               const bool left_face = true, const bool right_face = true,
+               const bool top_face = true, const bool bot_face = true);
 
   std::array<bool, 6> m_faces;
 };
 
 class BlockArray {
 public:
-  void fill(const BlockType value = BlockType::GRASS);
-  void half_fill(const BlockType value = BlockType::GRASS);
+  void fill(const block::Type value = block::Type::GRASS);
+  void half_fill(const block::Type value = block::Type::GRASS);
   void clear();
 
-  inline BlockType get(const size_t x, const size_t y, const size_t z) const {
+  inline block::Type get(const size_t x, const size_t y, const size_t z) const {
     return m_array[_index(x, y, z)].type;
   }
 
@@ -94,7 +93,7 @@ public:
   }
 
   inline void set(const size_t x, const size_t y, const size_t z,
-                  const BlockType value) {
+                  const block::Type value) {
     m_array[_index(x, y, z)].type = value;
   }
 

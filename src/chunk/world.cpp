@@ -8,7 +8,9 @@
 #include <sstream>
 
 namespace chunk {
-World::World(const ::core::vulkan::Context &context) : m_context(context) {}
+World::World(const ::core::vulkan::Context &context,
+             const block::Server &block_server)
+    : m_context(context), m_block_server(block_server) {}
 
 World::~World() {
   m_running = false;
@@ -16,7 +18,7 @@ World::~World() {
     m_chunk_update_thread->join();
 }
 
-void World::place_block(const glm::ivec3 &position, const BlockType block) {
+void World::place_block(const glm::ivec3 &position, const block::Type block) {
   std::lock_guard lk(m_chunks_mutex);
 
   {
@@ -42,7 +44,7 @@ void World::place_block(const glm::ivec3 &position, const BlockType block) {
 
     (*chunk)->set(chunk_block_position.x, chunk_block_position.y,
                   chunk_block_position.z, block);
-    (*chunk)->generate_block_change(chunk_block_position);
+    (*chunk)->generate_block_change(m_block_server, chunk_block_position);
     return;
   }
 
@@ -75,8 +77,8 @@ void World::destroy_block(const glm::ivec3 &position) {
         position.z - (*chunk)->get_position().y);
 
     (*chunk)->set(chunk_block_position.x, chunk_block_position.y,
-                  chunk_block_position.z, BlockType::AIR);
-    (*chunk)->generate_block_change(chunk_block_position);
+                  chunk_block_position.z, block::Type::AIR);
+    (*chunk)->generate_block_change(m_block_server, chunk_block_position);
     return;
   }
 
@@ -88,7 +90,7 @@ void World::destroy_block(const glm::ivec3 &position) {
   throw ::core::VulkanKraftException(stream.str());
 }
 
-BlockType World::show_block(const glm::ivec3 &position) {
+block::Type World::show_block(const glm::ivec3 &position) {
   std::lock_guard lk(m_chunks_mutex);
 
   const auto chunk_pos(get_chunk_position(position));
@@ -158,7 +160,7 @@ std::optional<glm::ivec3> World::raycast_block(const ::core::math::Ray &ray,
         for (int y = 0; y < block_height; y++) {
           for (int z = 0; z < block_depth; z++) {
             const auto &b = c->get_block(x, y, z);
-            if (b.type != BlockType::AIR) {
+            if (b.type != block::Type::AIR) {
               const glm::vec3 block_pos(
                   chunk_world_pos.x + static_cast<float>(x),
                   static_cast<float>(y),
@@ -486,7 +488,7 @@ void World::_update() {
       for (auto &_chunk : chunks_to_update) {
         if (auto chunk = _chunk.lock(); chunk) {
           chunk->needs_face_update();
-          chunk->generate();
+          chunk->generate(m_block_server);
         }
       }
 
