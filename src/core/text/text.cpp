@@ -1,9 +1,6 @@
 #include "text.hpp"
 #include <iostream>
 
-#include <shaders/text_frag.hpp>
-#include <shaders/text_vert.hpp>
-
 namespace core {
 namespace text {
 Text::Text(const vulkan::Context &context, Shader &shader, Font &font,

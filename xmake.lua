@@ -101,5 +101,5 @@ target("vulkankraft")
                   "src/chunk/*.hpp",
                   "src/block/*.hpp")
   add_files("shaders/*",
-            "textures/*",
+            "textures/*.png",
             "fonts/*")

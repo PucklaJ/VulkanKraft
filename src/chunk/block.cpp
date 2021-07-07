@@ -97,7 +97,8 @@ void Block::_create_cube(std::vector<Vertex> &vertices,
     const auto i{vertices.size()};
     vertices.reserve(vertices.size() + vertices_per_face);
 
-    vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + -0.5f, 1.0f,
+    vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + -0.5f,
+                          tex_coords.back.z,
                           tex_coords.back.w); // 4
     vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + -0.5f,
                           tex_coords.back.x,

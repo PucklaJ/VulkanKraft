@@ -13,5 +13,5 @@ void main() {
   if (texture_color.r < ALPHA_DISCARD) {
     discard;
   }
-  out_color = vec4(texture_color.r);
+  out_color = vec4(1.0, 1.0, 1.0, texture_color.r);
 }

@@ -8,10 +8,6 @@
 #include <sstream>
 #endif
 
-#include <shaders/chunk_mesh_frag.hpp>
-#include <shaders/chunk_mesh_vert.hpp>
-#include <textures/block.hpp>
-
 namespace chunk {
 
 Mesh::Mesh(const ::core::vulkan::Context &context)
