@@ -72,13 +72,27 @@ target("hpp_gen")
   set_languages("cxx17")
   add_rules("mode.release")
   add_files("cmd/hpp_gen/main.cpp")
+
+target("resources")
+  set_kind("static")
+
+  on_load(function (target)
+    -- xmake fails on startup when this folder is missing
+    os.mkdir("resources")
+  end)
+
+  add_deps("hpp_gen")
+  add_rules("shader", "texture", "font")
+  add_files("shaders/*",
+            "textures/*.png",
+            "fonts/*")
 target_end()
 
 add_rules("mode.debug", "mode.release")
 target("vulkankraft")
   set_kind("binary")
   set_languages("cxx17")
-  add_deps("hpp_gen")
+  add_deps("resources")
   add_packages("glfw", "glm", "stb", "vulkan-hpp")
   if is_plat("windows") then
     add_syslinks("C:\\VulkanSDK\\1.2.135.0\\Lib" .. (is_arch("x86") and "32" or "") .. "\\vulkan-1")
@@ -86,7 +100,6 @@ target("vulkankraft")
     add_syslinks("vulkan", "pthread")
   end
   add_includedirs("resources")
-  add_rules("shader", "texture", "font")
 
   add_files("src/*.cpp", 
             "src/core/*.cpp",
@@ -100,6 +113,3 @@ target("vulkankraft")
                   "src/core/text/*.hpp",
                   "src/chunk/*.hpp",
                   "src/block/*.hpp")
-  add_files("shaders/*",
-            "textures/*.png",
-            "fonts/*")

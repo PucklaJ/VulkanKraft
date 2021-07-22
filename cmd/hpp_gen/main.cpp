@@ -51,7 +51,7 @@ int main(int args, char *argv[]) {
 
   if (args == 4) {
     src_file.close();
-    return std::filesystem::remove(sourcefile);
+    return std::filesystem::remove(sourcefile) ? 0 : 1;
   }
 
   return 0;
