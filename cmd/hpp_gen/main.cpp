@@ -1,4 +1,3 @@
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <vector>
@@ -52,7 +51,7 @@ int main(int args, char *argv[]) {
 
   if (args == 4) {
     src_file.close();
-    return remove(sourcefile.c_str());
+    return std::filesystem::remove(sourcefile);
   }
 
   return 0;
