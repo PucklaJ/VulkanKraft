@@ -106,10 +106,33 @@ target("vulkankraft")
             "src/core/vulkan/*.cpp",
             "src/core/text/*.cpp",
             "src/chunk/*.cpp",
-            "src/block/*.cpp")
+            "src/block/*.cpp",
+            "src/world_gen/*.cpp")
   add_headerfiles("src/*.hpp",
                   "src/core/*.hpp",
                   "src/core/vulkan/*.hpp",
                   "src/core/text/*.hpp",
                   "src/chunk/*.hpp",
-                  "src/block/*.hpp")
+                  "src/block/*.hpp",
+                  "src/world_gen/*.hpp")
+
+target("perlin_noise_test")
+  set_kind("binary")
+  set_languages("cxx17")
+  add_deps("resources")
+  add_packages("glfw", "glm", "vulkan-hpp")
+  if is_plat("windows") then
+    add_syslinks("C:\\VulkanSDK\\1.2.135.0\\Lib" .. (is_arch("x86") and "32" or "") .. "\\vulkan-1")
+  else
+    add_syslinks("vulkan")
+  end
+
+  add_files("src/core/*.cpp",
+            "src/core/vulkan/*.cpp",
+            "src/world_gen/*.cpp",
+            "src/world_gen/perlin_noise_test/*.cpp")
+  del_files("src/core/resource_hodler.cpp")
+  add_headerfiles("src/core/*.hpp",
+                  "src/core/vulkan/*.hpp",
+                  "src/world_gen/*.hpp")
+  add_includedirs("resources")
