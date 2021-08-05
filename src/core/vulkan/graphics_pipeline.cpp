@@ -74,7 +74,7 @@ void GraphicsPipeline::_create_handle(
   const auto shader_stages = std::array{vert_i, frag_i};
 
   vk::PipelineVertexInputStateCreateInfo vi_i;
-  vi_i.vertexBindingDescriptionCount = 1;
+  vi_i.vertexBindingDescriptionCount = !vertex_attributes.empty();
   vi_i.vertexAttributeDescriptionCount =
       static_cast<uint32_t>(vertex_attributes.size());
   vi_i.pVertexBindingDescriptions = &vertex_binding;

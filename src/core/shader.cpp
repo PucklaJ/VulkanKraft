@@ -19,11 +19,6 @@ Shader Shader::Builder::build(const vulkan::Context &context,
         "no fragment shader has been provided for core::Shader");
   }
 
-  if (m_vertex_attributes.empty()) {
-    throw VulkanKraftException(
-        "no vertex atrributes have been specified for core::Shader");
-  }
-
   return Shader(context, settings, *this);
 }
 
@@ -255,14 +250,14 @@ void Shader::_create_descriptor_pool(const vulkan::Context &context,
   }
   std::vector<vk::DescriptorPoolSize> pool_sizes;
   pool_sizes.reserve(2);
-  {
+  if (!builder.m_uniform_buffers.empty()) {
     auto &ps = pool_sizes.emplace_back();
     ps.type = vk::DescriptorType::eUniformBuffer;
     ps.descriptorCount =
         static_cast<uint32_t>(context.get_swap_chain_image_count() *
                               builder.m_uniform_buffers.size());
   }
-  {
+  if (builder.m_texture_count != 0 || !builder.m_dynamic_textures.empty()) {
     auto &ps = pool_sizes.emplace_back();
     ps.type = vk::DescriptorType::eCombinedImageSampler;
     ps.descriptorCount = static_cast<uint32_t>(
@@ -327,31 +322,33 @@ void Shader::_create_descriptor_sets(const vulkan::Context &context,
         e.what());
   }
 
-  for (size_t i = 0; i < m_descriptor_sets.size(); i++) {
-    std::vector<vk::WriteDescriptorSet> writes;
-    std::vector<vk::DescriptorBufferInfo> buffer_infos(
-        builder.m_uniform_buffers.size());
-    size_t current_binding{0};
-    for (size_t j = 0; j < m_uniform_buffers[i].size();
-         j++, current_binding++) {
-      vk::DescriptorBufferInfo bi;
-      bi.buffer = m_uniform_buffers[i][j].get_handle();
-      bi.offset = 0;
-      bi.range = builder.m_uniform_buffers[j].initial_state.size();
-      buffer_infos[j] = std::move(bi);
+  if (!m_uniform_buffers.empty()) {
+    for (size_t i = 0; i < m_descriptor_sets.size(); i++) {
+      std::vector<vk::WriteDescriptorSet> writes;
+      std::vector<vk::DescriptorBufferInfo> buffer_infos(
+          builder.m_uniform_buffers.size());
+      size_t current_binding{0};
+      for (size_t j = 0; j < m_uniform_buffers[i].size();
+           j++, current_binding++) {
+        vk::DescriptorBufferInfo bi;
+        bi.buffer = m_uniform_buffers[i][j].get_handle();
+        bi.offset = 0;
+        bi.range = builder.m_uniform_buffers[j].initial_state.size();
+        buffer_infos[j] = std::move(bi);
 
-      vk::WriteDescriptorSet w;
-      w.dstSet = m_descriptor_sets[i];
-      w.dstBinding = current_binding;
-      w.dstArrayElement = 0;
-      w.descriptorType = vk::DescriptorType::eUniformBuffer;
-      w.descriptorCount = 1;
-      w.pBufferInfo = &buffer_infos[j];
+        vk::WriteDescriptorSet w;
+        w.dstSet = m_descriptor_sets[i];
+        w.dstBinding = current_binding;
+        w.dstArrayElement = 0;
+        w.descriptorType = vk::DescriptorType::eUniformBuffer;
+        w.descriptorCount = 1;
+        w.pBufferInfo = &buffer_infos[j];
 
-      writes.emplace_back(std::move(w));
+        writes.emplace_back(std::move(w));
+      }
+
+      m_context.get_device().updateDescriptorSets(writes, nullptr);
     }
-
-    m_context.get_device().updateDescriptorSets(writes, nullptr);
   }
 }
 
