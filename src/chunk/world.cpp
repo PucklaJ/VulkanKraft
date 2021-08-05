@@ -394,7 +394,7 @@ void World::_update() {
         if (m_stored_blocks.find(center_position) != m_stored_blocks.end()) {
           chunk->from_stored_blocks(m_stored_blocks.at(center_position));
         } else {
-          chunk->half_fill();
+          chunk->from_world_generation(m_world_generation);
         }
 
         m_chunks.emplace(center_position, chunk);
@@ -447,7 +447,7 @@ void World::_update() {
           auto stored_blocks(m_stored_blocks.at(chunk_pos));
           chunk->from_stored_blocks(stored_blocks);
         } else {
-          chunk->half_fill();
+          chunk->from_world_generation(m_world_generation);
         }
 
         m_chunks.emplace(get_chunk_position(chunk->get_position()), chunk);

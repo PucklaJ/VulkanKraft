@@ -132,6 +132,11 @@ void Chunk::render(const ::core::vulkan::RenderCall &render_call) {
   m_mesh.render(render_call);
 }
 
+void Chunk::from_world_generation(
+    const world_gen::WorldGeneration &world_generation) {
+  world_generation.generate(m_position, *this);
+}
+
 void Chunk::_check_faces(const Chunk *chunk, const size_t x, const size_t y,
                          const size_t z, bool &front_face, bool &back_face,
                          bool &right_face, bool &left_face, bool &top_face,

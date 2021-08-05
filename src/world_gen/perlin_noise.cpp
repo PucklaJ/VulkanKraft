@@ -1,18 +1,26 @@
 #include "perlin_noise.hpp"
 #include <algorithm>
 #include <cmath>
+#include <random>
 
 namespace world_gen {
-PerlinNoise::PerlinNoise() {
+PerlinNoise::PerlinNoise() { seed(1); }
+
+void PerlinNoise::seed(const size_t seed) {
   for (int i = 0; i < 256; i++) {
     m_p[i] = i;
   }
+
+  // std::mt19937_64 rand_engine;
+  // rand_engine.seed(seed);
 
   std::random_shuffle(m_p.begin(), m_p.end() - 1);
   m_p.back() = m_p[255];
 }
 
 float PerlinNoise::get(float x, float y, const float freq) const {
+  x = _abs(x);
+  y = _abs(y);
   x *= freq;
   y *= freq;
 

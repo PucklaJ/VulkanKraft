@@ -85,6 +85,8 @@ private:
            std::array<uint8_t, block_width * block_height * block_depth>>
       m_stored_blocks;
 
+  world_gen::WorldGeneration m_world_generation;
+
   const ::core::vulkan::Context &m_context;
   const block::Server &m_block_server;
 };

@@ -1,5 +1,6 @@
 #pragma once
 #include "../core/math.hpp"
+#include "../world_gen/world_generation.hpp"
 #include "mesh.hpp"
 #include <array>
 #include <atomic>
@@ -41,6 +42,9 @@ public:
     return m_right.lock();
   }
   inline const glm::ivec2 &get_position() const { return m_position; }
+
+  void
+  from_world_generation(const world_gen::WorldGeneration &world_generation);
 
 private:
   static void _check_faces(const Chunk *chunk, const size_t x, const size_t y,

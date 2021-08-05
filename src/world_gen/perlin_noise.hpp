@@ -7,6 +7,7 @@ class PerlinNoise {
 public:
   PerlinNoise();
 
+  void seed(const size_t seed);
   float get(float x, float y, const float freq = 0.005f) const;
 
 private:
@@ -34,6 +35,11 @@ private:
     return ((static_cast<S>(6) * t - static_cast<S>(15)) * t +
             static_cast<S>(10)) *
            t * t * t;
+  }
+
+  template <typename T> static inline auto _abs(const T &t) {
+    return ((t < static_cast<T>(0)) * static_cast<T>(-2) + static_cast<T>(1)) *
+           t;
   }
 
   std::array<int, 257> m_p;
