@@ -235,7 +235,7 @@ std::optional<int> World::get_height(const glm::vec3 &position) {
   }
 
   const auto &chunk = m_chunks.at(pos);
-  return chunk->get_height(pos);
+  return chunk->get_height(position);
 }
 
 void World::clear_and_reseed() {

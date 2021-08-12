@@ -22,7 +22,7 @@ public:
   ::core::math::AABB to_aabb() const;
   void update_faces();
   void render(const ::core::vulkan::RenderCall &render_call);
-  int get_height(const std::pair<int, int> &world_pos) const;
+  int get_height(glm::ivec3 world_pos) const;
 
   inline void set_front(std::shared_ptr<Chunk> c) { m_front = c; }
   inline void set_back(std::shared_ptr<Chunk> c) { m_back = c; }
