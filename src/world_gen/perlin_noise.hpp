@@ -10,7 +10,7 @@ public:
   void seed(const size_t seed);
 
   float get(const float x, const float y, const float freq = 0.005f,
-            const int oct = 20) const;
+            const int oct = 8) const;
 
 private:
   static inline glm::vec2 _get_constant_vector(const int v) {

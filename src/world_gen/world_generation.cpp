@@ -11,7 +11,7 @@ void WorldGeneration::generate(const glm::ivec2 &chunk_pos,
           static_cast<float>(chunk_pos.x) + static_cast<float>(x),
           static_cast<float>(chunk_pos.y) + static_cast<float>(z));
 
-      auto noise_value{m_noise.get(block_pos.x, block_pos.y, 0.01f)};
+      auto noise_value{m_noise.get(block_pos.x, block_pos.y)};
       noise_value += 1.0f;
       noise_value /= 2.0f;
       noise_value *= static_cast<float>(chunk::block_height);
