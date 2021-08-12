@@ -22,6 +22,7 @@ public:
   void start_update_thread();
   void wait_for_generation(const size_t chunk_count);
   std::optional<int> get_height(const glm::vec3 &position);
+  void clear_and_reseed();
 
   inline void set_center_position(const glm::vec3 &pos) {
     std::lock_guard lk(m_center_position_mutex);

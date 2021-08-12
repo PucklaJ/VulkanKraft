@@ -99,6 +99,16 @@ int main(int args, char *argv[]) {
         look_text.set_string(stream.str());
       }
 
+      if (window.key_just_pressed(GLFW_KEY_F8)) {
+        world.clear_and_reseed();
+      } else if (window.key_just_pressed(GLFW_KEY_F9)) {
+        // Place player at the height of the world
+        if (const auto player_height(world.get_height(player.get_position()));
+            player_height) {
+          player.set_height(static_cast<float>(*player_height));
+        }
+      }
+
       player.update(timer, window, world);
       world.set_center_position(player.get_position());
 

@@ -238,6 +238,12 @@ std::optional<int> World::get_height(const glm::vec3 &position) {
   return chunk->get_height(pos);
 }
 
+void World::clear_and_reseed() {
+  std::lock_guard lk(m_chunks_mutex);
+  m_chunks.clear();
+  m_world_generation.seed(time(nullptr));
+}
+
 bool World::_chunks_to_update_contains(
     const std::vector<std::weak_ptr<Chunk>> &chunks_to_update,
     std::shared_ptr<Chunk> chunk) {
