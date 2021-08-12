@@ -13,6 +13,9 @@ public:
             const int oct = 8) const;
 
 private:
+  static constexpr size_t noise_size = 1024;
+  static constexpr float noise_offset = 0.0f;
+
   static inline glm::vec2 _get_constant_vector(const int v) {
     const auto h{v % 4};
 
@@ -51,6 +54,6 @@ private:
 
   float _get(float x, float y, const float freq) const;
 
-  std::array<int, 257> m_p;
+  std::array<size_t, noise_size + 1> m_p;
 };
 } // namespace world_gen

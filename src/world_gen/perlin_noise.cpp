@@ -7,7 +7,7 @@ namespace world_gen {
 PerlinNoise::PerlinNoise() { seed(1); }
 
 void PerlinNoise::seed(const size_t seed) {
-  for (int i = 0; i < 256; i++) {
+  for (size_t i = 0; i < noise_size; i++) {
     m_p[i] = i;
   }
 
@@ -15,7 +15,7 @@ void PerlinNoise::seed(const size_t seed) {
   // rand_engine.seed(seed);
 
   std::random_shuffle(m_p.begin(), m_p.end() - 1);
-  m_p.back() = m_p[255];
+  m_p.back() = m_p[noise_size - 1];
 }
 
 float PerlinNoise::get(const float x, const float y, const float _freq,
@@ -36,13 +36,13 @@ float PerlinNoise::get(const float x, const float y, const float _freq,
 }
 
 float PerlinNoise::_get(float x, float y, const float freq) const {
-  x = _abs(x + 256.0f * 10000.0f);
-  y = _abs(y + 256.0f * 10000.0f);
+  x = _abs(x + noise_offset);
+  y = _abs(y + noise_offset);
   x *= freq;
   y *= freq;
 
-  const auto X{static_cast<int>(floorf(x)) % 256};
-  const auto Y{static_cast<int>(floorf(y)) % 256};
+  const auto X{static_cast<size_t>(floorf(x)) % noise_size};
+  const auto Y{static_cast<size_t>(floorf(y)) % noise_size};
   const auto xf{x - floorf(x)};
   const auto yf{y - floorf(y)};
 
