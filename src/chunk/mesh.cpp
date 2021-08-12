@@ -66,19 +66,24 @@ void Mesh::load_buffer() {
   const auto vertices_size{sizeof(Vertex) * m_vertices.size()};
   const auto indices_size{sizeof(uint32_t) * m_indices.size()};
 
-  if (!m_vertex_buffer) {
-    m_vertex_buffer = std::make_unique<::core::vulkan::Buffer>(
-        m_context, vk::BufferUsageFlagBits::eVertexBuffer, vertices_size);
-  }
+  if (vertices_size == 0) {
+    m_vertex_buffer.reset();
+    m_index_buffer.reset();
+  } else {
+    if (!m_vertex_buffer) {
+      m_vertex_buffer = std::make_unique<::core::vulkan::Buffer>(
+          m_context, vk::BufferUsageFlagBits::eVertexBuffer, vertices_size);
+    }
 
-  if (!m_index_buffer) {
-    m_index_buffer = std::make_unique<::core::vulkan::Buffer>(
-        m_context, vk::BufferUsageFlagBits::eIndexBuffer, indices_size);
-  }
+    if (!m_index_buffer) {
+      m_index_buffer = std::make_unique<::core::vulkan::Buffer>(
+          m_context, vk::BufferUsageFlagBits::eIndexBuffer, indices_size);
+    }
 
-  m_vertex_buffer->set_data(m_vertices.data(), vertices_size);
-  m_index_buffer->set_data(m_indices.data(), indices_size);
-  m_num_indices = m_indices.size();
+    m_vertex_buffer->set_data(m_vertices.data(), vertices_size);
+    m_index_buffer->set_data(m_indices.data(), indices_size);
+    m_num_indices = m_indices.size();
+  }
 
   m_vertices.clear();
   m_indices.clear();
