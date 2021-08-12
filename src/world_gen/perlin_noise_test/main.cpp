@@ -23,12 +23,12 @@ int main(int args, char *argv[]) {
                         core::Settings::window_title);
     core::vulkan::Context context(window, settings);
 
-    constexpr auto res = 256;
+    constexpr auto res = 1024;
 
     std::array<uint8_t, res * res * 4> pixel_data;
     for (int x = 0; x < res; x++) {
       for (int y = 0; y < res; y++) {
-        auto noise_value{noise.get(x, y, 0.02f)};
+        auto noise_value{noise.get(x - res / 2, y, 0.02f, 8)};
 
         noise_value += 1.0f;
         noise_value /= 2.0f;

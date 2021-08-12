@@ -36,8 +36,8 @@ float PerlinNoise::get(const float x, const float y, const float _freq,
 }
 
 float PerlinNoise::_get(float x, float y, const float freq) const {
-  x = _abs(x);
-  y = _abs(y);
+  x = _abs(x + 256.0f * 10000.0f);
+  y = _abs(y + 256.0f * 10000.0f);
   x *= freq;
   y *= freq;
 
