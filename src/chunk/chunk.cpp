@@ -132,6 +132,18 @@ void Chunk::render(const ::core::vulkan::RenderCall &render_call) {
   m_mesh.render(render_call);
 }
 
+int Chunk::get_height(const std::pair<int, int> &world_pos) const {
+  int height{0};
+
+  for (int y = 0; y < block_height; y++) {
+    const auto block_type{get(world_pos.first, y, world_pos.second)};
+    height = (block_type != block::Type::AIR) * (y + 1) +
+             (block_type == block::Type::AIR) * height;
+  }
+
+  return height;
+}
+
 void Chunk::from_world_generation(
     const world_gen::WorldGeneration &world_generation) {
   world_generation.generate(m_position, *this);

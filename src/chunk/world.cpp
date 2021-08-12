@@ -10,7 +10,9 @@
 namespace chunk {
 World::World(const ::core::vulkan::Context &context,
              const block::Server &block_server)
-    : m_context(context), m_block_server(block_server) {}
+    : m_context(context), m_block_server(block_server) {
+  m_world_generation.seed(time(nullptr));
+}
 
 World::~World() {
   m_running = false;
@@ -211,6 +213,29 @@ void World::start_update_thread() {
   m_running = true;
   m_chunk_update_thread =
       std::make_unique<std::thread>(std::bind(&World::_update, this));
+}
+
+void World::wait_for_generation(const size_t chunk_count) {
+  m_chunks_mutex.lock();
+  while (m_chunks.size() < chunk_count) {
+    m_chunks_mutex.unlock();
+    std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<size_t>(
+        1.0f / static_cast<float>(generation_wait_fps) * 1000.0f)));
+    m_chunks_mutex.lock();
+  }
+  m_chunks_mutex.unlock();
+}
+
+std::optional<int> World::get_height(const glm::vec3 &position) {
+  const auto pos(get_chunk_position(position));
+
+  std::lock_guard lk(m_chunks_mutex);
+  if (m_chunks.find(pos) == m_chunks.end()) {
+    return std::nullopt;
+  }
+
+  const auto &chunk = m_chunks.at(pos);
+  return chunk->get_height(pos);
 }
 
 bool World::_chunks_to_update_contains(

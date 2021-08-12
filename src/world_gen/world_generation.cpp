@@ -1,7 +1,15 @@
 #include "world_generation.hpp"
 
 namespace world_gen {
-WorldGeneration::WorldGeneration(const size_t seed) { m_noise.seed(seed); }
+WorldGeneration::WorldGeneration(const size_t seed_value) {
+  if (seed_value != 0) {
+    m_noise.seed(seed_value);
+  }
+}
+
+void WorldGeneration::seed(const size_t seed_value) {
+  m_noise.seed(seed_value);
+}
 
 void WorldGeneration::generate(const glm::ivec2 &chunk_pos,
                                chunk::BlockArray &block_array) const {

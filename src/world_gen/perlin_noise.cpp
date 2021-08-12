@@ -11,8 +11,7 @@ void PerlinNoise::seed(const size_t seed) {
     m_p[i] = i;
   }
 
-  // std::mt19937_64 rand_engine;
-  // rand_engine.seed(seed);
+  srand(seed);
 
   std::random_shuffle(m_p.begin(), m_p.end() - 1);
   m_p.back() = m_p[noise_size - 1];

@@ -47,12 +47,18 @@ int main(int args, char *argv[]) {
         context, text_shader, debug_font, L".",
         glm::vec2(settings.window_width / 2, settings.window_height / 2));
 
-    Player player(glm::vec3(8.0f, 70.0f, 8.0f));
+    Player player(glm::vec3(128.5f, 70.0f, 128.5f));
     chunk::World world(context, block_server);
 
     world.set_center_position(player.get_position());
     world.set_render_distance(settings.render_distance);
     world.start_update_thread();
+    world.wait_for_generation(16);
+
+    if (const auto player_height(world.get_height(player.get_position()));
+        player_height) {
+      player.set_height(static_cast<float>(*player_height));
+    }
 
     float current_time = 0.0f;
     while (!window.should_close()) {

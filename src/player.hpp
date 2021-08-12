@@ -8,6 +8,13 @@ class Player {
 public:
   Player(const glm::vec3 &position);
 
+  inline void set_position(const glm::vec3 &pos) { m_position = pos; }
+  inline void set_position(const float x, const float y, const float z) {
+    m_position.x = x;
+    m_position.y = y;
+    m_position.z = z;
+  }
+  inline void set_height(const float y) { m_position.y = y; }
   inline const glm::vec3 &get_position() const { return m_position; }
   inline glm::vec3 get_look_direction() const { return _get_look_direction(); }
 

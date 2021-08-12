@@ -20,6 +20,8 @@ public:
 
   void render(const ::core::vulkan::RenderCall &render_call);
   void start_update_thread();
+  void wait_for_generation(const size_t chunk_count);
+  std::optional<int> get_height(const glm::vec3 &position);
 
   inline void set_center_position(const glm::vec3 &pos) {
     std::lock_guard lk(m_center_position_mutex);
@@ -33,6 +35,7 @@ public:
 private:
   static constexpr int raycast_distance = 10;
   static constexpr size_t update_wait_fps = 100;
+  static constexpr size_t generation_wait_fps = update_wait_fps / 4;
 
   static inline std::pair<int, int>
   get_chunk_position(const glm::ivec3 &block_position) {
