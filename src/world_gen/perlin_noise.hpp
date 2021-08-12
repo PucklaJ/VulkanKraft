@@ -8,7 +8,9 @@ public:
   PerlinNoise();
 
   void seed(const size_t seed);
-  float get(float x, float y, const float freq = 0.005f) const;
+
+  float get(const float x, const float y, const float freq = 0.005f,
+            const int oct = 20) const;
 
 private:
   static inline glm::vec2 _get_constant_vector(const int v) {
@@ -26,6 +28,11 @@ private:
     }
   }
 
+  template <typename T>
+  static inline auto _clamp(const T &v, const T &min, const T &max) {
+    return (v < min) * min + (v > max) * max + (v >= min && v <= max) * v;
+  }
+
   template <typename S, typename T>
   static inline auto _lerp(const S &t, const T &a1, const T &a2) {
     return a1 + t * (a2 - a1);
@@ -41,6 +48,8 @@ private:
     return ((t < static_cast<T>(0)) * static_cast<T>(-2) + static_cast<T>(1)) *
            t;
   }
+
+  float _get(float x, float y, const float freq) const;
 
   std::array<int, 257> m_p;
 };

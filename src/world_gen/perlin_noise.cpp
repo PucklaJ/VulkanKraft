@@ -18,7 +18,24 @@ void PerlinNoise::seed(const size_t seed) {
   m_p.back() = m_p[255];
 }
 
-float PerlinNoise::get(float x, float y, const float freq) const {
+float PerlinNoise::get(const float x, const float y, const float _freq,
+                       const int oct) const {
+  // Fractal Brownian Motion (FBM)
+
+  float sum{0.0f};
+  float freq{_freq};
+  float amp{1.0f};
+
+  for (int i = 0; i < oct; i++) {
+    sum += _get(x, y, freq) * amp;
+    freq *= 2.0f;
+    amp /= 2.0f;
+  }
+
+  return _clamp(sum, -1.0f, 1.0f);
+}
+
+float PerlinNoise::_get(float x, float y, const float freq) const {
   x = _abs(x);
   y = _abs(y);
   x *= freq;
