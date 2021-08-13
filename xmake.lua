@@ -129,10 +129,10 @@ target("perlin_noise_test")
 
   add_files("src/core/*.cpp",
             "src/core/vulkan/*.cpp",
-            "src/world_gen/*.cpp",
+            "src/world_gen/perlin_noise.cpp",
             "src/world_gen/perlin_noise_test/*.cpp")
   del_files("src/core/resource_hodler.cpp")
   add_headerfiles("src/core/*.hpp",
                   "src/core/vulkan/*.hpp",
-                  "src/world_gen/*.hpp")
+                  "src/world_gen/perlin_noise.hpp")
   add_includedirs("resources")
