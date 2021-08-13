@@ -5,6 +5,7 @@
 
 namespace core {
 namespace vulkan {
+// Determines which format is used for which type of vertex attribute
 template <typename T> inline constexpr vk::Format vertex_attribute_format;
 template <>
 inline constexpr vk::Format vertex_attribute_format<glm::f32> =
