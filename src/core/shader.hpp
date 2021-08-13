@@ -12,27 +12,35 @@
 #include <vector>
 
 namespace core {
+// A class representing a graphics pipeline and all its shenanigans
 class Shader {
 public:
   friend class Builder;
+
+  // A class used to create a shader
   class Builder {
   public:
     friend class Shader;
 
     Builder();
 
+    // Build the shader using previously set configurations
     Shader build(const vulkan::Context &context, const Settings &settings);
 
+    // Set the shader code of the vertex shader
     template <size_t S>
     inline Builder &vertex(const std::array<uint8_t, S> &spv_data) {
       m_vertex_code = {spv_data.data(), S};
       return *this;
     }
+    // Set the shader code of the fragment shader
     template <size_t S>
     inline Builder &fragment(const std::array<uint8_t, S> &spv_data) {
       m_fragment_code = {spv_data.data(), S};
       return *this;
     }
+    // Add an uniform buffer and what should be its initial data (This also
+    // determines the size of the buffer)
     template <typename T>
     inline Builder &uniform_buffer(vk::ShaderStageFlags shader_stage,
                                    const T &initial_state) {
@@ -44,32 +52,43 @@ public:
 
       return *this;
     }
+
+    // Add a vertex attribute of the given type T
     template <typename T> inline Builder &vertex_attribute() {
       m_vertex_attributes.emplace_back(
           VertexAttributeInfo{vulkan::vertex_attribute_format<T>, sizeof(T)});
       return *this;
     }
 
+    // Add a static texture (A texture which is the same during one render call)
     inline Builder &texture() {
       m_texture_count++;
       return *this;
     }
 
+    // Add a dynamic texture (A texture which can be dynamically changed during
+    // one render call)
+    // max_sets ..... Determines how much different textures can be used for
+    // this dynamic texture
     inline Builder &dynamic_texture(const uint32_t max_sets) {
       m_dynamic_textures.emplace_back(max_sets);
       return *this;
     }
 
+    // Enable alpha blending for the shader
     inline Builder &alpha_blending() {
       m_alpha_blending = true;
       return *this;
     }
 
   private:
+    // Stores the initial state and for what shader stage the uniform buffer is
+    // used
     struct UniformBufferInfo {
       const std::vector<uint8_t> initial_state;
       const vk::ShaderStageFlags shader_stage;
     };
+    // Stores what format a vertex attribute has and how big it is in bytes
     struct VertexAttributeInfo {
       const vk::Format format;
       const size_t size;
@@ -87,24 +106,31 @@ public:
   Shader(Shader &&rhs);
   ~Shader();
 
+  // Update the given uniform buffer using the given data
   template <typename T>
   inline void update_uniform_buffer(const vulkan::RenderCall &render_call,
                                     const T &data, const size_t index = 0) {
     _update_uniform_buffer(render_call, &data, sizeof(T), index);
   }
+  // Update the given static texture
   void set_texture(const Texture &texture, const size_t index = 0);
+  // Update the given dynamic texture (requires a render call)
   void bind_dynamic_texture(const vulkan::RenderCall &render_call,
                             Texture &texture, const size_t index = 0) const;
 
+  // Bind the shader for all following draw calls
   void bind(const vulkan::RenderCall &render_call);
 
 private:
+  // Represents a write to the descriptor sets
   struct TextureWrite {
+    // Which swap image indices need to be updated
     std::set<uint32_t> image_indices;
     vk::DescriptorImageInfo image_info;
     vk::WriteDescriptorSet write;
   };
 
+  // Make the constructor private so that only the Builder can create shaders
   Shader(const vulkan::Context &context, const Settings &settings,
          const Builder &builder);
 
@@ -122,6 +148,7 @@ private:
                               const size_t index);
 
   std::unique_ptr<vulkan::GraphicsPipeline> m_pipeline;
+  // Store unform buffers for every swap chain image
   std::vector<std::vector<vulkan::Buffer>> m_uniform_buffers;
   vk::DescriptorSetLayout m_descriptor_layout;
   std::vector<vk::DescriptorSetLayout> m_dynamic_textures_layout;
