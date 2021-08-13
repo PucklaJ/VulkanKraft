@@ -12,59 +12,78 @@
 #include <iomanip>
 #include <sstream>
 
-#include <fonts/MisterPixelRegular.hpp>
-
 int main(int args, char *argv[]) {
+  // Initialise all objects not requireing vulkan directly
   core::Settings settings;
   core::FPSTimer timer(settings.max_fps);
   chunk::GlobalUniform chunk_global;
   core::text::Text::GlobalUniform text_global;
+  // The projection matrix for everything in the 3D space
   glm::mat4 projection_matrix;
+  // The projection matrix for everything in the 2D space (currently just used
+  // for text rendering)
   glm::mat4 text_projection_matrix;
 
   try {
+    // Initialise the window
     core::Window window(settings.window_width, settings.window_height,
                         core::Settings::window_title);
+    // Initialise vulkan
     core::vulkan::Context context(window, settings);
+    // Load all resources (textures, fonts, shaders, etc.)
     core::ResourceHodler hodler(context, settings);
     block::Server block_server;
 
+    // Retrieve the shaders from the resource hodler
     auto &chunk_shader =
         hodler.get_shader(core::ResourceHodler::chunk_mesh_shader_name);
     auto &text_shader =
         hodler.get_shader(core::ResourceHodler::text_shader_name);
 
+    // Retrieve the font from the resource hodler
     auto &debug_font = hodler.get_font(core::ResourceHodler::debug_font_name);
+    // Text used to display the frames per second
     core::text::Text fps_text(context, text_shader, debug_font, L"60 FPS");
+    // Text used to display the position of the player
     core::text::Text position_text(context, text_shader, debug_font,
                                    L"X\nY\nZ\n",
                                    glm::vec2(0.0f, fps_text.get_height() + 10));
+    // Text used to display the look direction of the player
     core::text::Text look_text(context, text_shader, debug_font, L"Look",
                                glm::vec2(0.0f, fps_text.get_height() + 10 +
                                                    position_text.get_height() +
                                                    10));
+    // This is a dot in the middle of the screen representing the cross hair
+    // (currently just a placeholder)
     core::text::Text cross_hair(
         context, text_shader, debug_font, L".",
         glm::vec2(settings.window_width / 2, settings.window_height / 2));
 
+    // Initialise the player and world
     Player player(glm::vec3(128.5f, 70.0f, 128.5f));
-    chunk::World world(context, block_server);
 
+    // Initialise all values of the world and start the background thread for
+    // updating the chunks
+    chunk::World world(context, block_server);
     world.set_center_position(player.get_position());
     world.set_render_distance(settings.render_distance);
     world.start_update_thread();
+    // Wait until some chunks have been generated
     world.wait_for_generation(16);
 
+    // Place the player at the correct height
     if (const auto player_height(world.get_height(player.get_position()));
         player_height) {
       player.set_height(static_cast<float>(*player_height));
     }
 
-    float current_time = 0.0f;
+    // The game loop
     while (!window.should_close()) {
+      // Begin measuring the frame time
       auto delta_timer(timer.begin_frame());
       window.poll_events();
 
+      // Generate the texts for every text element
       {
         std::wstringstream fps_stream;
         fps_stream << std::setprecision(0) << std::fixed
@@ -99,10 +118,11 @@ int main(int args, char *argv[]) {
         look_text.set_string(stream.str());
       }
 
+      // Some debug input for testing purposes
       if (window.key_just_pressed(GLFW_KEY_F8)) {
         world.clear_and_reseed();
       } else if (window.key_just_pressed(GLFW_KEY_F9)) {
-        // Place player at the height of the world
+        // Place player at the correct height at the current position
         if (const auto player_height(world.get_height(player.get_position()));
             player_height) {
           player.set_height(static_cast<float>(*player_height));
@@ -114,9 +134,11 @@ int main(int args, char *argv[]) {
 
       window.reset_keys();
 
+      // Start rendering the frame
       if (const auto _render_call(context.render_begin()); _render_call) {
         const auto &render_call{*_render_call};
 
+        // Update the projection matrices
         const auto [width, height] = window.get_framebuffer_size();
         projection_matrix = glm::perspective(
             settings.field_of_view,
@@ -127,22 +149,24 @@ int main(int args, char *argv[]) {
         text_projection_matrix = glm::ortho(0.0f, static_cast<float>(width),
                                             0.0f, static_cast<float>(height));
 
+        // Update the uniforms
         chunk_global.proj_view =
             projection_matrix * player.create_view_matrix();
         chunk_shader.update_uniform_buffer(render_call, chunk_global);
         text_global.proj = text_projection_matrix;
         text_shader.update_uniform_buffer(render_call, text_global);
 
+        // Render the world
         chunk_shader.bind(render_call);
         world.render(render_call);
 
+        // Render the text elements
         text_shader.bind(render_call);
         fps_text.render(render_call);
         position_text.render(render_call);
         look_text.render(render_call);
         cross_hair.render(render_call);
       }
-      current_time += timer.get_delta_time();
     }
   } catch (const core::VulkanKraftException &e) {
     core::Log::error(e.what());
