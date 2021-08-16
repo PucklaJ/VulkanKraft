@@ -81,6 +81,22 @@ void Texture::rebuild(const Texture::Builder &builder, const void *data) {
   _create_sampler(builder);
 }
 
+uint32_t Texture::_get_image_size(const uint32_t width, const uint32_t height,
+                                  const vk::Format format) {
+  switch (format) {
+  case vk::Format::eR8G8B8A8Srgb:
+    return width * height * 4;
+  case vk::Format::eR8G8B8Srgb:
+    return width * height * 3;
+  case vk::Format::eR8Srgb:
+    return width * height;
+  default:
+    throw VulkanKraftException("The given format " +
+                               std::to_string(static_cast<int>(format)) +
+                               " is not supported by core::Texture");
+  };
+}
+
 Texture::Texture(const vulkan::Context &context,
                  const Texture::Builder &builder, const void *data)
     : m_dynamic_binding_point(-1), m_context(context) {
@@ -136,7 +152,8 @@ void Texture::_create_image(const Texture::Builder &builder, const void *data) {
 
   m_context.get_device().bindImageMemory(m_image, m_memory, 0);
 
-  const auto image_size{builder.m_width * builder.m_height * 4};
+  const auto image_size{
+      _get_image_size(builder.m_width, builder.m_height, builder.m_format)};
 
   // Create Staging Buffer
   vk::BufferCreateInfo bi;

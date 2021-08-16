@@ -110,6 +110,11 @@ public:
   void rebuild(const Builder &builder, const void *data);
 
 private:
+  // Returns the image buffer size (in bytes) necessary for an image with the
+  // given dimensions and format
+  static uint32_t _get_image_size(const uint32_t width, const uint32_t height,
+                                  const vk::Format format);
+
   // Make the constructor private so that only the Builder can create Textures
   Texture(const vulkan::Context &context, const Builder &builder,
           const void *data);
