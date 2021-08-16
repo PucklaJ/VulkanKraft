@@ -36,7 +36,7 @@ Texture::Texture(Texture &&rhs)
       m_dynamic_sets(std::move(rhs.m_dynamic_sets)),
       m_dynamic_writes_to_perform(std::move(rhs.m_dynamic_writes_to_perform)),
       m_dynamic_binding_point(rhs.m_dynamic_binding_point),
-      m_context(rhs.m_context) {
+      m_width(rhs.m_width), m_height(rhs.m_height), m_context(rhs.m_context) {
   rhs.m_dynamic_sets.clear();
   rhs.m_dynamic_writes_to_perform.clear();
   rhs.m_image = VK_NULL_HANDLE;
@@ -56,6 +56,8 @@ Texture &Texture::operator=(Texture &&rhs) {
   m_dynamic_sets = std::move(rhs.m_dynamic_sets);
   m_dynamic_writes_to_perform = std::move(rhs.m_dynamic_writes_to_perform);
   m_dynamic_binding_point = rhs.m_dynamic_binding_point;
+  m_width = rhs.m_width;
+  m_height = rhs.m_height;
 
   rhs.m_image = VK_NULL_HANDLE;
   rhs.m_image_view = VK_NULL_HANDLE;
@@ -100,7 +102,8 @@ uint32_t Texture::_get_image_size(const uint32_t width, const uint32_t height,
 
 Texture::Texture(const vulkan::Context &context,
                  const Texture::Builder &builder, const void *data)
-    : m_dynamic_binding_point(-1), m_context(context) {
+    : m_dynamic_binding_point(-1), m_width(builder.m_width),
+      m_height(builder.m_height), m_context(context) {
   _create_image(builder, data);
   if (builder.m_mip_levels > 1) {
     _generate_mip_maps(builder);

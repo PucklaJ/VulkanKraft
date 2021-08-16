@@ -106,6 +106,11 @@ public:
     }
   }
 
+  // Returns the width of the texture in pixels
+  inline uint32_t get_width() const { return m_width; }
+  // Returns the height of the texture in pixels
+  inline uint32_t get_height() const { return m_height; }
+
   // Create the Texture anew
   void rebuild(const Builder &builder, const void *data);
 
@@ -141,6 +146,9 @@ private:
   // Which descriptor sets should be updated (every element represents a swap
   // chain image index)
   std::set<uint32_t> m_dynamic_writes_to_perform;
+
+  uint32_t m_width;
+  uint32_t m_height;
 
   const vulkan::Context &m_context;
 };
