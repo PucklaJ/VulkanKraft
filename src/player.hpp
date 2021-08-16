@@ -23,6 +23,7 @@ public:
   // Only set the y component of the position
   inline void set_height(const float y) { m_position.y = y; }
   inline const glm::vec3 &get_position() const { return m_position; }
+  inline glm::vec3 get_eye_position() const { return _get_eye_position(); }
   inline glm::vec3 get_look_direction() const { return _get_look_direction(); }
 
   // Create a camera view matrix from the players look direction and position

@@ -21,6 +21,7 @@ public:
 };
 struct GlobalUniform {
   glm::mat4 proj_view;
+  glm::vec3 eye_pos;
 };
 
 class Block {

@@ -149,6 +149,7 @@ int main(int args, char *argv[]) {
         // Update the uniforms
         chunk_global.proj_view =
             projection_matrix * player.create_view_matrix();
+        chunk_global.eye_pos = player.get_eye_position();
         chunk_shader.update_uniform_buffer(render_call, chunk_global);
         auto proj_2d(core::Render2D::update_projection_matrix(width, height,
                                                               render_call));
