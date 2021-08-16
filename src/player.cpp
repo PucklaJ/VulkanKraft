@@ -36,12 +36,14 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
   // **** handle movement *****
   constexpr auto move_speed = 20.0f;
   const auto look_direction(_get_look_direction());
+  const auto forward(
+      glm::normalize(glm::vec3(look_direction.x, 0.0f, look_direction.z)));
   const auto right_direction(
       glm::normalize(glm::cross(look_direction, glm::vec3(0.0f, 1.0f, 0.0f))));
   if (window.key_is_pressed(GLFW_KEY_W)) {
-    m_position += look_direction * move_speed * timer.get_delta_time();
+    m_position += forward * move_speed * timer.get_delta_time();
   } else if (window.key_is_pressed(GLFW_KEY_S)) {
-    m_position += look_direction * -move_speed * timer.get_delta_time();
+    m_position += forward * -move_speed * timer.get_delta_time();
   }
   if (window.key_is_pressed(GLFW_KEY_D)) {
     m_position += right_direction * move_speed * timer.get_delta_time();
