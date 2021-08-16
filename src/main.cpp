@@ -62,10 +62,12 @@ int main(int args, char *argv[]) {
     // updating the chunks
     chunk::World world(context, block_server);
     world.set_center_position(player.get_position());
-    world.set_render_distance(settings.render_distance);
+    const auto fog_max_distance{
+        world.set_render_distance(settings.render_distance)};
     world.start_update_thread();
     // Wait until some chunks have been generated
-    world.wait_for_generation(16);
+    world.wait_for_generation(settings.render_distance *
+                              settings.render_distance);
 
     // Place the player at the correct height
     if (const auto player_height(world.get_height(player.get_position()));
@@ -158,6 +160,8 @@ int main(int args, char *argv[]) {
 
         // Render the world
         chunk_shader.bind(render_call);
+        // fog max distance
+        chunk_shader.set_push_constant(render_call, fog_max_distance);
         world.render(render_call);
 
         // Render the player

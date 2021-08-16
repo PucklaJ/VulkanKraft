@@ -29,8 +29,11 @@ public:
     m_center_position = pos;
   }
 
-  inline void set_render_distance(const int render_distance) {
+  // returns the fog max distance
+  inline float set_render_distance(const int render_distance) {
     m_render_distance = render_distance;
+    return static_cast<float>(render_distance) *
+           static_cast<float>(block_width);
   }
 
 private:

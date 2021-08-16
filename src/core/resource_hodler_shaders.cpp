@@ -24,6 +24,7 @@ void ResourceHodler::build_chunk_mesh_shader(const vulkan::Context &context,
                   .fragment(shaders::chunk_mesh_frag_spv)
                   .uniform_buffer(vk::ShaderStageFlagBits::eVertex, global)
                   .texture()
+                  .push_constant<float>(vk::ShaderStageFlagBits::eFragment)
                   .build(context, settings));
   shader.set_texture(get_texture(chunk_mesh_texture_name));
 
