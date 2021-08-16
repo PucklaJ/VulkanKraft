@@ -85,6 +85,7 @@ uint32_t Texture::_get_image_size(const uint32_t width, const uint32_t height,
                                   const vk::Format format) {
   switch (format) {
   case vk::Format::eR8G8B8A8Srgb:
+  case vk::Format::eR32Sfloat:
     return width * height * 4;
   case vk::Format::eR8G8B8Srgb:
     return width * height * 3;
