@@ -59,6 +59,11 @@ public:
 private:
   void _load_all_resources(const vulkan::Context &context,
                            const Settings &settings);
+  void _load_all_textures(const vulkan::Context &context,
+                          const Settings &settings);
+  void _load_all_fonts();
+  void _load_all_shaders(const vulkan::Context &context,
+                         const Settings &settings);
 
   std::map<std::string, Texture> m_hodled_textures;
   std::map<std::string, text::Font> m_hodled_fonts;
