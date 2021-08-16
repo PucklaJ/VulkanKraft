@@ -25,7 +25,7 @@ int main(int args, char *argv[]) {
 
     constexpr auto res = 1024;
 
-    std::array<uint8_t, res * res * 4> pixel_data;
+    std::array<uint8_t, res * res> pixel_data;
     for (int x = 0; x < res; x++) {
       for (int y = 0; y < res; y++) {
         auto noise_value{noise.get(x - res / 2, y, 0.02f, 8)};
@@ -34,19 +34,14 @@ int main(int args, char *argv[]) {
         noise_value /= 2.0f;
 
         // Red
-        pixel_data[y * res * 4 + x * 4 + 0] = noise_value * 255;
-        // Green
-        pixel_data[y * res * 4 + x * 4 + 1] = noise_value * 255;
-        // Blue
-        pixel_data[y * res * 4 + x * 4 + 2] = noise_value * 255;
-        // Alpha
-        pixel_data[y * res * 4 + x * 4 + 3] = 255;
+        pixel_data[y * res + x] = noise_value * 255;
       }
     }
 
     const auto noise_texture(core::Texture::Builder()
                                  .dimensions(res, res)
                                  .filter(vk::Filter::eNearest)
+                                 .format(vk::Format::eR8Srgb)
                                  .build(context, pixel_data.data()));
 
     auto noise_shader(core::Shader::Builder()
