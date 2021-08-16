@@ -41,6 +41,11 @@ private:
   // Scales the crosshair size
   static constexpr float crosshair_scale = 6.0f;
 
+  static inline float _abs_dead_zone(const float value, const float min) {
+    const auto abs{(value < 0.0f) * -value + (value >= 0.0f) * value};
+    return (abs >= min) * value;
+  }
+
   // Returns the direction which the player is currently facing
   glm::vec3 _get_look_direction() const;
   // Returns the position of the eyes (m_position + eye_height)
@@ -55,6 +60,8 @@ private:
   float m_last_mouse_x;
   // The last vertical position of the mouse cursor
   float m_last_mouse_y;
+  bool m_last_left_trigger;
+  bool m_last_right_trigger;
 
   core::Render2D m_crosshair;
 };

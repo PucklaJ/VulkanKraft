@@ -5,7 +5,8 @@
 
 Player::Player(const glm::vec3 &position, core::ResourceHodler &hodler)
     : m_position(position), m_rotation(0.0f, 0.0f), m_last_mouse_x(0.0f),
-      m_last_mouse_y(0.0f),
+      m_last_mouse_y(0.0f), m_last_left_trigger(false),
+      m_last_right_trigger(false),
       m_crosshair(
           hodler.get_texture(core::ResourceHodler::crosshair_texture_name)) {}
 
@@ -19,39 +20,75 @@ glm::mat4 Player::create_view_matrix() const {
 
 void Player::update(const core::FPSTimer &timer, core::Window &window,
                     chunk::World &world) {
-  bool button_left{false}, button_right{false}, button_forward{false},
-      button_backward{false}, button_up{false}, button_down{false};
+  bool button_up{false}, button_down{false}, button_place{false},
+      button_destroy{false};
   float view_x{0.0f}, view_y{0.0f};
+  glm::vec2 move_direction(0.0f, 0.0f);
 
   if (window.is_gamepad_connected()) {
-    button_left =
-        window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_DPAD_LEFT);
-    button_right =
-        window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_DPAD_RIGHT);
-    button_forward =
-        window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_DPAD_UP);
-    button_backward =
-        window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_DPAD_DOWN);
+    constexpr float axis_dead_zone = 0.1f;
+    constexpr float trigger_threshold = 0.3f;
+
+    if (const auto horizontal_value(
+            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_LEFT_X));
+        horizontal_value) {
+      move_direction.x = _abs_dead_zone(*horizontal_value, axis_dead_zone);
+    }
+    if (const auto vertical_value(
+            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_LEFT_Y));
+        vertical_value) {
+      move_direction.y = _abs_dead_zone(-*vertical_value, axis_dead_zone);
+    }
+
+    if (const auto right_trigger(
+            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER));
+        right_trigger && *right_trigger > trigger_threshold) {
+      button_place = !m_last_right_trigger;
+      m_last_right_trigger = true;
+    } else {
+      m_last_right_trigger = false;
+    }
+
+    if (const auto left_trigger(
+            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_LEFT_TRIGGER));
+        left_trigger && *left_trigger > trigger_threshold) {
+      button_destroy = !m_last_left_trigger;
+      m_last_left_trigger = true;
+    } else {
+      m_last_left_trigger = false;
+    }
+
     button_up = window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_CROSS);
-    button_down = window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_CIRCLE);
+    button_down =
+        window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_RIGHT_THUMB);
+
+    constexpr float axis_view_factor = 20.0f;
 
     if (const auto horizontal_value{
-            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_LEFT_X)};
+            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_RIGHT_X)};
         horizontal_value) {
-      view_x = *horizontal_value;
+      view_x =
+          _abs_dead_zone(*horizontal_value, axis_dead_zone) * axis_view_factor;
     }
     if (const auto vertical_value{
-            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_LEFT_Y)};
+            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_RIGHT_Y)};
         vertical_value) {
-      view_y = *vertical_value;
+      view_y =
+          _abs_dead_zone(*vertical_value, axis_dead_zone) * axis_view_factor;
     }
   } else {
-    button_left = window.key_is_pressed(GLFW_KEY_A);
-    button_right = window.key_is_pressed(GLFW_KEY_D);
-    button_forward = window.key_is_pressed(GLFW_KEY_W);
-    button_backward = window.key_is_pressed(GLFW_KEY_S);
+    move_direction.y =
+        window.key_is_pressed(GLFW_KEY_W) - window.key_is_pressed(GLFW_KEY_S);
+    move_direction.x =
+        window.key_is_pressed(GLFW_KEY_D) - window.key_is_pressed(GLFW_KEY_A);
     button_up = window.key_is_pressed(GLFW_KEY_I);
     button_down = window.key_is_pressed(GLFW_KEY_K);
+    button_place =
+        window.cursor_is_locked() &&
+        window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_LEFT);
+    button_destroy =
+        window.cursor_is_locked() &&
+        window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_RIGHT);
 
     // **** handle camera *****
     const auto cur_mouse_x = window.get_mouse().screen_position.x;
@@ -75,27 +112,18 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
       glm::normalize(glm::vec3(look_direction.x, 0.0f, look_direction.z)));
   const auto right_direction(
       glm::normalize(glm::cross(look_direction, glm::vec3(0.0f, 1.0f, 0.0f))));
-  if (button_forward) {
-    m_position += forward * move_speed * timer.get_delta_time();
-  } else if (button_backward) {
-    m_position += forward * -move_speed * timer.get_delta_time();
-  }
-  if (button_right) {
-    m_position += right_direction * move_speed * timer.get_delta_time();
-  } else if (button_left) {
-    m_position += right_direction * -move_speed * timer.get_delta_time();
-  }
-  if (button_up) {
-    m_position +=
-        glm::vec3(0.0f, 1.0f, 0.0f) * move_speed * timer.get_delta_time();
-  } else if (button_down) {
-    m_position +=
-        glm::vec3(0.0f, 1.0f, 0.0f) * -move_speed * timer.get_delta_time();
-  }
+
+  m_position +=
+      forward * move_direction.y * move_speed * timer.get_delta_time();
+  m_position +=
+      right_direction * move_direction.x * move_speed * timer.get_delta_time();
+
+  m_position += glm::vec3(0.0f, 1.0f, 0.0f) *
+                ((button_up - button_down) * move_speed) *
+                timer.get_delta_time();
   // **************************
 
-  if ((window.cursor_is_locked() &&
-       window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_LEFT))) {
+  if (button_destroy) {
     const core::math::Ray ray{_get_eye_position(), look_direction};
     core::math::Ray::Face face;
     const auto _block(world.raycast_block(ray, face));
@@ -108,9 +136,7 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
         core::Log::warning(std::string("failed to destroy block: ") + e.what());
       }
     }
-  } else if ((window.cursor_is_locked() &&
-              window.get_mouse().button_just_pressed(
-                  GLFW_MOUSE_BUTTON_RIGHT))) {
+  } else if (button_place) {
     const core::math::Ray ray{_get_eye_position(), look_direction};
     core::math::Ray::Face face;
     const auto _block(world.raycast_block(ray, face));
