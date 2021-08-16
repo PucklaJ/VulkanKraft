@@ -26,11 +26,11 @@ Server::Server() {
     BlockData data;
 
     data.tex_coords.front = _block_tex_coords(4, 2);
-    data.tex_coords.back = _block_tex_coords(4, 2);
-    data.tex_coords.left = _block_tex_coords(4, 2);
-    data.tex_coords.right = _block_tex_coords(4, 2);
-    data.tex_coords.bot = _block_tex_coords(4, 2);
-    data.tex_coords.top = _block_tex_coords(4, 2);
+    data.tex_coords.back = _block_tex_coords(4, 0);
+    data.tex_coords.left = _block_tex_coords(3, 1);
+    data.tex_coords.right = _block_tex_coords(5, 1);
+    data.tex_coords.bot = _block_tex_coords(4, 3);
+    data.tex_coords.top = _block_tex_coords(4, 1);
 
     m_block_data.emplace(Type::DIRT, std::move(data));
   }
