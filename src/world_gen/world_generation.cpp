@@ -25,9 +25,10 @@ void WorldGeneration::generate(const glm::ivec2 &chunk_pos,
       noise_value *= static_cast<float>(chunk::block_height);
 
       const auto max_height{static_cast<size_t>(noise_value)};
-      for (size_t y = 0; y < max_height; y++) {
-        block_array.set(x, y, z, block::Type::GRASS);
+      for (size_t y = 0; y < max_height - 1; y++) {
+        block_array.set(x, y, z, block::Type::DIRT);
       }
+      block_array.set(x, max_height - 1, z, block::Type::GRASS);
       for (size_t y = max_height; y < chunk::block_height; y++) {
         block_array.set(x, y, z, block::Type::AIR);
       }

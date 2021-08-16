@@ -2,25 +2,38 @@
 
 namespace block {
 Server::Server() {
-  constexpr auto ps2 = 1.0f / 512.0f / 2.0f;
+
+  // tex_coords.x ...... left
+  // tex_coords.y ...... top
+  // tex_coords.z ...... right
+  // tex_coords.w ...... bot
 
   // Grass
   {
     BlockData data;
-    data.tex_coords.front = glm::vec4(
-        0.0f + ps2, 0.0f + ps2, 16.0f / 512.0f - ps2, 16.0f / 512.0f - ps2);
-    data.tex_coords.back = glm::vec4(
-        0.0f + ps2, 0.0f + ps2, 16.0f / 512.0f - ps2, 16.0f / 512.0f - ps2);
-    data.tex_coords.left = glm::vec4(
-        0.0f + ps2, 0.0f + ps2, 16.0f / 512.0f - ps2, 16.0f / 512.0f - ps2);
-    data.tex_coords.right = glm::vec4(
-        0.0f + ps2, 0.0f + ps2, 16.0f / 512.0f - ps2, 16.0f / 512.0f - ps2);
-    data.tex_coords.bot = glm::vec4(0.0f + ps2, 0.0f + ps2,
-                                    16.0f / 512.0f - ps2, 16.0f / 512.0f - ps2);
-    data.tex_coords.top = glm::vec4(0.0f + ps2, 0.0f + ps2,
-                                    16.0f / 512.0f - ps2, 16.0f / 512.0f - ps2);
+    data.tex_coords.front = _block_tex_coords(0, 0);
+    data.tex_coords.back = _block_tex_coords(0, 0);
+    data.tex_coords.back = _block_tex_coords(0, 0);
+    data.tex_coords.left = _block_tex_coords(0, 0);
+    data.tex_coords.right = _block_tex_coords(0, 0);
+    data.tex_coords.bot = _block_tex_coords(0, 0);
+    data.tex_coords.top = _block_tex_coords(0, 0);
 
     m_block_data.emplace(Type::GRASS, std::move(data));
+  }
+
+  // Dirt
+  {
+    BlockData data;
+
+    data.tex_coords.front = _block_tex_coords(1, 0);
+    data.tex_coords.back = _block_tex_coords(1, 0);
+    data.tex_coords.left = _block_tex_coords(1, 0);
+    data.tex_coords.right = _block_tex_coords(1, 0);
+    data.tex_coords.bot = _block_tex_coords(1, 0);
+    data.tex_coords.top = _block_tex_coords(1, 0);
+
+    m_block_data.emplace(Type::DIRT, std::move(data));
   }
 }
 
