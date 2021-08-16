@@ -125,6 +125,10 @@ int main(int args, char *argv[]) {
         }
       }
 
+      if (window.key_just_pressed(GLFW_KEY_F11)) {
+        window.toggle_fullscreen();
+      }
+
       player.update(timer, window, world);
       world.set_center_position(player.get_position());
 

@@ -85,6 +85,8 @@ public:
   void release_cursor();
   // Wether the cursor is currently locked in the window
   bool cursor_is_locked();
+  // Sets the window into fullscreen mode or goes out of fullscreen mode
+  void toggle_fullscreen();
 
 private:
   // A callback used for GLFW
@@ -107,5 +109,11 @@ private:
   // The state of the keys in the last frame
   std::map<int, bool> m_previous_pressed_keys;
   Mouse m_mouse;
+
+  int m_previous_width;
+  int m_previous_height;
+  int m_previous_x;
+  int m_previous_y;
+  bool m_is_fullscreen;
 };
 } // namespace core

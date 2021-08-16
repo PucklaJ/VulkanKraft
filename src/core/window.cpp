@@ -1,5 +1,6 @@
 #include "window.hpp"
 #include "exception.hpp"
+#include "log.hpp"
 
 namespace core {
 bool Window::Mouse::button_is_pressed(int button) const {
@@ -25,7 +26,8 @@ void Window::on_framebuffer_resize(GLFWwindow *window, int width, int height) {
   }
 }
 
-Window::Window(const uint32_t width, const uint32_t height, std::string title) {
+Window::Window(const uint32_t width, const uint32_t height, std::string title)
+    : m_is_fullscreen(false) {
   if (glfwInit() == GLFW_FALSE) {
     throw VulkanKraftException("failed to initialise GLFW");
   }
@@ -104,6 +106,36 @@ void Window::release_cursor() {
 
 bool Window::cursor_is_locked() {
   return glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
+}
+
+void Window::toggle_fullscreen() {
+  if (!m_is_fullscreen) {
+    glfwGetFramebufferSize(m_window, &m_previous_width, &m_previous_height);
+    glfwGetWindowPos(m_window, &m_previous_x, &m_previous_y);
+
+    int monitor_count;
+    auto **monitors = glfwGetMonitors(&monitor_count);
+    if (monitor_count == 0) {
+      Log::warning("no monitors for fullscreen have been detected");
+      return;
+    }
+
+    int x_pos, y_pos, width, height;
+    glfwGetMonitorWorkarea(monitors[0], &x_pos, &y_pos, &width, &height);
+
+    glfwSetWindowMonitor(m_window, monitors[0], 0, 0, 0, 0, GLFW_DONT_CARE);
+    glfwSetWindowAttrib(m_window, GLFW_DECORATED, GLFW_FALSE);
+    glfwSetWindowSize(m_window, width, height);
+    glfwSetWindowPos(m_window, x_pos, y_pos);
+    m_is_fullscreen = true;
+  } else {
+    glfwSetWindowMonitor(m_window, nullptr, m_previous_x, m_previous_y,
+                         m_previous_width, m_previous_height, GLFW_DONT_CARE);
+    glfwSetWindowAttrib(m_window, GLFW_DECORATED, GLFW_TRUE);
+    glfwSetWindowSize(m_window, m_previous_width, m_previous_height);
+    glfwSetWindowPos(m_window, m_previous_x, m_previous_y);
+    m_is_fullscreen = false;
+  }
 }
 
 void Window::_on_key_callback(GLFWwindow *window, int key, int scancode,
