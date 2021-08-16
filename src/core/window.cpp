@@ -42,7 +42,7 @@ void Window::on_joystick_event(int jid, int event) {
 }
 
 Window::Window(const uint32_t width, const uint32_t height, std::string title)
-    : m_is_fullscreen(false) {
+    : m_is_fullscreen(false), m_joystick1(-1) {
   if (glfwInit() == GLFW_FALSE) {
     throw VulkanKraftException("failed to initialise GLFW");
   }
@@ -76,15 +76,32 @@ Window::~Window() {
 void Window::poll_events() {
   glfwPollEvents();
 
-  GLFWgamepadstate gamepad_state;
-  if (glfwGetGamepadState(GLFW_JOYSTICK_1, &gamepad_state)) {
-    for (int b = GLFW_GAMEPAD_BUTTON_A; b <= GLFW_GAMEPAD_BUTTON_DPAD_LEFT;
-         b++) {
-      m_pressed_gamepad_buttons[b] = gamepad_state.buttons[b];
-    }
-    for (int a = GLFW_GAMEPAD_AXIS_LEFT_X; a <= GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER;
-         a++) {
-      m_gamepad_axes[a] = gamepad_state.axes[a];
+  if (m_joystick1 != -1) {
+    GLFWgamepadstate gamepad_state;
+    if (glfwGetGamepadState(m_joystick1, &gamepad_state)) {
+      for (int b = GLFW_GAMEPAD_BUTTON_A; b <= GLFW_GAMEPAD_BUTTON_DPAD_LEFT;
+           b++) {
+        m_pressed_gamepad_buttons[b] = gamepad_state.buttons[b];
+      }
+      for (int a = GLFW_GAMEPAD_AXIS_LEFT_X;
+           a <= GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER; a++) {
+        m_gamepad_axes[a] = gamepad_state.axes[a];
+      }
+    } else {
+      int count;
+      const auto *buttons = glfwGetJoystickButtons(m_joystick1, &count);
+      if (buttons) {
+        for (int b = 0; b < count; b++) {
+          m_pressed_gamepad_buttons[b] = buttons[b] == GLFW_PRESS;
+        }
+      }
+
+      const auto *axes = glfwGetJoystickAxes(m_joystick1, &count);
+      if (axes) {
+        for (int a = 0; a < count; a++) {
+          m_gamepad_axes[a] = axes[a];
+        }
+      }
     }
   }
 }
@@ -173,6 +190,23 @@ void Window::toggle_fullscreen() {
     glfwSetWindowPos(m_window, m_previous_x, m_previous_y);
     m_is_fullscreen = false;
   }
+}
+
+bool Window::is_gamepad_connected() {
+  if (m_joystick1 == -1 || !glfwJoystickIsGamepad(m_joystick1)) {
+    for (int i = GLFW_JOYSTICK_1; i <= GLFW_JOYSTICK_LAST; i++) {
+      if (glfwJoystickIsGamepad(i)) {
+        m_joystick1 = i;
+        Log::info("Using \"" + std::string(glfwGetJoystickName(m_joystick1)) +
+                  "\" as Gamepad");
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  return true;
 }
 
 bool Window::gamepad_button_is_pressed(int button) const {

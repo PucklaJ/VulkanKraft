@@ -91,9 +91,7 @@ public:
   void toggle_fullscreen();
 
   // ***** Gamepad ******
-  inline bool is_gamepad_connected() const {
-    return glfwJoystickIsGamepad(GLFW_JOYSTICK_1);
-  }
+  bool is_gamepad_connected();
 
   bool gamepad_button_is_pressed(int button) const;
 
@@ -132,5 +130,7 @@ private:
   int m_previous_x;
   int m_previous_y;
   bool m_is_fullscreen;
+
+  int m_joystick1;
 };
 } // namespace core
