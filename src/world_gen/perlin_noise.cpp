@@ -45,13 +45,18 @@ float PerlinNoise::_get(float x, float y, const float freq) const {
   const auto xf{x - floorf(x)};
   const auto yf{y - floorf(y)};
 
+#ifndef NDEBUG
+  assert(X < noise_size);
+  assert(Y < noise_size);
+#endif
+
   const glm::vec2 top_right(xf - 1.0f, yf - 1.0f), top_left(xf, yf - 1.0f),
       bottom_right(xf - 1.0f, yf), bottom_left(xf, yf);
 
-  const auto value_top_right{m_p[m_p[X + 1] + Y + 1]};
-  const auto value_top_left{m_p[m_p[X] + Y + 1]};
-  const auto value_bottom_right{m_p[m_p[X + 1] + Y]};
-  const auto value_bottom_left{m_p[m_p[X] + Y]};
+  const auto value_top_right{m_p[(m_p[X + 1] + Y + 1) % (noise_size + 1)]};
+  const auto value_top_left{m_p[(m_p[X] + Y + 1) % (noise_size + 1)]};
+  const auto value_bottom_right{m_p[(m_p[X + 1] + Y) % (noise_size + 1)]};
+  const auto value_bottom_left{m_p[(m_p[X] + Y) % (noise_size + 1)]};
 
   const auto dot_top_right{
       glm::dot(top_right, _get_constant_vector(value_top_right))};
