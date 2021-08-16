@@ -19,14 +19,14 @@ void Render2D::set_model_matrix(const glm::vec2 &position,
 void Render2D::update_projection_matrix(
     const uint32_t window_width, const uint32_t window_height,
     const vulkan::RenderCall &render_call) const {
-  const auto proj(glm::ortho(0.0f, static_cast<float>(window_width), 0.0f,
-                             static_cast<float>(window_height)) *
-                  m_model_matrix);
-  m_shader.update_uniform_buffer(render_call, proj);
+  m_shader.update_uniform_buffer(
+      render_call, glm::ortho(0.0f, static_cast<float>(window_width), 0.0f,
+                              static_cast<float>(window_height)));
 }
 
 void Render2D::render(const vulkan::RenderCall &render_call) {
   m_shader.bind_dynamic_texture(render_call, m_texture);
+  m_shader.set_push_constant(render_call, m_model_matrix);
   render_call.render_vertices(6);
 }
 

@@ -93,13 +93,14 @@ void ResourceHodler::build_text_shader(const vulkan::Context &context,
 
 void ResourceHodler::build_texture_2d_shader(const vulkan::Context &context,
                                              const Settings &settings) {
-  const glm::mat4 proj_model(1.0f);
+  const glm::mat4 proj(1.0f);
   constexpr uint32_t max_textures = 10;
 
   auto shader(Shader::Builder()
                   .vertex(shaders::texture_2d_vert_spv)
                   .fragment(shaders::texture_2d_frag_spv)
-                  .uniform_buffer(vk::ShaderStageFlagBits::eVertex, proj_model)
+                  .uniform_buffer(vk::ShaderStageFlagBits::eVertex, proj)
+                  .push_constant<glm::mat4>(vk::ShaderStageFlagBits::eVertex)
                   .dynamic_texture(max_textures)
                   .alpha_blending()
                   .build(context, settings));
