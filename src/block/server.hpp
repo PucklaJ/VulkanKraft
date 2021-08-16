@@ -30,7 +30,7 @@ private:
   // Returns the uv texture coordinates for the block at horizontal x position
   // and vertical y position
   static constexpr glm::vec4 _block_tex_coords(int x, int y) {
-    constexpr auto ps2 = 1.0f / block_texture_size / 2.0f;
+    constexpr auto ps2 = 0.0f;
     return glm::vec4(
         static_cast<float>(x) * block_pixel_size / block_texture_size + ps2,
         static_cast<float>(y) * block_pixel_size / block_texture_size + ps2,
