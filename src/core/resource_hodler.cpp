@@ -12,6 +12,8 @@ namespace shaders {
 #include <shaders/chunk_mesh_vert.hpp>
 #include <shaders/text_frag.hpp>
 #include <shaders/text_vert.hpp>
+#include <shaders/texture_2d_frag.hpp>
+#include <shaders/texture_2d_vert.hpp>
 } // namespace shaders
 
 namespace textures {
@@ -23,9 +25,10 @@ namespace fonts {
 }
 
 ResourceHodler::ResourceHodler(const core::vulkan::Context &context,
-                               const Settings &settings)
+                               const Settings &settings, const bool load_all)
     : m_context(context) {
-  _load_all_resources(context, settings);
+  if (load_all)
+    _load_all_resources(context, settings);
 }
 
 void ResourceHodler::load_texture(
@@ -88,6 +91,22 @@ void ResourceHodler::build_text_shader(const vulkan::Context &context,
   m_hodled_shaders.emplace(text_shader_name, std::move(shader));
 }
 
+void ResourceHodler::build_texture_2d_shader(const vulkan::Context &context,
+                                             const Settings &settings) {
+  const glm::mat4 proj_model(1.0f);
+  constexpr uint32_t max_textures = 10;
+
+  auto shader(Shader::Builder()
+                  .vertex(shaders::texture_2d_vert_spv)
+                  .fragment(shaders::texture_2d_frag_spv)
+                  .uniform_buffer(vk::ShaderStageFlagBits::eVertex, proj_model)
+                  .dynamic_texture(max_textures)
+                  .alpha_blending()
+                  .build(context, settings));
+
+  m_hodled_shaders.emplace(texture_2d_shader_name, std::move(shader));
+}
+
 void ResourceHodler::_load_all_resources(const vulkan::Context &context,
                                          const Settings &settings) {
   // Textures
@@ -100,6 +119,7 @@ void ResourceHodler::_load_all_resources(const vulkan::Context &context,
   // Shaders
   build_chunk_mesh_shader(context, settings);
   build_text_shader(context, settings);
+  build_texture_2d_shader(context, settings);
 }
 
 } // namespace core

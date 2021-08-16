@@ -14,8 +14,10 @@ public:
   static constexpr char debug_font_name[] = "debug";
   static constexpr char chunk_mesh_shader_name[] = "chunk/mesh";
   static constexpr char text_shader_name[] = "text";
+  static constexpr char texture_2d_shader_name[] = "texture_2d";
 
-  ResourceHodler(const vulkan::Context &context, const Settings &settings);
+  ResourceHodler(const vulkan::Context &context, const Settings &settings,
+                 const bool load_all = true);
 
   void load_texture(
       const vulkan::Context &context, std::string name, const uint8_t *data,
@@ -38,6 +40,8 @@ public:
                                const Settings &settings);
   void build_text_shader(const vulkan::Context &context,
                          const Settings &settings);
+  void build_texture_2d_shader(const vulkan::Context &context,
+                               const Settings &settings);
 
   inline Texture &get_texture(std::string name) {
     return m_hodled_textures.at(name);
