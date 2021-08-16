@@ -1,6 +1,9 @@
 #pragma once
 #include "chunk/world.hpp"
 #include "core/fps_timer.hpp"
+#include "core/render_2d.hpp"
+#include "core/resource_hodler.hpp"
+#include "core/vulkan/render_call.hpp"
 #include "core/window.hpp"
 #include <glm/glm.hpp>
 
@@ -9,7 +12,7 @@
 class Player {
 public:
   // Give the player an initial position
-  Player(const glm::vec3 &position);
+  Player(const glm::vec3 &position, core::ResourceHodler &hodler);
 
   inline void set_position(const glm::vec3 &pos) { m_position = pos; }
   inline void set_position(const float x, const float y, const float z) {
@@ -28,10 +31,14 @@ public:
   // Update everything the player does (input, block placing/breaking, etc.)
   void update(const core::FPSTimer &timer, core::Window &window,
               chunk::World &world);
+  // returns the projection matrix used for the crosshair
+  void render(const core::vulkan::RenderCall &render_call);
 
 private:
   // The height of the player in blocks
   static constexpr float eye_height = 1.8f;
+  // Scales the crosshair size
+  static constexpr float crosshair_scale = 6.0f;
 
   // Returns the direction which the player is currently facing
   glm::vec3 _get_look_direction() const;
@@ -47,4 +54,6 @@ private:
   float m_last_mouse_x;
   // The last vertical position of the mouse cursor
   float m_last_mouse_y;
+
+  core::Render2D m_crosshair;
 };

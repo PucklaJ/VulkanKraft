@@ -11,7 +11,10 @@ namespace core {
 class ResourceHodler {
 public:
   static constexpr char chunk_mesh_texture_name[] = "chunk/mesh";
+  static constexpr char crosshair_texture_name[] = "crosshair";
+
   static constexpr char debug_font_name[] = "debug";
+
   static constexpr char chunk_mesh_shader_name[] = "chunk/mesh";
   static constexpr char text_shader_name[] = "text";
   static constexpr char texture_2d_shader_name[] = "texture_2d";

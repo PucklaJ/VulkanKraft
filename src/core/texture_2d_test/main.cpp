@@ -26,7 +26,8 @@ int main(int args, char *argv[]) {
     auto &texture_2d_shader =
         hodler.get_shader(core::ResourceHodler::texture_2d_shader_name);
 
-    core::Render2D block_texture_render(block_texture, texture_2d_shader);
+    core::Render2D::set_shader(texture_2d_shader);
+    core::Render2D block_texture_render(block_texture);
 
     while (!window.should_close()) {
       auto delta_timer(timer.begin_frame());
@@ -40,10 +41,9 @@ int main(int args, char *argv[]) {
           const auto [width, height] = window.get_framebuffer_size();
           block_texture_render.set_model_matrix(glm::vec2(
               static_cast<float>(width / 2), static_cast<float>(height / 2)));
-          block_texture_render.update_projection_matrix(width, height,
-                                                        render_call);
+          core::Render2D::update_projection_matrix(width, height, render_call);
         }
-        texture_2d_shader.bind(render_call);
+        core::Render2D::bind_shader(render_call);
         block_texture_render.render(render_call);
       }
     }

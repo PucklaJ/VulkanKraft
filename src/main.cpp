@@ -20,9 +20,6 @@ int main(int args, char *argv[]) {
   core::text::Text::GlobalUniform text_global;
   // The projection matrix for everything in the 3D space
   glm::mat4 projection_matrix;
-  // The projection matrix for everything in the 2D space (currently just used
-  // for text rendering)
-  glm::mat4 text_projection_matrix;
 
   try {
     // Initialise the window
@@ -39,6 +36,10 @@ int main(int args, char *argv[]) {
         hodler.get_shader(core::ResourceHodler::chunk_mesh_shader_name);
     auto &text_shader =
         hodler.get_shader(core::ResourceHodler::text_shader_name);
+    auto &texture_2d_shader =
+        hodler.get_shader(core::ResourceHodler::texture_2d_shader_name);
+
+    core::Render2D::set_shader(texture_2d_shader);
 
     // Retrieve the font from the resource hodler
     auto &debug_font = hodler.get_font(core::ResourceHodler::debug_font_name);
@@ -53,14 +54,9 @@ int main(int args, char *argv[]) {
                                glm::vec2(0.0f, fps_text.get_height() + 10 +
                                                    position_text.get_height() +
                                                    10));
-    // This is a dot in the middle of the screen representing the cross hair
-    // (currently just a placeholder)
-    core::text::Text cross_hair(
-        context, text_shader, debug_font, L".",
-        glm::vec2(settings.window_width / 2, settings.window_height / 2));
 
     // Initialise the player and world
-    Player player(glm::vec3(128.5f, 70.0f, 128.5f));
+    Player player(glm::vec3(128.5f, 70.0f, 128.5f), hodler);
 
     // Initialise all values of the world and start the background thread for
     // updating the chunks
@@ -146,26 +142,28 @@ int main(int args, char *argv[]) {
             core::Settings::near_plane, core::Settings::far_plane);
         projection_matrix[1][1] *= -1.0f;
 
-        text_projection_matrix = glm::ortho(0.0f, static_cast<float>(width),
-                                            0.0f, static_cast<float>(height));
-
         // Update the uniforms
         chunk_global.proj_view =
             projection_matrix * player.create_view_matrix();
         chunk_shader.update_uniform_buffer(render_call, chunk_global);
-        text_global.proj = text_projection_matrix;
+        auto proj_2d(core::Render2D::update_projection_matrix(width, height,
+                                                              render_call));
+        text_global.proj = std::move(proj_2d);
         text_shader.update_uniform_buffer(render_call, text_global);
 
         // Render the world
         chunk_shader.bind(render_call);
         world.render(render_call);
 
+        // Render the player
+        core::Render2D::bind_shader(render_call);
+        player.render(render_call);
+
         // Render the text elements
         text_shader.bind(render_call);
         fps_text.render(render_call);
         position_text.render(render_call);
         look_text.render(render_call);
-        cross_hair.render(render_call);
       }
     }
   } catch (const core::VulkanKraftException &e) {

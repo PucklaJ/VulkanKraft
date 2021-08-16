@@ -3,9 +3,11 @@
 #include "core/log.hpp"
 #include <glm/gtx/transform.hpp>
 
-Player::Player(const glm::vec3 &position)
+Player::Player(const glm::vec3 &position, core::ResourceHodler &hodler)
     : m_position(position), m_rotation(0.0f, 0.0f), m_last_mouse_x(0.0f),
-      m_last_mouse_y(0.0f) {}
+      m_last_mouse_y(0.0f),
+      m_crosshair(
+          hodler.get_texture(core::ResourceHodler::crosshair_texture_name)) {}
 
 glm::mat4 Player::create_view_matrix() const {
   const auto eye_position(_get_eye_position());
@@ -118,6 +120,16 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
   if (window.key_just_pressed(GLFW_KEY_ESCAPE)) {
     window.release_cursor();
   }
+
+  // Update crosshair
+  const auto [width, height] = window.get_framebuffer_size();
+  m_crosshair.set_model_matrix(
+      glm::vec2(static_cast<float>(width / 2), static_cast<float>(height / 2)),
+      glm::vec2(crosshair_scale, crosshair_scale));
+}
+
+void Player::render(const core::vulkan::RenderCall &render_call) {
+  m_crosshair.render(render_call);
 }
 
 glm::vec3 Player::_get_look_direction() const {
