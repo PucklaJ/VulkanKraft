@@ -5,6 +5,7 @@
 #include <functional>
 #include <glm/glm.hpp>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 #include <vulkan/vulkan.hpp>
@@ -41,6 +42,7 @@ public:
 
   // A callback for GLFW
   static void on_framebuffer_resize(GLFWwindow *window, int width, int height);
+  static void on_joystick_event(int jid, int event);
 
   // Initalise the window given the width and height in pixels as well as a
   // window title
@@ -88,6 +90,18 @@ public:
   // Sets the window into fullscreen mode or goes out of fullscreen mode
   void toggle_fullscreen();
 
+  // ***** Gamepad ******
+  inline bool is_gamepad_connected() const {
+    return glfwJoystickIsGamepad(GLFW_JOYSTICK_1);
+  }
+
+  bool gamepad_button_is_pressed(int button) const;
+
+  bool gamepad_button_just_pressed(int button) const;
+
+  std::optional<float> get_gamepad_axis_value(int axis) const;
+  // ********************
+
 private:
   // A callback used for GLFW
   static void _on_key_callback(GLFWwindow *window, int key, int scancode,
@@ -108,6 +122,9 @@ private:
   std::map<int, bool> m_pressed_keys;
   // The state of the keys in the last frame
   std::map<int, bool> m_previous_pressed_keys;
+  std::map<int, bool> m_pressed_gamepad_buttons;
+  std::map<int, bool> m_previous_pressed_gamepad_buttons;
+  std::map<int, float> m_gamepad_axes;
   Mouse m_mouse;
 
   int m_previous_width;

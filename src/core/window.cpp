@@ -2,6 +2,8 @@
 #include "exception.hpp"
 #include "log.hpp"
 
+#include "gamecontrollerdb.hpp"
+
 namespace core {
 bool Window::Mouse::button_is_pressed(int button) const {
   return m_pressed_buttons.find(button) != m_pressed_buttons.end() &&
@@ -26,6 +28,19 @@ void Window::on_framebuffer_resize(GLFWwindow *window, int width, int height) {
   }
 }
 
+void Window::on_joystick_event(int jid, int event) {
+  std::string name("No Name");
+  if (const char *_name = glfwGetJoystickName(jid); _name) {
+    name = _name;
+  }
+
+  if (event == GLFW_CONNECTED) {
+    Log::info("Joystick \"" + name + "\" just connected");
+  } else if (event == GLFW_DISCONNECTED) {
+    Log::info("Joystick \"" + name + "\" just disconnected");
+  }
+}
+
 Window::Window(const uint32_t width, const uint32_t height, std::string title)
     : m_is_fullscreen(false) {
   if (glfwInit() == GLFW_FALSE) {
@@ -46,6 +61,11 @@ Window::Window(const uint32_t width, const uint32_t height, std::string title)
   glfwSetKeyCallback(m_window, _on_key_callback);
   glfwSetCursorPosCallback(m_window, _on_cursor_pos_callback);
   glfwSetMouseButtonCallback(m_window, _on_mouse_button_callback);
+
+  if (!glfwUpdateGamepadMappings(gamecontrollerdb)) {
+    Log::warning("failed to update gamepad mappings");
+  }
+  glfwSetJoystickCallback(on_joystick_event);
 }
 
 Window::~Window() {
@@ -53,7 +73,21 @@ Window::~Window() {
   glfwTerminate();
 }
 
-void Window::poll_events() { glfwPollEvents(); }
+void Window::poll_events() {
+  glfwPollEvents();
+
+  GLFWgamepadstate gamepad_state;
+  if (glfwGetGamepadState(GLFW_JOYSTICK_1, &gamepad_state)) {
+    for (int b = GLFW_GAMEPAD_BUTTON_A; b <= GLFW_GAMEPAD_BUTTON_DPAD_LEFT;
+         b++) {
+      m_pressed_gamepad_buttons[b] = gamepad_state.buttons[b];
+    }
+    for (int a = GLFW_GAMEPAD_AXIS_LEFT_X; a <= GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER;
+         a++) {
+      m_gamepad_axes[a] = gamepad_state.axes[a];
+    }
+  }
+}
 
 std::vector<const char *> Window::get_required_vulkan_extensions() const {
   uint32_t glfw_count;
@@ -82,6 +116,9 @@ void Window::reset_keys() {
   }
   for (auto [k, b] : m_mouse.m_pressed_buttons) {
     m_mouse.m_previous_pressed_buttons[k] = b;
+  }
+  for (auto [k, b] : m_pressed_gamepad_buttons) {
+    m_previous_pressed_gamepad_buttons[k] = b;
   }
 }
 
@@ -136,6 +173,27 @@ void Window::toggle_fullscreen() {
     glfwSetWindowPos(m_window, m_previous_x, m_previous_y);
     m_is_fullscreen = false;
   }
+}
+
+bool Window::gamepad_button_is_pressed(int button) const {
+  return m_pressed_gamepad_buttons.find(button) !=
+             m_pressed_gamepad_buttons.end() &&
+         m_pressed_gamepad_buttons.at(button);
+}
+
+bool Window::gamepad_button_just_pressed(int button) const {
+  return gamepad_button_is_pressed(button) &&
+         (m_pressed_gamepad_buttons.find(button) ==
+              m_pressed_gamepad_buttons.end() ||
+          !m_previous_pressed_gamepad_buttons.at(button));
+}
+
+std::optional<float> Window::get_gamepad_axis_value(int axis) const {
+  if (m_gamepad_axes.find(axis) == m_gamepad_axes.end()) {
+    return std::nullopt;
+  }
+
+  return m_gamepad_axes.at(axis);
 }
 
 void Window::_on_key_callback(GLFWwindow *window, int key, int scancode,

@@ -19,19 +19,54 @@ glm::mat4 Player::create_view_matrix() const {
 
 void Player::update(const core::FPSTimer &timer, core::Window &window,
                     chunk::World &world) {
-  // **** handle camera *****
-  const auto cur_mouse_x = window.get_mouse().screen_position.x;
-  const auto cur_mouse_y = window.get_mouse().screen_position.y;
-  if (window.cursor_is_locked()) {
-    const auto delta_mouse_x = cur_mouse_x - m_last_mouse_x;
-    const auto delta_mouse_y = cur_mouse_y - m_last_mouse_y;
+  bool button_left{false}, button_right{false}, button_forward{false},
+      button_backward{false}, button_up{false}, button_down{false};
+  float view_x{0.0f}, view_y{0.0f};
 
-    m_rotation.x += -delta_mouse_x * glm::radians(0.1f);
-    m_rotation.y += -delta_mouse_y * glm::radians(0.1f);
+  if (window.is_gamepad_connected()) {
+    button_left =
+        window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_DPAD_LEFT);
+    button_right =
+        window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_DPAD_RIGHT);
+    button_forward =
+        window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_DPAD_UP);
+    button_backward =
+        window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_DPAD_DOWN);
+    button_up = window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_CROSS);
+    button_down = window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_CIRCLE);
+
+    if (const auto horizontal_value{
+            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_LEFT_X)};
+        horizontal_value) {
+      view_x = *horizontal_value;
+    }
+    if (const auto vertical_value{
+            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_LEFT_Y)};
+        vertical_value) {
+      view_y = *vertical_value;
+    }
+  } else {
+    button_left = window.key_is_pressed(GLFW_KEY_A);
+    button_right = window.key_is_pressed(GLFW_KEY_D);
+    button_forward = window.key_is_pressed(GLFW_KEY_W);
+    button_backward = window.key_is_pressed(GLFW_KEY_S);
+    button_up = window.key_is_pressed(GLFW_KEY_I);
+    button_down = window.key_is_pressed(GLFW_KEY_K);
+
+    // **** handle camera *****
+    const auto cur_mouse_x = window.get_mouse().screen_position.x;
+    const auto cur_mouse_y = window.get_mouse().screen_position.y;
+    if (window.cursor_is_locked()) {
+      view_x = cur_mouse_x - m_last_mouse_x;
+      view_y = cur_mouse_y - m_last_mouse_y;
+    }
+    m_last_mouse_x = cur_mouse_x;
+    m_last_mouse_y = cur_mouse_y;
+    // **************************
   }
-  m_last_mouse_x = cur_mouse_x;
-  m_last_mouse_y = cur_mouse_y;
-  // **************************
+
+  m_rotation.x += -view_x * glm::radians(0.1f);
+  m_rotation.y += -view_y * glm::radians(0.1f);
 
   // **** handle movement *****
   constexpr auto move_speed = 20.0f;
@@ -40,77 +75,73 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
       glm::normalize(glm::vec3(look_direction.x, 0.0f, look_direction.z)));
   const auto right_direction(
       glm::normalize(glm::cross(look_direction, glm::vec3(0.0f, 1.0f, 0.0f))));
-  if (window.key_is_pressed(GLFW_KEY_W)) {
+  if (button_forward) {
     m_position += forward * move_speed * timer.get_delta_time();
-  } else if (window.key_is_pressed(GLFW_KEY_S)) {
+  } else if (button_backward) {
     m_position += forward * -move_speed * timer.get_delta_time();
   }
-  if (window.key_is_pressed(GLFW_KEY_D)) {
+  if (button_right) {
     m_position += right_direction * move_speed * timer.get_delta_time();
-  } else if (window.key_is_pressed(GLFW_KEY_A)) {
+  } else if (button_left) {
     m_position += right_direction * -move_speed * timer.get_delta_time();
   }
-  if (window.key_is_pressed(GLFW_KEY_I)) {
+  if (button_up) {
     m_position +=
         glm::vec3(0.0f, 1.0f, 0.0f) * move_speed * timer.get_delta_time();
-  } else if (window.key_is_pressed(GLFW_KEY_K)) {
+  } else if (button_down) {
     m_position +=
         glm::vec3(0.0f, 1.0f, 0.0f) * -move_speed * timer.get_delta_time();
   }
   // **************************
 
-  if (window.cursor_is_locked() || window.key_just_pressed(GLFW_KEY_N)) {
-    if ((window.key_is_pressed(GLFW_KEY_LEFT_SHIFT) &&
-         window.get_mouse().button_is_pressed(GLFW_MOUSE_BUTTON_LEFT)) ||
-        window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_LEFT) ||
-        window.key_just_pressed(GLFW_KEY_N)) {
-      const core::math::Ray ray{_get_eye_position(), look_direction};
-      core::math::Ray::Face face;
-      const auto _block(world.raycast_block(ray, face));
-      if (_block) {
-        const auto block = *_block;
+  if ((window.cursor_is_locked() &&
+       window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_LEFT))) {
+    const core::math::Ray ray{_get_eye_position(), look_direction};
+    core::math::Ray::Face face;
+    const auto _block(world.raycast_block(ray, face));
+    if (_block) {
+      const auto block = *_block;
 
-        try {
-          world.destroy_block(block);
-        } catch (const core::VulkanKraftException &e) {
-          core::Log::warning(std::string("failed to destroy block: ") +
-                             e.what());
-        }
+      try {
+        world.destroy_block(block);
+      } catch (const core::VulkanKraftException &e) {
+        core::Log::warning(std::string("failed to destroy block: ") + e.what());
       }
-    } else if (window.get_mouse().button_just_pressed(
-                   GLFW_MOUSE_BUTTON_RIGHT)) {
-      const core::math::Ray ray{_get_eye_position(), look_direction};
-      core::math::Ray::Face face;
-      const auto _block(world.raycast_block(ray, face));
-      if (_block) {
-        auto block = *_block;
+    }
+  } else if ((window.cursor_is_locked() &&
+              window.get_mouse().button_just_pressed(
+                  GLFW_MOUSE_BUTTON_RIGHT))) {
+    const core::math::Ray ray{_get_eye_position(), look_direction};
+    core::math::Ray::Face face;
+    const auto _block(world.raycast_block(ray, face));
+    if (_block) {
+      auto block = *_block;
 
-        switch (face) {
-        case core::math::Ray::Face::FRONT:
-          block.z -= 1;
-          break;
-        case core::math::Ray::Face::BACK:
-          block.z += 1;
-          break;
-        case core::math::Ray::Face::LEFT:
-          block.x -= 1;
-          break;
-        case core::math::Ray::Face::RIGHT:
-          block.x += 1;
-          break;
-        case core::math::Ray::Face::TOP:
-          block.y += 1;
-          break;
-        case core::math::Ray::Face::BOTTOM:
-          block.y -= 1;
-          break;
-        }
+      switch (face) {
+      case core::math::Ray::Face::FRONT:
+        block.z -= 1;
+        break;
+      case core::math::Ray::Face::BACK:
+        block.z += 1;
+        break;
+      case core::math::Ray::Face::LEFT:
+        block.x -= 1;
+        break;
+      case core::math::Ray::Face::RIGHT:
+        block.x += 1;
+        break;
+      case core::math::Ray::Face::TOP:
+        block.y += 1;
+        break;
+      case core::math::Ray::Face::BOTTOM:
+        block.y -= 1;
+        break;
+      }
 
-        try {
-          world.place_block(block, block::Type::GRASS);
-        } catch (const core::VulkanKraftException &e) {
-          core::Log::warning(std::string("failed to place block: ") + e.what());
-        }
+      try {
+        world.place_block(block, block::Type::GRASS);
+      } catch (const core::VulkanKraftException &e) {
+        core::Log::warning(std::string("failed to place block: ") + e.what());
       }
     }
   }
