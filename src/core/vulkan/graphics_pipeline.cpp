@@ -11,11 +11,12 @@ GraphicsPipeline::GraphicsPipeline(
     const SPVData &vertex_code, const SPVData &fragment_code,
     vk::VertexInputBindingDescription vertex_binding,
     std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
-    const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending)
+    const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending,
+    const std::vector<vk::PushConstantRange> &push_constant_ranges)
     : m_context(context) {
   _create_handle(std::move(descriptor_set_layouts), vertex_code, fragment_code,
                  std::move(vertex_binding), std::move(vertex_attributes),
-                 msaa_samples, alpha_blending);
+                 msaa_samples, alpha_blending, push_constant_ranges);
 }
 
 GraphicsPipeline::~GraphicsPipeline() { _destroy(); }
@@ -44,7 +45,8 @@ void GraphicsPipeline::_create_handle(
     const SPVData &vertex_code, const SPVData &fragment_code,
     vk::VertexInputBindingDescription vertex_binding,
     std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
-    const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending) {
+    const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending,
+    const std::vector<vk::PushConstantRange> &push_constant_ranges) {
   try {
     m_vertex_module =
         _create_shader_module(m_context.get_device(), vertex_code);
@@ -129,7 +131,9 @@ void GraphicsPipeline::_create_handle(
   vk::PipelineLayoutCreateInfo pl_i;
   pl_i.setLayoutCount = static_cast<uint32_t>(descriptor_set_layouts.size());
   pl_i.pSetLayouts = descriptor_set_layouts.data();
-  pl_i.pushConstantRangeCount = 0;
+  pl_i.pPushConstantRanges = push_constant_ranges.data();
+  pl_i.pushConstantRangeCount =
+      static_cast<uint32_t>(push_constant_ranges.size());
 
   try {
     m_layout = m_context.get_device().createPipelineLayout(pl_i);

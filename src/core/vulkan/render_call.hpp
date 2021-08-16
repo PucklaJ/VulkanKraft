@@ -39,6 +39,14 @@ public:
   // Bind a buffer either as vertex or index or both
   void bind_buffer(const vk::Buffer &buffer, vk::BufferUsageFlags usage) const;
 
+  template <typename T>
+  inline void set_push_constant(const vk::PipelineLayout &layout,
+                                const vk::ShaderStageFlags stage_flags,
+                                const uint32_t offset, const T &data) const {
+    m_graphics_buffer.pushConstants(layout, stage_flags, offset, sizeof(data),
+                                    &data);
+  }
+
 private:
   // The command buffer used to record all commands
   const vk::CommandBuffer &m_graphics_buffer;

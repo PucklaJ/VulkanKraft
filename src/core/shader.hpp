@@ -81,9 +81,26 @@ public:
       return *this;
     }
 
+    template <typename T>
+    inline Builder &push_constant(vk::ShaderStageFlags shader_stage,
+                                  const T &data) {
+      m_push_constants.emplace_back(
+          shader_stage, m_current_push_constant_offset, sizeof(data));
+      m_current_push_constant_offset += sizeof(data);
+      return *this;
+    }
+
+    template <typename T>
+    inline Builder &push_constant(vk::ShaderStageFlags shader_stage) {
+      m_push_constants.emplace_back(shader_stage,
+                                    m_current_push_constant_offset, sizeof(T));
+      m_current_push_constant_offset += sizeof(T);
+      return *this;
+    }
+
   private:
-    // Stores the initial state and for what shader stage the uniform buffer is
-    // used
+    // Stores the initial state and for what shader stage the uniform buffer
+    // is used
     struct UniformBufferInfo {
       const std::vector<uint8_t> initial_state;
       const vk::ShaderStageFlags shader_stage;
@@ -101,6 +118,8 @@ public:
     size_t m_texture_count;
     std::vector<uint32_t> m_dynamic_textures;
     bool m_alpha_blending;
+    std::vector<vk::PushConstantRange> m_push_constants;
+    uint32_t m_current_push_constant_offset;
   };
 
   Shader(Shader &&rhs);
@@ -117,6 +136,13 @@ public:
   // Update the given dynamic texture (requires a render call)
   void bind_dynamic_texture(const vulkan::RenderCall &render_call,
                             Texture &texture, const size_t index = 0) const;
+  template <typename T>
+  inline void set_push_constant(const vulkan::RenderCall &render_call,
+                                const T &data, const size_t index = 0) const {
+    render_call.set_push_constant(m_pipeline->get_layout(),
+                                  m_push_constants[index].shader_stage,
+                                  m_push_constants[index].offset, data);
+  }
 
   // Bind the shader for all following draw calls
   void bind(const vulkan::RenderCall &render_call);
@@ -128,6 +154,12 @@ private:
     std::set<uint32_t> image_indices;
     vk::DescriptorImageInfo image_info;
     vk::WriteDescriptorSet write;
+  };
+
+  // Stores information about a push constant required to set the push constant
+  struct PushConstantData {
+    const vk::ShaderStageFlags shader_stage;
+    const uint32_t offset;
   };
 
   // Make the constructor private so that only the Builder can create shaders
@@ -154,6 +186,7 @@ private:
   std::vector<vk::DescriptorSetLayout> m_dynamic_textures_layout;
   vk::DescriptorPool m_descriptor_pool;
   std::vector<vk::DescriptorSet> m_descriptor_sets;
+  std::vector<PushConstantData> m_push_constants;
 
   std::map<size_t, TextureWrite> m_texture_writes_to_perform;
   size_t m_min_dynamic_texture_binding_point;

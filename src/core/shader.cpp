@@ -5,7 +5,8 @@
 namespace core {
 Shader::Builder::Builder()
     : m_texture_count(0),
-      m_alpha_blending(false), m_vertex_code{0, 0}, m_fragment_code{0, 0} {}
+      m_alpha_blending(false), m_vertex_code{0, 0}, m_fragment_code{0, 0},
+      m_current_push_constant_offset(0) {}
 
 Shader Shader::Builder::build(const vulkan::Context &context,
                               const Settings &settings) {
@@ -29,6 +30,7 @@ Shader::Shader(Shader &&rhs)
       m_dynamic_textures_layout(std::move(rhs.m_dynamic_textures_layout)),
       m_descriptor_pool(std::move(rhs.m_descriptor_pool)),
       m_descriptor_sets(std::move(rhs.m_descriptor_sets)),
+      m_push_constants(std::move(rhs.m_push_constants)),
       m_texture_writes_to_perform(std::move(rhs.m_texture_writes_to_perform)),
       m_min_dynamic_texture_binding_point(
           rhs.m_min_dynamic_texture_binding_point),
@@ -123,6 +125,10 @@ Shader::Shader(const vulkan::Context &context, const Settings &settings,
 void Shader::_create_graphics_pipeline(const vulkan::Context &context,
                                        const Settings &settings,
                                        const Builder &builder) {
+  for (const auto &pc : builder.m_push_constants) {
+    m_push_constants.emplace_back(PushConstantData{pc.stageFlags, pc.offset});
+  }
+
   size_t binding_point{0};
 
   std::vector<std::vector<vk::DescriptorSetLayoutBinding>> all_bindings(
@@ -234,7 +240,8 @@ void Shader::_create_graphics_pipeline(const vulkan::Context &context,
     m_pipeline = std::make_unique<vulkan::GraphicsPipeline>(
         context, std::move(all_layouts), std::move(builder.m_vertex_code),
         std::move(builder.m_fragment_code), std::move(bind), std::move(atts),
-        settings.msaa_samples, builder.m_alpha_blending);
+        settings.msaa_samples, builder.m_alpha_blending,
+        builder.m_push_constants);
   } catch (const VulkanKraftException &e) {
     throw VulkanKraftException(
         std::string("failed to create graphics pipeline of core::Shader: ") +

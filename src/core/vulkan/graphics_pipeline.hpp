@@ -24,7 +24,8 @@ public:
       const SPVData &vertex_code, const SPVData &fragment_code,
       vk::VertexInputBindingDescription vertex_binding,
       std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
-      const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending);
+      const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending,
+      const std::vector<vk::PushConstantRange> &push_constant_ranges);
   ~GraphicsPipeline();
 
   // Bind the pipeline before executing graphics commands
@@ -45,7 +46,8 @@ private:
       const SPVData &vertex_code, const SPVData &fragment_code,
       vk::VertexInputBindingDescription vertex_binding,
       std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
-      const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending);
+      const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending,
+      const std::vector<vk::PushConstantRange> &push_constant_ranges);
   void _destroy();
 
   vk::Pipeline m_handle;
