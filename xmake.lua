@@ -89,8 +89,8 @@ target("resources")
 target_end()
 
 add_rules("mode.debug", "mode.release")
-target("vulkankraft")
-  set_kind("binary")
+target("core")
+  set_kind("static")
   set_languages("cxx17")
   add_deps("resources")
   add_packages("glfw", "glm", "stb", "vulkan-hpp")
@@ -101,58 +101,45 @@ target("vulkankraft")
   end
   add_includedirs("resources")
 
-  add_files("src/*.cpp", 
-            "src/core/*.cpp",
+  add_files("src/core/*.cpp",
             "src/core/vulkan/*.cpp",
-            "src/core/text/*.cpp",
+            "src/core/text/*.cpp")
+  add_headerfiles("src/core/*.hpp",
+                  "src/core/vulkan/*.hpp",
+                  "src/core/text/*.hpp")
+
+target("vulkankraft")
+  set_kind("binary")
+  set_languages("cxx17")
+  add_deps("core")
+  add_packages("glm", "stb")
+
+  add_files("src/*.cpp",
             "src/chunk/*.cpp",
             "src/block/*.cpp",
             "src/world_gen/*.cpp")
   add_headerfiles("src/*.hpp",
-                  "src/core/*.hpp",
-                  "src/core/vulkan/*.hpp",
-                  "src/core/text/*.hpp",
                   "src/chunk/*.hpp",
                   "src/block/*.hpp",
                   "src/world_gen/*.hpp")
 
 target("perlin_noise_test")
+  set_enabled(is_mode("debug"))
   set_kind("binary")
   set_languages("cxx17")
-  add_deps("resources")
-  add_packages("glfw", "glm", "vulkan-hpp")
-  if is_plat("windows") then
-    add_syslinks("C:\\VulkanSDK\\1.2.135.0\\Lib" .. (is_arch("x86") and "32" or "") .. "\\vulkan-1")
-  else
-    add_syslinks("vulkan")
-  end
+  add_deps("core")
+  add_packages("glm")
 
-  add_files("src/core/*.cpp",
-            "src/core/vulkan/*.cpp",
-            "src/world_gen/perlin_noise.cpp",
+  add_files("src/world_gen/perlin_noise.cpp",
             "src/world_gen/perlin_noise_test/*.cpp")
-  del_files("src/core/resource_hodler.cpp")
-  add_headerfiles("src/core/*.hpp",
-                  "src/core/vulkan/*.hpp",
-                  "src/world_gen/perlin_noise.hpp")
+  add_headerfiles("src/world_gen/perlin_noise.hpp")
   add_includedirs("resources")
 
 target("texture_2d_test")
+  set_enabled(is_mode("debug"))
   set_kind("binary")
   set_languages("cxx17")
-  add_deps("resources")
-  add_packages("glfw", "glm", "vulkan-hpp", "stb")
-  if is_plat("windows") then
-    add_syslinks("C:\\VulkanSDK\\1.2.135.0\\Lib" .. (is_arch("x86") and "32" or "") .. "\\vulkan-1")
-  else
-    add_syslinks("vulkan")
-  end
+  add_deps("core")
+  add_packages("glm", "stb")
 
-  add_files("src/core/*.cpp",
-            "src/core/vulkan/*.cpp",
-            "src/core/text/*.cpp",
-            "src/core/texture_2d_test/main.cpp")
-  add_headerfiles("src/core/*.hpp",
-                  "src/core/vulkan/*.hpp",
-                  "src/core/text/*.hpp")
-  add_includedirs("resources")
+  add_files("src/core/texture_2d_test/main.cpp")
