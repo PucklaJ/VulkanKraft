@@ -60,7 +60,10 @@ private:
   const glm::ivec2 m_position;
   std::atomic<bool> m_needs_face_update;
   std::unique_ptr<std::thread> m_generate_thread;
+  // Wether there are currently newly generated vertices that need to be
+  // uploaded to the GPU
   std::atomic<bool> m_vertices_ready;
+  // Wether the generate thread has been started, but has not been joined yet
   std::atomic<bool> m_generating;
 
   std::weak_ptr<Chunk> m_front;

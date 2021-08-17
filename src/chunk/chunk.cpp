@@ -12,6 +12,7 @@ Chunk::Chunk(const ::core::vulkan::Context &context, const glm::ivec2 &position)
 Chunk::~Chunk() {
   if (m_generating) {
     m_generate_thread->join();
+    m_generating = false;
     m_generate_thread.reset();
   }
 }
@@ -20,6 +21,7 @@ void Chunk::generate(const block::Server &block_server,
                      const bool multi_thread) {
   if (m_generating) {
     m_generate_thread->join();
+    m_generating = false;
     m_generate_thread.reset();
   }
 
@@ -32,8 +34,6 @@ void Chunk::generate(const block::Server &block_server,
     m_mesh.load_buffer();
     return;
   }
-
-  m_vertices_ready = false;
 
   m_generate_thread = std::make_unique<std::thread>([&]() {
     if (m_needs_face_update) {
@@ -117,16 +117,9 @@ void Chunk::update_faces() {
 }
 
 void Chunk::render(const ::core::vulkan::RenderCall &render_call) {
-  if (m_generating) {
-    if (!m_vertices_ready) {
-      return;
-    }
-
-    m_generate_thread->join();
-    m_generate_thread.reset();
-    m_generating = false;
-
+  if (m_vertices_ready) {
     m_mesh.load_buffer();
+    m_vertices_ready = false;
   }
 
   m_mesh.render(render_call);
