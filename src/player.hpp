@@ -55,7 +55,7 @@ private:
 
   // ****** Update ******
   void _update_input(core::Window &window, bool &button_up, bool &button_down,
-                     bool button_place, bool &button_destroy,
+                     bool &button_place, bool &button_destroy,
                      glm::vec2 &move_direction, glm::vec2 &view);
   // ********************
 

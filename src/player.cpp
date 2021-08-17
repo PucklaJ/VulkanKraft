@@ -128,7 +128,7 @@ void Player::render(const core::vulkan::RenderCall &render_call) {
 }
 
 void Player::_update_input(core::Window &window, bool &button_up,
-                           bool &button_down, bool button_place,
+                           bool &button_down, bool &button_place,
                            bool &button_destroy, glm::vec2 &move_direction,
                            glm::vec2 &view) {
 
@@ -158,6 +158,7 @@ void Player::_update_input(core::Window &window, bool &button_up,
       m_last_right_trigger = true;
     } else {
       m_last_right_trigger = false;
+      button_place = false;
     }
 
     if (const auto left_trigger(
@@ -167,6 +168,7 @@ void Player::_update_input(core::Window &window, bool &button_up,
       m_last_left_trigger = true;
     } else {
       m_last_left_trigger = false;
+      button_destroy = false;
     }
     // ******************************
 
