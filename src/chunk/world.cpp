@@ -329,6 +329,19 @@ void World::check_aabb(physics::AABB &aabb) const {
                           static_cast<float>(y),
                           static_cast<float>(z + cc->get_position().y))));
             if (block_aabb.collide(aabb, push.x, push.y, push.z)) {
+              // We can't push the aabb when there is another block in the way
+              push.x = !(push.x < 0.0f && !block.left_face() ||
+                         push.x > 0.0f && !block.right_face()) *
+                       push.x;
+
+              push.y = !(push.y < 0.0f && !block.bot_face() ||
+                         push.y > 0.0f && !block.top_face()) *
+                       push.y;
+
+              push.z = !(push.z < 0.0f && !block.back_face() ||
+                         push.z > 0.0f && !block.front_face()) *
+                       push.z;
+
               const glm::vec3 push_abs(core::math::abs(push.x),
                                        core::math::abs(push.y),
                                        core::math::abs(push.z));

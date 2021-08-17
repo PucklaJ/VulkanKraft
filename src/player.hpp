@@ -15,16 +15,16 @@ public:
   // Give the player an initial position
   Player(const glm::vec3 &position, core::ResourceHodler &hodler);
 
-  inline void set_position(const glm::vec3 &pos) { m_aabb.position = pos; }
+  inline void set_position(const glm::vec3 &pos) { m_feet_position = pos; }
   inline void set_position(const float x, const float y, const float z) {
-    m_aabb.position.x = x;
-    m_aabb.position.y = y;
-    m_aabb.position.z = z;
+    m_feet_position.x = x;
+    m_feet_position.y = y;
+    m_feet_position.z = z;
   }
   // Only set the y component of the position
-  inline void set_height(const float y) { m_aabb.position.y = y; }
+  inline void set_height(const float y) { m_feet_position.y = y; }
   // Returns the position of the feet
-  inline const glm::vec3 &get_position() const { return m_aabb.position; }
+  inline const glm::vec3 &get_position() const { return m_feet_position; }
   // Returns the position of the eyes (m_position + eye_height)
   inline glm::vec3 get_eye_position() const {
     return get_position() + glm::vec3(0.0f, eye_height, 0.0f);
@@ -48,8 +48,8 @@ private:
   // Scales the crosshair size
   static constexpr float crosshair_scale = 6.0f;
 
-  static constexpr float aabb_width = 1.0f;
-  static constexpr float aabb_depth = 1.0f;
+  static constexpr float aabb_width = 0.7f;
+  static constexpr float aabb_depth = 0.7f;
 
   // Handles the controller dead zone. If the axis values absolute value is
   // below min, then the returned value will be 0 otherwise it will be the value
@@ -64,6 +64,8 @@ private:
                      glm::vec2 &move_direction, glm::vec2 &view);
   // ********************
 
+  // The position of the feet
+  glm::vec3 m_feet_position;
   // The current rotation of the head (controlled by the mouse/gamepad)
   glm::vec2 m_rotation;
 
@@ -80,6 +82,5 @@ private:
   core::Render2D m_crosshair;
 
   // Used for physics collision
-  // also stores the position of the feet
   physics::AABB m_aabb;
 };

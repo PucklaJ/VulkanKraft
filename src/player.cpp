@@ -4,11 +4,13 @@
 #include <glm/gtx/transform.hpp>
 
 Player::Player(const glm::vec3 &position, core::ResourceHodler &hodler)
-    : m_rotation(0.0f, 0.0f), m_last_mouse_x(0.0f), m_last_mouse_y(0.0f),
-      m_last_left_trigger(false), m_last_right_trigger(false),
+    : m_feet_position(position), m_rotation(0.0f, 0.0f), m_last_mouse_x(0.0f),
+      m_last_mouse_y(0.0f), m_last_left_trigger(false),
+      m_last_right_trigger(false),
       m_crosshair(
           hodler.get_texture(core::ResourceHodler::crosshair_texture_name)),
-      m_aabb(position.x, position.y, position.z, aabb_width, eye_height,
+      m_aabb(position.x - aabb_width / 2.0f, position.y,
+             position.z - aabb_depth / 2.0f, aabb_width, eye_height,
              aabb_depth) {}
 
 glm::mat4 Player::create_view_matrix() const {
@@ -35,19 +37,19 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
   // *******************************
 
   // **** handle movement *****
-  constexpr auto move_speed = 20.0f;
+  constexpr auto move_speed = 5.0f;
   const auto look_direction(get_look_direction());
   const auto forward(
       glm::normalize(glm::vec3(look_direction.x, 0.0f, look_direction.z)));
   const auto right_direction(
       glm::normalize(glm::cross(look_direction, glm::vec3(0.0f, 1.0f, 0.0f))));
 
-  m_aabb.position +=
+  m_feet_position +=
       forward * move_direction.y * move_speed * timer.get_delta_time();
-  m_aabb.position +=
+  m_feet_position +=
       right_direction * move_direction.x * move_speed * timer.get_delta_time();
 
-  m_aabb.position += glm::vec3(0.0f, 1.0f, 0.0f) *
+  m_feet_position += glm::vec3(0.0f, 1.0f, 0.0f) *
                      ((button_up - button_down) * move_speed) *
                      timer.get_delta_time();
   // **************************
@@ -124,7 +126,13 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
       glm::vec2(crosshair_scale, crosshair_scale));
 
   // ****** handle physics *****
+  m_feet_position.y -= 2.0f * timer.get_delta_time();
+  m_aabb.position =
+      m_feet_position - glm::vec3(aabb_width / 2.0f, 0.0f, aabb_depth / 2.0f);
   world.check_aabb(m_aabb);
+  m_feet_position.x = m_aabb.position.x + aabb_width / 2.0f;
+  m_feet_position.y = m_aabb.position.y;
+  m_feet_position.z = m_aabb.position.z + aabb_depth / 2.0f;
   // ***************************
 }
 
