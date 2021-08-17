@@ -41,6 +41,8 @@ private:
   // Scales the crosshair size
   static constexpr float crosshair_scale = 6.0f;
 
+  // Handles the controller dead zone. If the axis values absolute value is
+  // below min, then the returned value will be 0 otherwise it will be the value
   static inline float _abs_dead_zone(const float value, const float min) {
     const auto abs{(value < 0.0f) * -value + (value >= 0.0f) * value};
     return (abs >= min) * value;
@@ -60,8 +62,11 @@ private:
   float m_last_mouse_x;
   // The last vertical position of the mouse cursor
   float m_last_mouse_y;
+  // Wether the left trigger has been pressed in the last frame
   bool m_last_left_trigger;
+  // Wether the right trigger has been pressed in the last frame
   bool m_last_right_trigger;
 
+  // Used to render the crosshair in the middle of the screen
   core::Render2D m_crosshair;
 };
