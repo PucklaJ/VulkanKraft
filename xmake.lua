@@ -117,11 +117,13 @@ target("vulkankraft")
   add_files("src/*.cpp",
             "src/chunk/*.cpp",
             "src/block/*.cpp",
-            "src/world_gen/*.cpp")
+            "src/world_gen/*.cpp",
+            "src/physics/*.cpp")
   add_headerfiles("src/*.hpp",
                   "src/chunk/*.hpp",
                   "src/block/*.hpp",
-                  "src/world_gen/*.hpp")
+                  "src/world_gen/*.hpp",
+                  "src/physics/*.hpp")
 
 target("perlin_noise_test")
   set_enabled(is_mode("debug"))
@@ -143,3 +145,13 @@ target("texture_2d_test")
   add_packages("glm", "stb")
 
   add_files("src/core/texture_2d_test/main.cpp")
+
+target("physics_test")
+  set_enabled(is_mode("debug"))
+  set_kind("binary")
+  set_languages("cxx17")
+  add_packages("glm")
+
+  add_files("src/physics/aabb.cpp",
+            "src/physics/physics_test/main.cpp")
+  add_headerfiles("src/physics/aabb.hpp")
