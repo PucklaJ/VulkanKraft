@@ -1,4 +1,5 @@
 #pragma once
+#include "../physics/aabb.hpp"
 #include "chunk.hpp"
 #include <map>
 #include <mutex>
@@ -35,6 +36,10 @@ public:
     return static_cast<float>(render_distance) *
            static_cast<float>(block_width);
   }
+
+  // Checks if the AABB collides with blocks of the world and corrects its
+  // position if it is the case
+  void check_aabb(physics::AABB &aabb) const;
 
 private:
   static constexpr int raycast_distance = 10;

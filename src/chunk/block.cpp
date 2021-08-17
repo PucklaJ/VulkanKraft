@@ -30,6 +30,10 @@ void Block::generate(const block::Server &block_server,
   return aabb;
 }
 
+physics::AABB Block::to_physics_aabb(const glm::vec3 &position) const {
+  return physics::AABB(position.x, position.y, position.z, 1.0f, 1.0f, 1.0f);
+}
+
 void Block::_create_cube(std::vector<Vertex> &vertices,
                          std::vector<uint32_t> &indices, const glm::vec3 &p,
                          const block::Server::TextureCoordinates &tex_coords,

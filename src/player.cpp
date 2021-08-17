@@ -4,11 +4,12 @@
 #include <glm/gtx/transform.hpp>
 
 Player::Player(const glm::vec3 &position, core::ResourceHodler &hodler)
-    : m_position(position), m_rotation(0.0f, 0.0f), m_last_mouse_x(0.0f),
-      m_last_mouse_y(0.0f), m_last_left_trigger(false),
-      m_last_right_trigger(false),
+    : m_rotation(0.0f, 0.0f), m_last_mouse_x(0.0f), m_last_mouse_y(0.0f),
+      m_last_left_trigger(false), m_last_right_trigger(false),
       m_crosshair(
-          hodler.get_texture(core::ResourceHodler::crosshair_texture_name)) {}
+          hodler.get_texture(core::ResourceHodler::crosshair_texture_name)),
+      m_aabb(position.x, position.y, position.z, aabb_width, eye_height,
+             aabb_depth) {}
 
 glm::mat4 Player::create_view_matrix() const {
   const auto eye_position(get_eye_position());
@@ -41,14 +42,14 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
   const auto right_direction(
       glm::normalize(glm::cross(look_direction, glm::vec3(0.0f, 1.0f, 0.0f))));
 
-  m_position +=
+  m_aabb.position +=
       forward * move_direction.y * move_speed * timer.get_delta_time();
-  m_position +=
+  m_aabb.position +=
       right_direction * move_direction.x * move_speed * timer.get_delta_time();
 
-  m_position += glm::vec3(0.0f, 1.0f, 0.0f) *
-                ((button_up - button_down) * move_speed) *
-                timer.get_delta_time();
+  m_aabb.position += glm::vec3(0.0f, 1.0f, 0.0f) *
+                     ((button_up - button_down) * move_speed) *
+                     timer.get_delta_time();
   // **************************
 
   // ******** handle block place/destroy *******
@@ -121,6 +122,10 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
   m_crosshair.set_model_matrix(
       glm::vec2(static_cast<float>(width / 2), static_cast<float>(height / 2)),
       glm::vec2(crosshair_scale, crosshair_scale));
+
+  // ****** handle physics *****
+  world.check_aabb(m_aabb);
+  // ***************************
 }
 
 void Player::render(const core::vulkan::RenderCall &render_call) {

@@ -7,6 +7,15 @@ namespace block {
 
 class Server {
 public:
+  static constexpr bool block_is_solid(const Type type) {
+    switch (type) {
+    case Type::AIR:
+      return false;
+    default:
+      return true;
+    }
+  }
+
   struct TextureCoordinates {
     glm::vec4 front;
     glm::vec4 back;

@@ -1,6 +1,7 @@
 #include "server.hpp"
 
 namespace block {
+
 Server::Server() {
 
   // tex_coords.x ...... left

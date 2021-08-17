@@ -1,4 +1,5 @@
 #include "perlin_noise.hpp"
+#include "../core/math.hpp"
 #include <algorithm>
 #include <cmath>
 #include <random>
@@ -35,8 +36,8 @@ float PerlinNoise::get(const float x, const float y, const float _freq,
 }
 
 float PerlinNoise::_get(float x, float y, const float freq) const {
-  x = _abs(x + noise_offset);
-  y = _abs(y + noise_offset);
+  x = core::math::abs(x + noise_offset);
+  y = core::math::abs(y + noise_offset);
   x *= freq;
   y *= freq;
 

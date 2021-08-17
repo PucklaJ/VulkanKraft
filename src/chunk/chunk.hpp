@@ -1,5 +1,6 @@
 #pragma once
 #include "../core/math.hpp"
+#include "../physics/aabb.hpp"
 #include "../world_gen/world_generation.hpp"
 #include "mesh.hpp"
 #include <array>
@@ -20,6 +21,7 @@ public:
   void generate_block_change(const block::Server &block_server,
                              const glm::ivec3 &position);
   ::core::math::AABB to_aabb() const;
+  physics::AABB to_physics_aabb() const;
   void update_faces();
   void render(const ::core::vulkan::RenderCall &render_call);
   int get_height(glm::ivec3 world_pos) const;

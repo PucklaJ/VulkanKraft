@@ -89,6 +89,13 @@ void Chunk::generate_block_change(const block::Server &block_server,
   return aabb;
 }
 
+physics::AABB Chunk::to_physics_aabb() const {
+  return physics::AABB(
+      static_cast<float>(m_position.x), 0.0f, static_cast<float>(m_position.y),
+      static_cast<float>(block_width), static_cast<float>(block_height),
+      static_cast<float>(block_depth));
+}
+
 void Chunk::update_faces() {
 #ifndef NDEBUG
   const auto start_time = std::chrono::high_resolution_clock::now();

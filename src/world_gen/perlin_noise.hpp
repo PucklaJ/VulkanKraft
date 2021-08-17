@@ -58,12 +58,6 @@ private:
            t * t * t;
   }
 
-  // Returns the absolute value of t
-  template <typename T> static inline auto _abs(const T &t) {
-    return ((t < static_cast<T>(0)) * static_cast<T>(-2) + static_cast<T>(1)) *
-           t;
-  }
-
   // An internally noise function without Fractal Brownian Motion (FBM)
   float _get(float x, float y, const float freq) const;
 

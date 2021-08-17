@@ -6,12 +6,12 @@ AABB::AABB(const float x, const float y, const float z, const float w,
     : position(x, y, z), dimensions(w, h, d) {}
 
 bool AABB::collide(const AABB &other, float &x, float &y, float &z) const {
-  const auto collides{other.position.x <= position.x + dimensions.x &&
-                      other.position.x + other.dimensions.x >= position.x &&
-                      other.position.y <= position.y + dimensions.y &&
-                      other.position.y + other.dimensions.y >= position.y &&
-                      other.position.z <= position.z + dimensions.z &&
-                      other.position.z + other.dimensions.z >= position.z};
+  const auto collides{other.position.x < position.x + dimensions.x &&
+                      other.position.x + other.dimensions.x > position.x &&
+                      other.position.y < position.y + dimensions.y &&
+                      other.position.y + other.dimensions.y > position.y &&
+                      other.position.z < position.z + dimensions.z &&
+                      other.position.z + other.dimensions.z > position.z};
 
   if (!collides)
     return false;
