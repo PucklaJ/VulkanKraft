@@ -11,8 +11,8 @@ Player::Player(const glm::vec3 &position, core::ResourceHodler &hodler)
           hodler.get_texture(core::ResourceHodler::crosshair_texture_name)) {}
 
 glm::mat4 Player::create_view_matrix() const {
-  const auto eye_position(_get_eye_position());
-  const auto look_direction(_get_look_direction());
+  const auto eye_position(get_eye_position());
+  const auto look_direction(get_look_direction());
 
   return glm::lookAt(eye_position, eye_position + look_direction,
                      glm::vec3(0.0f, 1.0f, 0.0f));
@@ -20,94 +20,22 @@ glm::mat4 Player::create_view_matrix() const {
 
 void Player::update(const core::FPSTimer &timer, core::Window &window,
                     chunk::World &world) {
-  bool button_up{false}, button_down{false}, button_place{false},
-      button_destroy{false};
-  float view_x{0.0f}, view_y{0.0f};
-  glm::vec2 move_direction(0.0f, 0.0f);
+  // ***** handle input ************
+  bool button_up, button_down, button_place, button_destroy;
+  glm::vec2 move_direction(0.0f, 0.0f), view(0.0f, 0.0f);
 
-  if (window.is_gamepad_connected()) {
-    constexpr float axis_dead_zone = 0.1f;
-    constexpr float trigger_threshold = 0.3f;
+  _update_input(window, button_up, button_down, button_place, button_destroy,
+                move_direction, view);
+  // *******************************
 
-    if (const auto horizontal_value(
-            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_LEFT_X));
-        horizontal_value) {
-      move_direction.x = _abs_dead_zone(*horizontal_value, axis_dead_zone);
-    }
-    if (const auto vertical_value(
-            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_LEFT_Y));
-        vertical_value) {
-      move_direction.y = _abs_dead_zone(-*vertical_value, axis_dead_zone);
-    }
-
-    if (const auto right_trigger(
-            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER));
-        right_trigger && *right_trigger > trigger_threshold) {
-      button_place = !m_last_right_trigger;
-      m_last_right_trigger = true;
-    } else {
-      m_last_right_trigger = false;
-    }
-
-    if (const auto left_trigger(
-            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_LEFT_TRIGGER));
-        left_trigger && *left_trigger > trigger_threshold) {
-      button_destroy = !m_last_left_trigger;
-      m_last_left_trigger = true;
-    } else {
-      m_last_left_trigger = false;
-    }
-
-    button_up = window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_CROSS);
-    button_down =
-        window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_RIGHT_THUMB);
-
-    constexpr float axis_view_factor = 20.0f;
-
-    if (const auto horizontal_value{
-            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_RIGHT_X)};
-        horizontal_value) {
-      view_x =
-          _abs_dead_zone(*horizontal_value, axis_dead_zone) * axis_view_factor;
-    }
-    if (const auto vertical_value{
-            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_RIGHT_Y)};
-        vertical_value) {
-      view_y =
-          _abs_dead_zone(*vertical_value, axis_dead_zone) * axis_view_factor;
-    }
-  } else {
-    move_direction.y =
-        window.key_is_pressed(GLFW_KEY_W) - window.key_is_pressed(GLFW_KEY_S);
-    move_direction.x =
-        window.key_is_pressed(GLFW_KEY_D) - window.key_is_pressed(GLFW_KEY_A);
-    button_up = window.key_is_pressed(GLFW_KEY_I);
-    button_down = window.key_is_pressed(GLFW_KEY_K);
-    button_place =
-        window.cursor_is_locked() &&
-        window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_LEFT);
-    button_destroy =
-        window.cursor_is_locked() &&
-        window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_RIGHT);
-
-    // **** handle camera *****
-    const auto cur_mouse_x = window.get_mouse().screen_position.x;
-    const auto cur_mouse_y = window.get_mouse().screen_position.y;
-    if (window.cursor_is_locked()) {
-      view_x = cur_mouse_x - m_last_mouse_x;
-      view_y = cur_mouse_y - m_last_mouse_y;
-    }
-    m_last_mouse_x = cur_mouse_x;
-    m_last_mouse_y = cur_mouse_y;
-    // **************************
-  }
-
-  m_rotation.x += -view_x * glm::radians(0.1f);
-  m_rotation.y += -view_y * glm::radians(0.1f);
+  // ***** handle camera ***********
+  m_rotation.x += -view.x * glm::radians(0.1f);
+  m_rotation.y += -view.y * glm::radians(0.1f);
+  // *******************************
 
   // **** handle movement *****
   constexpr auto move_speed = 20.0f;
-  const auto look_direction(_get_look_direction());
+  const auto look_direction(get_look_direction());
   const auto forward(
       glm::normalize(glm::vec3(look_direction.x, 0.0f, look_direction.z)));
   const auto right_direction(
@@ -123,12 +51,14 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
                 timer.get_delta_time();
   // **************************
 
+  // ******** handle block place/destroy *******
   if (button_destroy) {
-    const core::math::Ray ray{_get_eye_position(), look_direction};
+    // Create a ray at the eyes and cast it along the look direction
+    const core::math::Ray ray{get_eye_position(), look_direction};
     core::math::Ray::Face face;
     const auto _block(world.raycast_block(ray, face));
     if (_block) {
-      const auto block = *_block;
+      const auto block(*_block);
 
       try {
         world.destroy_block(block);
@@ -137,12 +67,15 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
       }
     }
   } else if (button_place) {
-    const core::math::Ray ray{_get_eye_position(), look_direction};
+    // Create a ray at the eyes and cast it along the look direction
+    const core::math::Ray ray{get_eye_position(), look_direction};
     core::math::Ray::Face face;
     const auto _block(world.raycast_block(ray, face));
     if (_block) {
-      auto block = *_block;
+      auto block(*_block);
 
+      // Determine the position of the block the will be newly created based on
+      // the face the player is facing
       switch (face) {
       case core::math::Ray::Face::FRONT:
         block.z -= 1;
@@ -171,7 +104,9 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
       }
     }
   }
+  // *******************************************
 
+  // ***** handle cursor lock and release ******
   if (window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_LEFT)) {
     window.lock_cursor();
   }
@@ -179,6 +114,7 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
   if (window.key_just_pressed(GLFW_KEY_ESCAPE)) {
     window.release_cursor();
   }
+  // *******************************************
 
   // Update crosshair
   const auto [width, height] = window.get_framebuffer_size();
@@ -191,19 +127,113 @@ void Player::render(const core::vulkan::RenderCall &render_call) {
   m_crosshair.render(render_call);
 }
 
-glm::vec3 Player::_get_look_direction() const {
+void Player::_update_input(core::Window &window, bool &button_up,
+                           bool &button_down, bool button_place,
+                           bool &button_destroy, glm::vec2 &move_direction,
+                           glm::vec2 &view) {
+
+  // Gamepad input
+  if (window.is_gamepad_connected()) {
+    constexpr float axis_dead_zone = 0.1f;
+    constexpr float trigger_threshold = 0.3f;
+
+    // **** handle left stick ******
+    if (const auto horizontal_value(
+            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_LEFT_X));
+        horizontal_value) {
+      move_direction.x = _abs_dead_zone(*horizontal_value, axis_dead_zone);
+    }
+    if (const auto vertical_value(
+            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_LEFT_Y));
+        vertical_value) {
+      move_direction.y = _abs_dead_zone(-*vertical_value, axis_dead_zone);
+    }
+    // ******************************
+
+    // ***** handle trigger input ***
+    if (const auto right_trigger(
+            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER));
+        right_trigger && *right_trigger > trigger_threshold) {
+      button_place = !m_last_right_trigger;
+      m_last_right_trigger = true;
+    } else {
+      m_last_right_trigger = false;
+    }
+
+    if (const auto left_trigger(
+            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_LEFT_TRIGGER));
+        left_trigger && *left_trigger > trigger_threshold) {
+      button_destroy = !m_last_left_trigger;
+      m_last_left_trigger = true;
+    } else {
+      m_last_left_trigger = false;
+    }
+    // ******************************
+
+    button_up = window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_CROSS);
+    button_down =
+        window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_RIGHT_THUMB);
+
+    constexpr float axis_view_factor = 20.0f;
+
+    // ***** handle right stick ******
+    if (const auto horizontal_value{
+            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_RIGHT_X)};
+        horizontal_value) {
+      view.x =
+          _abs_dead_zone(*horizontal_value, axis_dead_zone) * axis_view_factor;
+    }
+    if (const auto vertical_value{
+            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_RIGHT_Y)};
+        vertical_value) {
+      view.y =
+          _abs_dead_zone(*vertical_value, axis_dead_zone) * axis_view_factor;
+    }
+    // ********************************
+
+  } else {
+    // Mouse and Keyboard input
+    move_direction.y =
+        window.key_is_pressed(GLFW_KEY_W) - window.key_is_pressed(GLFW_KEY_S);
+    move_direction.x =
+        window.key_is_pressed(GLFW_KEY_D) - window.key_is_pressed(GLFW_KEY_A);
+    button_up = window.key_is_pressed(GLFW_KEY_I);
+    button_down = window.key_is_pressed(GLFW_KEY_K);
+    button_place =
+        window.cursor_is_locked() &&
+        window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_LEFT);
+    button_destroy =
+        window.cursor_is_locked() &&
+        window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_RIGHT);
+
+    // **** handle mouse input *****
+    const auto cur_mouse_x = window.get_mouse().screen_position.x;
+    const auto cur_mouse_y = window.get_mouse().screen_position.y;
+    if (window.cursor_is_locked()) {
+      view.x = cur_mouse_x - m_last_mouse_x;
+      view.y = cur_mouse_y - m_last_mouse_y;
+    }
+    m_last_mouse_x = cur_mouse_x;
+    m_last_mouse_y = cur_mouse_y;
+    // *****************************
+  }
+
+  if (move_direction.x != 0.0f || move_direction.y != 0.0f)
+    move_direction = glm::normalize(move_direction);
+}
+
+glm::vec3 Player::get_look_direction() const {
+  // Default look direction when no rotation is applied is the negative z axis
   glm::vec3 look_direction(0.0f, 0.0f, -1.0f);
 
-  const glm::mat4 y_rot_mat(
-      glm::rotate(m_rotation.x, glm::vec3(0.0f, 1.0f, 0.0f)));
+  // Apply the rotation around the y axis (based on horizontal mouse movement)
+  const auto y_rot_mat(glm::rotate(m_rotation.x, glm::vec3(0.0f, 1.0f, 0.0f)));
   look_direction = y_rot_mat * glm::vec4(look_direction, 1.0f);
 
-  const glm::vec3 x_axis = y_rot_mat * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+  // Change the x axis based on the rotation
+  const glm::vec3 x_axis(y_rot_mat * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+  // Apply the rotation around the x axis (based on vertical mouse movement)
   look_direction =
       glm::rotate(m_rotation.y, x_axis) * glm::vec4(look_direction, 1.0f);
   return look_direction;
-}
-
-glm::vec3 Player::_get_eye_position() const {
-  return m_position + glm::vec3(0.0f, eye_height, 0.0f);
 }

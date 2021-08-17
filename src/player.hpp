@@ -23,8 +23,12 @@ public:
   // Only set the y component of the position
   inline void set_height(const float y) { m_position.y = y; }
   inline const glm::vec3 &get_position() const { return m_position; }
-  inline glm::vec3 get_eye_position() const { return _get_eye_position(); }
-  inline glm::vec3 get_look_direction() const { return _get_look_direction(); }
+  // Returns the position of the eyes (m_position + eye_height)
+  inline glm::vec3 get_eye_position() const {
+    return m_position + glm::vec3(0.0f, eye_height, 0.0f);
+  }
+  // Returns the direction which the player is currently facing
+  glm::vec3 get_look_direction() const;
 
   // Create a camera view matrix from the players look direction and position
   glm::mat4 create_view_matrix() const;
@@ -32,6 +36,7 @@ public:
   // Update everything the player does (input, block placing/breaking, etc.)
   void update(const core::FPSTimer &timer, core::Window &window,
               chunk::World &world);
+
   // returns the projection matrix used for the crosshair
   void render(const core::vulkan::RenderCall &render_call);
 
@@ -48,10 +53,11 @@ private:
     return (abs >= min) * value;
   }
 
-  // Returns the direction which the player is currently facing
-  glm::vec3 _get_look_direction() const;
-  // Returns the position of the eyes (m_position + eye_height)
-  glm::vec3 _get_eye_position() const;
+  // ****** Update ******
+  void _update_input(core::Window &window, bool &button_up, bool &button_down,
+                     bool button_place, bool &button_destroy,
+                     glm::vec2 &move_direction, glm::vec2 &view);
+  // ********************
 
   // The position of the feet of the player
   glm::vec3 m_position;
