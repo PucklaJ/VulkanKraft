@@ -219,9 +219,6 @@ void Player::_update_input(core::Window &window, bool &button_up,
     m_last_mouse_y = cur_mouse_y;
     // *****************************
   }
-
-  if (move_direction.x != 0.0f || move_direction.y != 0.0f)
-    move_direction = glm::normalize(move_direction);
 }
 
 glm::vec3 Player::get_look_direction() const {
