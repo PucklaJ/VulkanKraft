@@ -144,7 +144,7 @@ target("perlin_noise_test")
   set_kind("binary")
   set_languages("cxx17")
   add_deps("core")
-  add_packages("glm")
+  add_packages("glfw", "glm", "stb", "vulkan-hpp")
 
   add_files("src/world_gen/perlin_noise.cpp",
             "src/world_gen/perlin_noise_test/*.cpp")
@@ -156,7 +156,7 @@ target("texture_2d_test")
   set_kind("binary")
   set_languages("cxx17")
   add_deps("core")
-  add_packages("glm", "stb")
+  add_packages("glfw", "glm", "stb", "vulkan-hpp")
 
   add_files("src/core/texture_2d_test/main.cpp")
 

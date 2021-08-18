@@ -1,4 +1,5 @@
 #include "aabb.hpp"
+#include <algorithm>
 
 namespace physics {
 AABB::AABB(const float x, const float y, const float z, const float w,
