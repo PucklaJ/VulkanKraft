@@ -83,9 +83,14 @@ RenderCall::~RenderCall() {
   pi.pSwapchains = swap_chains.data();
   pi.pImageIndices = &m_image_index;
 
-  if (const auto r = m_context->m_present_queue.presentKHR(pi);
-      r == vk::Result::eErrorOutOfDateKHR || r == vk::Result::eSuboptimalKHR ||
-      m_context->m_framebuffer_resized) {
+  try {
+    if (const auto r = m_context->m_present_queue.presentKHR(pi);
+        r == vk::Result::eErrorOutOfDateKHR ||
+        r == vk::Result::eSuboptimalKHR || m_context->m_framebuffer_resized) {
+      m_context->_handle_framebuffer_resize();
+      m_context->m_framebuffer_resized = false;
+    }
+  } catch (const vk::OutOfDateKHRError &e) {
     m_context->_handle_framebuffer_resize();
     m_context->m_framebuffer_resized = false;
   }
