@@ -2,8 +2,6 @@
 #include "exception.hpp"
 #include "log.hpp"
 
-#include "gamecontrollerdb.hpp"
-
 namespace core {
 bool Window::Mouse::button_is_pressed(int button) const {
   return m_pressed_buttons.find(button) != m_pressed_buttons.end() &&
@@ -62,9 +60,6 @@ Window::Window(const uint32_t width, const uint32_t height, std::string title)
   glfwSetCursorPosCallback(m_window, _on_cursor_pos_callback);
   glfwSetMouseButtonCallback(m_window, _on_mouse_button_callback);
 
-  if (!glfwUpdateGamepadMappings(gamecontrollerdb)) {
-    Log::warning("failed to update gamepad mappings");
-  }
   glfwSetJoystickCallback(on_joystick_event);
 }
 
