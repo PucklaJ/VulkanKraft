@@ -7,7 +7,10 @@ rule("shader")
             import("lib.detect.find_tool")
             local glslc = assert(find_tool("glslc"), "glslc not found!")
             local hpp_gen = path.join("build", target:plat(), target:arch(), "release", "hpp_gen" .. (target:is_plat("windows") and ".exe" or ""))
-            assert(os.exists(hpp_gen), "hpp_gen has not been built yet!")
+            if not os.exists(hpp_gen) then 
+                hpp_gen = path.join("build", target:plat(), target:arch(), "debug", "hpp_gen" .. (target:is_plat("windows") and ".exe" or ""))
+                assert(os.exists(hpp_gen), "hpp_gen has not been built yet. Run \"xmake build hpp_gen\"")
+            end
 
             local flags = {}
             local shader_stage
@@ -44,7 +47,10 @@ rule("texture")
   set_extensions(".png")
   on_buildcmd_file(function(target, batchcmds, sourcefile_png, opt)
     local hpp_gen = path.join("build", target:plat(), target:arch(), "release", "hpp_gen" .. (target:is_plat("windows") and ".exe" or ""))
-    assert(os.exists(hpp_gen), "hpp_gen has not been built yet!")
+    if not os.exists(hpp_gen) then 
+        hpp_gen = path.join("build", target:plat(), target:arch(), "debug", "hpp_gen" .. (target:is_plat("windows") and ".exe" or ""))
+        assert(os.exists(hpp_gen), "hpp_gen has not been built yet. Run \"xmake build hpp_gen\"")
+    end
 
     batchcmds:show_progress(opt.progress, "${color.build.object}generating.hpp %s", sourcefile_png)
     batchcmds:vrunv(hpp_gen, {sourcefile_png, path.join(os.scriptdir(), "resources/textures")})
@@ -56,7 +62,10 @@ rule("font")
   set_extensions(".otf", ".ttf")
   on_buildcmd_file(function(target, batchcmds, sourcefile_ttf, opt)
     local hpp_gen = path.join("build", target:plat(), target:arch(), "release", "hpp_gen" .. (target:is_plat("windows") and ".exe" or ""))
-    assert(os.exists(hpp_gen), "hpp_gen has not been built yet!")
+    if not os.exists(hpp_gen) then 
+        hpp_gen = path.join("build", target:plat(), target:arch(), "debug", "hpp_gen" .. (target:is_plat("windows") and ".exe" or ""))
+        assert(os.exists(hpp_gen), "hpp_gen has not been built yet. Run \"xmake build hpp_gen\"")
+    end
 
     batchcmds:show_progress(opt.progress, "${color.build.object}generating.hpp %s", sourcefile_ttf)
     batchcmds:vrunv(hpp_gen, {sourcefile_ttf, path.join(os.scriptdir(), "resources/fonts")})
@@ -95,7 +104,12 @@ target("core")
   add_deps("resources")
   add_packages("glfw", "glm", "stb", "vulkan-hpp")
   if is_plat("windows") then
-    add_syslinks("C:\\VulkanSDK\\1.2.135.0\\Lib" .. (is_arch("x86") and "32" or "") .. "\\vulkan-1")
+    local vulkan_path = os.getenv("VK_SDK_PATH")
+    if vulkan_path == nil then
+        print("couldn't find an installation of the Vulkan SDK. Make sure that the VK_SDK_PATH environment variable is set")
+    else
+        add_syslinks(path.join(vulkan_path, "Lib" .. (is_arch("x86") and "32" or ""), "vulkan-1"))
+    end
   else
     add_syslinks("vulkan", "pthread")
   end
@@ -112,7 +126,7 @@ target("vulkankraft")
   set_kind("binary")
   set_languages("cxx17")
   add_deps("core")
-  add_packages("glm", "stb")
+  add_packages("glfw", "glm", "stb", "vulkan-hpp")
 
   add_files("src/*.cpp",
             "src/chunk/*.cpp",
