@@ -105,9 +105,11 @@ void Server::_check_aabb(const chunk::World &world, MovingObject *mob) const {
           if (block::Server::block_is_solid(block.type)) {
             // Push the AABB if it collides with the block
             const auto block_aabb(block.to_aabb(
-                glm::vec3(static_cast<float>(x + cc->get_position().x),
+                glm::vec3(static_cast<float>(x) +
+                              static_cast<float>(cc->get_position().x),
                           static_cast<float>(y),
-                          static_cast<float>(z + cc->get_position().y))));
+                          static_cast<float>(z) +
+                              static_cast<float>(cc->get_position().y))));
             if (block_aabb.collide(mob->m_aabb, push.x, push.y, push.z)) {
               // We can't push the mob->m_aabb when there is another block in
               // the way
