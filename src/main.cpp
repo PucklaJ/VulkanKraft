@@ -51,10 +51,15 @@ int main(int args, char *argv[]) {
                                    L"X\nY\nZ\n",
                                    glm::vec2(0.0f, fps_text.get_height() + 10));
     // Text used to display the look direction of the player
-    core::text::Text look_text(context, text_shader, debug_font, L"Look",
-                               glm::vec2(0.0f, fps_text.get_height() + 10 +
-                                                   position_text.get_height() +
-                                                   10));
+    core::text::Text look_text(
+        context, text_shader, debug_font, L"Look\nX\nY\nZ",
+        glm::vec2(0.0f, fps_text.get_height() + 10 +
+                            position_text.get_height() + 10));
+    core::text::Text vel_text(context, text_shader, debug_font, L"Velocity",
+                              glm::vec2(0.0f, fps_text.get_height() + 10 +
+                                                  position_text.get_height() +
+                                                  10 + look_text.get_height() +
+                                                  10));
 
     // Initialise the player and world
     Player player(glm::vec3(128.5f, 70.0f, 128.5f), hodler, physics_server);
@@ -116,6 +121,19 @@ int main(int args, char *argv[]) {
                << std::endl;
         look_text.set_string(stream.str());
       }
+      {
+        constexpr auto float_width = 8;
+        std::wstringstream stream;
+        stream << "Velocity" << std::endl;
+        stream << std::fixed << std::setprecision(3);
+        stream << "X:" << std::setw(float_width) << std::right
+               << player.velocity.x << std::endl;
+        stream << "Y:" << std::setw(float_width) << std::right
+               << player.velocity.y << std::endl;
+        stream << "Z:" << std::setw(float_width) << std::right
+               << player.velocity.z << std::endl;
+        vel_text.set_string(stream.str());
+      }
 
       // Some debug input for testing purposes
       if (window.key_just_pressed(GLFW_KEY_F8)) {
@@ -175,6 +193,7 @@ int main(int args, char *argv[]) {
         fps_text.render(render_call);
         position_text.render(render_call);
         look_text.render(render_call);
+        vel_text.render(render_call);
       }
     }
   } catch (const core::VulkanKraftException &e) {
