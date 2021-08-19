@@ -23,13 +23,12 @@ glm::mat4 Player::create_view_matrix() const {
                      glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
-void Player::update(const core::FPSTimer &timer, core::Window &window,
-                    chunk::World &world) {
+void Player::update(core::Window &window, chunk::World &world) {
   // ***** handle input ************
-  bool button_up, button_down, button_place, button_destroy;
+  bool button_jump, button_down, button_place, button_destroy;
   glm::vec2 move_direction(0.0f, 0.0f), view(0.0f, 0.0f);
 
-  _update_input(window, button_up, button_down, button_place, button_destroy,
+  _update_input(window, button_jump, button_down, button_place, button_destroy,
                 move_direction, view);
   // *******************************
 
@@ -39,20 +38,19 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
   // *******************************
 
   // **** handle movement *****
-  constexpr auto move_speed = 5.0f;
   const auto look_direction(get_look_direction());
   const auto forward(
       glm::normalize(glm::vec3(look_direction.x, 0.0f, look_direction.z)));
   const auto right_direction(
       glm::normalize(glm::cross(look_direction, glm::vec3(0.0f, 1.0f, 0.0f))));
 
-  // TODO: translate to velocity
-  position += forward * move_direction.y * move_speed * timer.get_delta_time();
-  position +=
-      right_direction * move_direction.x * move_speed * timer.get_delta_time();
-
-  position += glm::vec3(0.0f, 1.0f, 0.0f) *
-              ((button_up - button_down) * move_speed) * timer.get_delta_time();
+  velocity.x = 0.0f;
+  velocity.z = 0.0f;
+  velocity += forward * move_direction.y * move_speed;
+  velocity += right_direction * move_direction.x * move_speed;
+  // **** handle jump ****
+  velocity.y = button_jump * jump_power + !button_jump * velocity.y;
+  // *********************
   // **************************
 
   // ******** handle block place/destroy *******
@@ -131,7 +129,7 @@ void Player::render(const core::vulkan::RenderCall &render_call) {
   m_crosshair.render(render_call);
 }
 
-void Player::_update_input(core::Window &window, bool &button_up,
+void Player::_update_input(core::Window &window, bool &button_jump,
                            bool &button_down, bool &button_place,
                            bool &button_destroy, glm::vec2 &move_direction,
                            glm::vec2 &view) {
@@ -176,7 +174,7 @@ void Player::_update_input(core::Window &window, bool &button_up,
     }
     // ******************************
 
-    button_up = window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_CROSS);
+    button_jump = window.gamepad_button_just_pressed(GLFW_GAMEPAD_BUTTON_CROSS);
     button_down =
         window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_RIGHT_THUMB);
 
@@ -203,7 +201,7 @@ void Player::_update_input(core::Window &window, bool &button_up,
         window.key_is_pressed(GLFW_KEY_W) - window.key_is_pressed(GLFW_KEY_S);
     move_direction.x =
         window.key_is_pressed(GLFW_KEY_D) - window.key_is_pressed(GLFW_KEY_A);
-    button_up = window.key_is_pressed(GLFW_KEY_I);
+    button_jump = window.key_just_pressed(GLFW_KEY_I);
     button_down = window.key_is_pressed(GLFW_KEY_K);
     button_place =
         window.cursor_is_locked() &&

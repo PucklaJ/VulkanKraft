@@ -132,7 +132,7 @@ int main(int args, char *argv[]) {
         window.toggle_fullscreen();
       }
 
-      player.update(timer, window, world);
+      player.update(window, world);
       world.set_center_position(player.position);
 
       physics_server.update(world, timer.get_delta_time());

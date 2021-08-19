@@ -29,8 +29,7 @@ public:
   glm::mat4 create_view_matrix() const;
 
   // Update everything the player does (input, block placing/breaking, etc.)
-  void update(const core::FPSTimer &timer, core::Window &window,
-              chunk::World &world);
+  void update(core::Window &window, chunk::World &world);
 
   // returns the projection matrix used for the crosshair
   void render(const core::vulkan::RenderCall &render_call);
@@ -40,9 +39,10 @@ private:
   static constexpr float eye_height = 1.8f;
   // Scales the crosshair size
   static constexpr float crosshair_scale = 6.0f;
-
   static constexpr float aabb_width = 0.7f;
   static constexpr float aabb_depth = 0.7f;
+  static constexpr float move_speed = 5.0f;
+  static constexpr float jump_power = 5.0f;
 
   // Handles the controller dead zone. If the axis values absolute value is
   // below min, then the returned value will be 0 otherwise it will be the value
