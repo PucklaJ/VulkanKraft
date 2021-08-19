@@ -1,4 +1,5 @@
 #include "server.hpp"
+#include "../core/math.hpp"
 #include "moving_object.hpp"
 
 namespace physics {
@@ -36,54 +37,49 @@ void Server::_check_aabb(const chunk::World &world, MovingObject *mob) const {
 
   // Get the chunk and all its eight neighbors
   const auto chunk(world.m_chunks.at(chunk_pos));
-  if (auto chunk_aabb(chunk->to_physics_aabb());
-      chunk_aabb.collide(mob->m_aabb)) {
+  if (auto chunk_aabb(chunk->to_aabb()); chunk_aabb.collide(mob->m_aabb)) {
     colliding_chunks.push_back(chunk);
   }
 
   if (auto left(chunk->get_left()); left) {
-    if (auto chunk_aabb(left->to_physics_aabb());
-        chunk_aabb.collide(mob->m_aabb)) {
+    if (auto chunk_aabb(left->to_aabb()); chunk_aabb.collide(mob->m_aabb)) {
       colliding_chunks.push_back(left);
     }
   }
   if (auto right(chunk->get_right()); right) {
-    if (auto chunk_aabb(right->to_physics_aabb());
-        chunk_aabb.collide(mob->m_aabb)) {
+    if (auto chunk_aabb(right->to_aabb()); chunk_aabb.collide(mob->m_aabb)) {
       colliding_chunks.push_back(right);
     }
   }
   if (auto front(chunk->get_front()); front) {
-    if (auto chunk_aabb(front->to_physics_aabb());
-        chunk_aabb.collide(mob->m_aabb)) {
+    if (auto chunk_aabb(front->to_aabb()); chunk_aabb.collide(mob->m_aabb)) {
       colliding_chunks.push_back(front);
     }
     if (auto front_left(front->get_left()); front_left) {
-      if (auto chunk_aabb(front_left->to_physics_aabb());
+      if (auto chunk_aabb(front_left->to_aabb());
           chunk_aabb.collide(mob->m_aabb)) {
         colliding_chunks.push_back(front_left);
       }
     }
     if (auto front_right(front->get_right()); front_right) {
-      if (auto chunk_aabb(front_right->to_physics_aabb());
+      if (auto chunk_aabb(front_right->to_aabb());
           chunk_aabb.collide(mob->m_aabb)) {
         colliding_chunks.push_back(front_right);
       }
     }
   }
   if (auto back(chunk->get_back()); back) {
-    if (auto chunk_aabb(back->to_physics_aabb());
-        chunk_aabb.collide(mob->m_aabb)) {
+    if (auto chunk_aabb(back->to_aabb()); chunk_aabb.collide(mob->m_aabb)) {
       colliding_chunks.push_back(back);
     }
     if (auto back_left(back->get_left()); back_left) {
-      if (auto chunk_aabb(back_left->to_physics_aabb());
+      if (auto chunk_aabb(back_left->to_aabb());
           chunk_aabb.collide(mob->m_aabb)) {
         colliding_chunks.push_back(back_left);
       }
     }
     if (auto back_right(back->get_right()); back_right) {
-      if (auto chunk_aabb(back_right->to_physics_aabb());
+      if (auto chunk_aabb(back_right->to_aabb());
           chunk_aabb.collide(mob->m_aabb)) {
         colliding_chunks.push_back(back_right);
       }
@@ -108,7 +104,7 @@ void Server::_check_aabb(const chunk::World &world, MovingObject *mob) const {
           const auto &block{cc->get_block(x, y, z)};
           if (block::Server::block_is_solid(block.type)) {
             // Push the AABB if it collides with the block
-            const auto block_aabb(block.to_physics_aabb(
+            const auto block_aabb(block.to_aabb(
                 glm::vec3(static_cast<float>(x + cc->get_position().x),
                           static_cast<float>(y),
                           static_cast<float>(z + cc->get_position().y))));

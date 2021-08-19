@@ -20,17 +20,7 @@ void Block::generate(const block::Server &block_server,
                m_faces[top_face_index], m_faces[bot_face_index]);
 }
 
-::core::math::AABB Block::to_aabb(const glm::vec3 &p) const {
-  ::core::math::AABB aabb;
-
-  aabb.min = p;
-
-  aabb.max = aabb.min + glm::vec3(1.0f, 1.0f, 1.0f);
-
-  return aabb;
-}
-
-physics::AABB Block::to_physics_aabb(const glm::vec3 &position) const {
+physics::AABB Block::to_aabb(const glm::vec3 &position) const {
   return physics::AABB(position.x, position.y, position.z, 1.0f, 1.0f, 1.0f);
 }
 

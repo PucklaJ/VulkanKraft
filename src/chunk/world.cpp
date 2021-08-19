@@ -115,8 +115,8 @@ block::Type World::show_block(const glm::ivec3 &position) {
   throw ::core::VulkanKraftException(stream.str());
 }
 
-std::optional<glm::ivec3> World::raycast_block(const ::core::math::Ray &ray,
-                                               ::core::math::Ray::Face &face) {
+std::optional<glm::ivec3> World::raycast_block(const physics::Ray &ray,
+                                               physics::Ray::Face &face) {
   std::lock_guard lk(m_chunks_mutex);
 
   // Get chunk of ray
@@ -144,7 +144,7 @@ std::optional<glm::ivec3> World::raycast_block(const ::core::math::Ray &ray,
   auto t_min{std::numeric_limits<float>::max()};
   glm::vec3 chunk_world_pos;
   glm::ivec3 block_world_pos;
-  ::core::math::Ray::Face ray_face;
+  physics::Ray::Face ray_face;
 
   chunk_world_pos.y = 0.0f;
 

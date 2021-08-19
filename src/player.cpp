@@ -1,6 +1,7 @@
 #include "player.hpp"
 #include "core/exception.hpp"
 #include "core/log.hpp"
+#include "physics/ray.hpp"
 #include <glm/gtx/transform.hpp>
 
 Player::Player(const glm::vec3 &position, core::ResourceHodler &hodler,
@@ -56,8 +57,8 @@ void Player::update(core::Window &window, chunk::World &world) {
   // ******** handle block place/destroy *******
   if (button_destroy) {
     // Create a ray at the eyes and cast it along the look direction
-    const core::math::Ray ray{get_eye_position(), look_direction};
-    core::math::Ray::Face face;
+    const physics::Ray ray{get_eye_position(), look_direction};
+    physics::Ray::Face face;
     const auto _block(world.raycast_block(ray, face));
     if (_block) {
       const auto block(*_block);
@@ -70,8 +71,8 @@ void Player::update(core::Window &window, chunk::World &world) {
     }
   } else if (button_place) {
     // Create a ray at the eyes and cast it along the look direction
-    const core::math::Ray ray{get_eye_position(), look_direction};
-    core::math::Ray::Face face;
+    const physics::Ray ray{get_eye_position(), look_direction};
+    physics::Ray::Face face;
     const auto _block(world.raycast_block(ray, face));
     if (_block) {
       auto block(*_block);
@@ -79,22 +80,22 @@ void Player::update(core::Window &window, chunk::World &world) {
       // Determine the position of the block the will be newly created based on
       // the face the player is facing
       switch (face) {
-      case core::math::Ray::Face::FRONT:
+      case physics::Ray::Face::FRONT:
         block.z -= 1;
         break;
-      case core::math::Ray::Face::BACK:
+      case physics::Ray::Face::BACK:
         block.z += 1;
         break;
-      case core::math::Ray::Face::LEFT:
+      case physics::Ray::Face::LEFT:
         block.x -= 1;
         break;
-      case core::math::Ray::Face::RIGHT:
+      case physics::Ray::Face::RIGHT:
         block.x += 1;
         break;
-      case core::math::Ray::Face::TOP:
+      case physics::Ray::Face::TOP:
         block.y += 1;
         break;
-      case core::math::Ray::Face::BOTTOM:
+      case physics::Ray::Face::BOTTOM:
         block.y -= 1;
         break;
       }

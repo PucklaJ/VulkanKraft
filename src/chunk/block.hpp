@@ -1,7 +1,6 @@
 #pragma once
 #include "../block/server.hpp"
 #include "../block/type.hpp"
-#include "../core/math.hpp"
 #include "../physics/aabb.hpp"
 #include <array>
 #include <glm/glm.hpp>
@@ -52,8 +51,7 @@ public:
   void generate(const block::Server &block_server,
                 std::vector<Vertex> &vertices, std::vector<uint32_t> &indices,
                 const glm::vec3 &position) const;
-  ::core::math::AABB to_aabb(const glm::vec3 &position) const;
-  physics::AABB to_physics_aabb(const glm::vec3 &position) const;
+  physics::AABB to_aabb(const glm::vec3 &position) const;
 
   block::Type type;
 

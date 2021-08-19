@@ -1,8 +1,8 @@
-#include "math.hpp"
+#include "ray.hpp"
 #include <algorithm>
 
-namespace core {
-namespace math {
+namespace physics {
+
 float face_min(const float v1, const float v2, const Ray::Face f1,
                const Ray::Face f2, Ray::Face &rf) {
   if (v1 < v2) {
@@ -26,13 +26,14 @@ float face_max(const float v1, const float v2, const Ray::Face f1,
 }
 
 float Ray::cast(const AABB &aabb, Ray::Face &face) const {
+  const auto aabb_max(aabb.max());
   // https://gdbooks.gitbooks.io/3dcollisions/content/Chapter3/raycast_aabb.html
-  const auto t_x_min{(aabb.min.x - origin.x) / direction.x};
-  const auto t_x_max{(aabb.max.x - origin.x) / direction.x};
-  const auto t_y_min{(aabb.min.y - origin.y) / direction.y};
-  const auto t_y_max{(aabb.max.y - origin.y) / direction.y};
-  const auto t_z_min{(aabb.min.z - origin.z) / direction.z};
-  const auto t_z_max{(aabb.max.z - origin.z) / direction.z};
+  const auto t_x_min{(aabb.min().x - origin.x) / direction.x};
+  const auto t_x_max{(aabb_max.x - origin.x) / direction.x};
+  const auto t_y_min{(aabb.min().y - origin.y) / direction.y};
+  const auto t_y_max{(aabb_max.y - origin.y) / direction.y};
+  const auto t_z_min{(aabb.min().z - origin.z) / direction.z};
+  const auto t_z_max{(aabb_max.z - origin.z) / direction.z};
 
   Face min_face, max_face, x_face, y_face, z_face;
 
@@ -69,5 +70,5 @@ float Ray::cast(const AABB &aabb, Ray::Face &face) const {
   face = min_face;
   return t_min;
 }
-} // namespace math
-} // namespace core
+
+} // namespace physics

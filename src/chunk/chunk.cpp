@@ -75,21 +75,7 @@ void Chunk::generate_block_change(const block::Server &block_server,
   generate(block_server, false);
 }
 
-::core::math::AABB Chunk::to_aabb() const {
-  ::core::math::AABB aabb;
-
-  aabb.min.x = static_cast<float>(m_position.x);
-  aabb.min.y = 0.0f;
-  aabb.min.z = static_cast<float>(m_position.y);
-
-  aabb.max.x = aabb.min.x + static_cast<float>(block_width);
-  aabb.max.y = static_cast<float>(block_height);
-  aabb.max.z = aabb.min.z + static_cast<float>(block_depth);
-
-  return aabb;
-}
-
-physics::AABB Chunk::to_physics_aabb() const {
+physics::AABB Chunk::to_aabb() const {
   return physics::AABB(
       static_cast<float>(m_position.x), 0.0f, static_cast<float>(m_position.y),
       static_cast<float>(block_width), static_cast<float>(block_height),

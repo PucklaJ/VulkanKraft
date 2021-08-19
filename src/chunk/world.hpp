@@ -1,5 +1,5 @@
 #pragma once
-#include "../physics/aabb.hpp"
+#include "../physics/ray.hpp"
 #include "chunk.hpp"
 #include <map>
 #include <mutex>
@@ -28,8 +28,8 @@ public:
   block::Type show_block(const glm::ivec3 &position);
   // Cast a ray and return the world position at which the ray is hitting a
   // block face .... which face of the block is hit by the ray
-  std::optional<glm::ivec3> raycast_block(const ::core::math::Ray &ray,
-                                          ::core::math::Ray::Face &face);
+  std::optional<glm::ivec3> raycast_block(const physics::Ray &ray,
+                                          physics::Ray::Face &face);
 
   // Render out the chunks
   void render(const ::core::vulkan::RenderCall &render_call);
