@@ -7,6 +7,7 @@ static float _temp;
 
 class AABB {
 public:
+  AABB();
   AABB(const float x, const float y, const float z, const float w,
        const float h, const float d);
 

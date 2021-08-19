@@ -30,6 +30,7 @@ int main(int args, char *argv[]) {
     // Load all resources (textures, fonts, shaders, etc.)
     core::ResourceHodler hodler(context, settings);
     block::Server block_server;
+    physics::Server physics_server(1.0f / static_cast<float>(settings.max_fps));
 
     // Retrieve the shaders from the resource hodler
     auto &chunk_shader =
@@ -56,12 +57,12 @@ int main(int args, char *argv[]) {
                                                    10));
 
     // Initialise the player and world
-    Player player(glm::vec3(128.5f, 70.0f, 128.5f), hodler);
+    Player player(glm::vec3(128.5f, 70.0f, 128.5f), hodler, physics_server);
 
     // Initialise all values of the world and start the background thread for
     // updating the chunks
     chunk::World world(context, block_server);
-    world.set_center_position(player.get_position());
+    world.set_center_position(player.position);
     const auto fog_max_distance{
         world.set_render_distance(settings.render_distance)};
     world.start_update_thread();
@@ -70,9 +71,9 @@ int main(int args, char *argv[]) {
                               settings.render_distance);
 
     // Place the player at the correct height
-    if (const auto player_height(world.get_height(player.get_position()));
+    if (const auto player_height(world.get_height(player.position));
         player_height) {
-      player.set_height(static_cast<float>(*player_height));
+      player.position.y = static_cast<float>(*player_height);
     }
 
     // The game loop
@@ -94,11 +95,11 @@ int main(int args, char *argv[]) {
         std::wstringstream pos_stream;
         pos_stream << std::fixed << std::setprecision(1);
         pos_stream << "X:" << std::setw(float_width) << std::right
-                   << player.get_position().x << std::endl;
+                   << player.position.x << std::endl;
         pos_stream << "Y:" << std::setw(float_width) << std::right
-                   << player.get_position().y << std::endl;
+                   << player.position.y << std::endl;
         pos_stream << "Z:" << std::setw(float_width) << std::right
-                   << player.get_position().z << std::endl;
+                   << player.position.z << std::endl;
         position_text.set_string(pos_stream.str());
       }
       {
@@ -121,9 +122,9 @@ int main(int args, char *argv[]) {
         world.clear_and_reseed();
       } else if (window.key_just_pressed(GLFW_KEY_F9)) {
         // Place player at the correct height at the current position
-        if (const auto player_height(world.get_height(player.get_position()));
+        if (const auto player_height(world.get_height(player.position));
             player_height) {
-          player.set_height(static_cast<float>(*player_height));
+          player.position.y = static_cast<float>(*player_height);
         }
       }
 
@@ -132,8 +133,9 @@ int main(int args, char *argv[]) {
       }
 
       player.update(timer, window, world);
-      world.set_center_position(player.get_position());
+      world.set_center_position(player.position);
 
+      physics_server.update(world, timer.get_delta_time());
       window.reset_keys();
 
       // Start rendering the frame

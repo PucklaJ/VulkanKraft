@@ -3,15 +3,17 @@
 #include "core/log.hpp"
 #include <glm/gtx/transform.hpp>
 
-Player::Player(const glm::vec3 &position, core::ResourceHodler &hodler)
-    : m_feet_position(position), m_rotation(0.0f, 0.0f), m_last_mouse_x(0.0f),
-      m_last_mouse_y(0.0f), m_last_left_trigger(false),
-      m_last_right_trigger(false),
+Player::Player(const glm::vec3 &position, core::ResourceHodler &hodler,
+               physics::Server &physics_server)
+    : physics::MovingObject(
+          position, glm::vec3(aabb_width, eye_height, aabb_depth),
+          glm::vec3(-aabb_width / 2.0f, 0.0f, -aabb_depth / 2.0f)),
+      m_rotation(0.0f, 0.0f), m_last_mouse_x(0.0f), m_last_mouse_y(0.0f),
+      m_last_left_trigger(false), m_last_right_trigger(false),
       m_crosshair(
-          hodler.get_texture(core::ResourceHodler::crosshair_texture_name)),
-      m_aabb(position.x - aabb_width / 2.0f, position.y,
-             position.z - aabb_depth / 2.0f, aabb_width, eye_height,
-             aabb_depth) {}
+          hodler.get_texture(core::ResourceHodler::crosshair_texture_name)) {
+  physics_server.add_mob(this);
+}
 
 glm::mat4 Player::create_view_matrix() const {
   const auto eye_position(get_eye_position());
@@ -44,14 +46,13 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
   const auto right_direction(
       glm::normalize(glm::cross(look_direction, glm::vec3(0.0f, 1.0f, 0.0f))));
 
-  m_feet_position +=
-      forward * move_direction.y * move_speed * timer.get_delta_time();
-  m_feet_position +=
+  // TODO: translate to velocity
+  position += forward * move_direction.y * move_speed * timer.get_delta_time();
+  position +=
       right_direction * move_direction.x * move_speed * timer.get_delta_time();
 
-  m_feet_position += glm::vec3(0.0f, 1.0f, 0.0f) *
-                     ((button_up - button_down) * move_speed) *
-                     timer.get_delta_time();
+  position += glm::vec3(0.0f, 1.0f, 0.0f) *
+              ((button_up - button_down) * move_speed) * timer.get_delta_time();
   // **************************
 
   // ******** handle block place/destroy *******
@@ -124,16 +125,6 @@ void Player::update(const core::FPSTimer &timer, core::Window &window,
   m_crosshair.set_model_matrix(
       glm::vec2(static_cast<float>(width / 2), static_cast<float>(height / 2)),
       glm::vec2(crosshair_scale, crosshair_scale));
-
-  // ****** handle physics *****
-  m_feet_position.y -= 2.0f * timer.get_delta_time();
-  m_aabb.position =
-      m_feet_position - glm::vec3(aabb_width / 2.0f, 0.0f, aabb_depth / 2.0f);
-  world.check_aabb(m_aabb);
-  m_feet_position.x = m_aabb.position.x + aabb_width / 2.0f;
-  m_feet_position.y = m_aabb.position.y;
-  m_feet_position.z = m_aabb.position.z + aabb_depth / 2.0f;
-  // ***************************
 }
 
 void Player::render(const core::vulkan::RenderCall &render_call) {

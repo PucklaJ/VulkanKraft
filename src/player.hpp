@@ -6,28 +6,21 @@
 #include "core/vulkan/render_call.hpp"
 #include "core/window.hpp"
 #include "physics/aabb.hpp"
+#include "physics/moving_object.hpp"
+#include "physics/server.hpp"
 #include <glm/glm.hpp>
 
 // The player class representing the character of the user and everything he can
 // do
-class Player {
+class Player : public physics::MovingObject {
 public:
   // Give the player an initial position
-  Player(const glm::vec3 &position, core::ResourceHodler &hodler);
+  Player(const glm::vec3 &position, core::ResourceHodler &hodler,
+         physics::Server &physics_server);
 
-  inline void set_position(const glm::vec3 &pos) { m_feet_position = pos; }
-  inline void set_position(const float x, const float y, const float z) {
-    m_feet_position.x = x;
-    m_feet_position.y = y;
-    m_feet_position.z = z;
-  }
-  // Only set the y component of the position
-  inline void set_height(const float y) { m_feet_position.y = y; }
-  // Returns the position of the feet
-  inline const glm::vec3 &get_position() const { return m_feet_position; }
   // Returns the position of the eyes (m_position + eye_height)
   inline glm::vec3 get_eye_position() const {
-    return get_position() + glm::vec3(0.0f, eye_height, 0.0f);
+    return position + glm::vec3(0.0f, eye_height, 0.0f);
   }
   // Returns the direction which the player is currently facing
   glm::vec3 get_look_direction() const;
@@ -64,8 +57,6 @@ private:
                      glm::vec2 &move_direction, glm::vec2 &view);
   // ********************
 
-  // The position of the feet
-  glm::vec3 m_feet_position;
   // The current rotation of the head (controlled by the mouse/gamepad)
   glm::vec2 m_rotation;
 
@@ -80,7 +71,4 @@ private:
 
   // Used to render the crosshair in the middle of the screen
   core::Render2D m_crosshair;
-
-  // Used for physics collision
-  physics::AABB m_aabb;
 };

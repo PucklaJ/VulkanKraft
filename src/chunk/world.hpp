@@ -6,10 +6,16 @@
 #include <optional>
 #include <thread>
 
+namespace physics {
+class Server;
+}
+
 namespace chunk {
 // This represents the whole voxel world consisting of chunks
 class World {
 public:
+  friend class physics::Server;
+
   World(const ::core::vulkan::Context &context,
         const block::Server &block_server);
   ~World();
@@ -51,10 +57,6 @@ public:
     return static_cast<float>(render_distance) *
            static_cast<float>(block_width);
   }
-
-  // Checks if the AABB collides with blocks of the world and corrects its
-  // position if it is the case
-  void check_aabb(physics::AABB &aabb) const;
 
 private:
   // Determines how far away from a ray a block can be in number of blocks

@@ -2,6 +2,8 @@
 #include <algorithm>
 
 namespace physics {
+AABB::AABB() : position(0.0f, 0.0f, 0.0f), dimensions(0.0f, 0.0f, 0.0f) {}
+
 AABB::AABB(const float x, const float y, const float z, const float w,
            const float h, const float d)
     : position(x, y, z), dimensions(w, h, d) {}
