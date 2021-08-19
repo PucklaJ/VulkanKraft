@@ -35,7 +35,7 @@ bool AABB::collide(const AABB &other, float &x, float &y, float &z) const {
     const auto min_x{std::min(min_left_x, min_right_x)};
     const auto max_x{std::min(max_left_x, max_right_x)};
 
-    x = min_in * min_x + max_in * -max_x;
+    x = (min_in && !max_in) * min_x + max_in * -max_x;
   }
 
   {
@@ -52,7 +52,7 @@ bool AABB::collide(const AABB &other, float &x, float &y, float &z) const {
     const auto min_y{std::min(min_left_y, min_right_y)};
     const auto max_y{std::min(max_left_y, max_right_y)};
 
-    y = min_in * min_y + max_in * -max_y;
+    y = (min_in && !max_in) * min_y + max_in * -max_y;
   }
 
   {
@@ -71,7 +71,7 @@ bool AABB::collide(const AABB &other, float &x, float &y, float &z) const {
     const auto min_z{std::min(min_left_z, min_right_z)};
     const auto max_z{std::min(max_left_z, max_right_z)};
 
-    z = min_in * min_z + max_in * -max_z;
+    z = (min_in && !max_in) * min_z + max_in * -max_z;
   }
 
   return true;
