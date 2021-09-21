@@ -20,7 +20,7 @@ World::World(const ::core::vulkan::Context &context,
   if (save_meta_data) {
     m_world_generation.seed(save_meta_data->seed);
   } else {
-    save::World::MetaData meta_data{time(nullptr)};
+    save::World::MetaData meta_data{static_cast<size_t>(time(nullptr))};
     m_save_world->write_meta_data(meta_data);
     m_world_generation.seed(meta_data.seed);
   }
@@ -30,6 +30,11 @@ World::~World() {
   m_running = false;
   if (m_chunk_update_thread)
     m_chunk_update_thread->join();
+
+  // Store all chunks
+  for (const auto &[chunk_pos, chunk] : m_chunks) {
+    m_save_world->store_chunk(chunk_pos, chunk->to_stored_blocks());
+  }
 }
 
 void World::place_block(const glm::ivec3 &position, const block::Type block) {
