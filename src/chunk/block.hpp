@@ -34,19 +34,27 @@ public:
 
   Block();
 
-  constexpr inline bool front_face() const { return m_faces[front_face_index]; }
-  constexpr inline bool back_face() const { return m_faces[back_face_index]; }
-  constexpr inline bool left_face() const { return m_faces[left_face_index]; }
-  constexpr inline bool right_face() const { return m_faces[right_face_index]; }
-  constexpr inline bool top_face() const { return m_faces[top_face_index]; }
-  constexpr inline bool bot_face() const { return m_faces[bot_face_index]; }
+  constexpr bool front_face() const { return _get_face(front_face_bit); }
+  constexpr bool back_face() const { return _get_face(back_face_bit); }
+  constexpr bool left_face() const { return _get_face(left_face_bit); }
+  constexpr bool right_face() const { return _get_face(right_face_bit); }
+  constexpr bool top_face() const { return _get_face(top_face_bit); }
+  constexpr bool bot_face() const { return _get_face(bot_face_bit); }
 
-  constexpr inline bool &front_face() { return m_faces[front_face_index]; }
-  constexpr inline bool &back_face() { return m_faces[back_face_index]; }
-  constexpr inline bool &left_face() { return m_faces[left_face_index]; }
-  constexpr inline bool &right_face() { return m_faces[right_face_index]; }
-  constexpr inline bool &top_face() { return m_faces[top_face_index]; }
-  constexpr inline bool &bot_face() { return m_faces[bot_face_index]; }
+  constexpr void front_face(const bool value) {
+    _set_face(front_face_bit, value);
+  }
+  constexpr void back_face(const bool value) {
+    _set_face(back_face_bit, value);
+  }
+  constexpr void left_face(const bool value) {
+    _set_face(left_face_bit, value);
+  }
+  constexpr void right_face(const bool value) {
+    _set_face(right_face_bit, value);
+  }
+  constexpr void top_face(const bool value) { _set_face(top_face_bit, value); }
+  constexpr void bot_face(const bool value) { _set_face(bot_face_bit, value); }
 
   void generate(const block::Server &block_server,
                 std::vector<Vertex> &vertices, std::vector<uint32_t> &indices,
@@ -56,12 +64,12 @@ public:
   block::Type type;
 
 private:
-  static constexpr size_t front_face_index = 0;
-  static constexpr size_t back_face_index = 1;
-  static constexpr size_t left_face_index = 2;
-  static constexpr size_t right_face_index = 3;
-  static constexpr size_t top_face_index = 4;
-  static constexpr size_t bot_face_index = 5;
+  static constexpr uint8_t front_face_bit = 1 << 0;
+  static constexpr uint8_t back_face_bit = 1 << 1;
+  static constexpr uint8_t left_face_bit = 1 << 2;
+  static constexpr uint8_t right_face_bit = 1 << 3;
+  static constexpr uint8_t top_face_bit = 1 << 4;
+  static constexpr uint8_t bot_face_bit = 1 << 5;
 
   static void
   _create_cube(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices,
@@ -71,7 +79,14 @@ private:
                const bool left_face = true, const bool right_face = true,
                const bool top_face = true, const bool bot_face = true);
 
-  std::array<bool, 6> m_faces;
+  constexpr bool _get_face(const uint8_t bit) const {
+    return (m_faces & bit) == bit;
+  }
+  constexpr void _set_face(const uint8_t bit, const bool value) {
+    m_faces = m_faces & (~bit * !value + ~0 * value) | (bit * value);
+  }
+
+  uint8_t m_faces;
 };
 
 class BlockArray {

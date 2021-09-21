@@ -49,9 +49,7 @@ public:
 
 private:
   static void _check_faces(const Chunk *chunk, const size_t x, const size_t y,
-                           const size_t z, bool &front_face, bool &back_face,
-                           bool &right_face, bool &left_face, bool &top_face,
-                           bool &bot_face);
+                           const size_t z, Block &block);
 
   void _check_faces_of_block(const glm::ivec3 &position);
   void _check_neighboring_faces_of_block(const glm::ivec3 &position);

@@ -89,10 +89,7 @@ void Chunk::update_faces() {
   for (size_t x = 0; x < block_width; x++) {
     for (size_t y = 0; y < block_height; y++) {
       for (size_t z = 0; z < block_depth; z++) {
-        auto &block = get_block(x, y, z);
-        _check_faces(this, x, y, z, block.front_face(), block.back_face(),
-                     block.right_face(), block.left_face(), block.top_face(),
-                     block.bot_face());
+        _check_faces(this, x, y, z, get_block(x, y, z));
       }
     }
   }
@@ -140,37 +137,32 @@ void Chunk::from_world_generation(
 }
 
 void Chunk::_check_faces(const Chunk *chunk, const size_t x, const size_t y,
-                         const size_t z, bool &front_face, bool &back_face,
-                         bool &right_face, bool &left_face, bool &top_face,
-                         bool &bot_face) {
-  left_face = x == 0 || !chunk->get(x - 1, y, z);
-  right_face = x == block_width - 1 || !chunk->get(x + 1, y, z);
+                         const size_t z, Block &block) {
+  block.left_face(x == 0 || !chunk->get(x - 1, y, z));
+  block.right_face(x == block_width - 1 || !chunk->get(x + 1, y, z));
 
-  front_face = z == block_depth - 1 || !chunk->get(x, y, z + 1);
-  back_face = z == 0 || !chunk->get(x, y, z - 1);
+  block.front_face(z == block_depth - 1 || !chunk->get(x, y, z + 1));
+  block.back_face(z == 0 || !chunk->get(x, y, z - 1));
 
-  top_face = y == block_height - 1 || !chunk->get(x, y + 1, z);
-  bot_face = y == 0 || !chunk->get(x, y - 1, z);
+  block.top_face(y == block_height - 1 || !chunk->get(x, y + 1, z));
+  block.bot_face(y == 0 || !chunk->get(x, y - 1, z));
 
   if (auto left(chunk->m_left.lock()); x == 0) {
-    left_face = !left || !left->get(block_width - 1, y, z);
+    block.left_face(!left || !left->get(block_width - 1, y, z));
   }
   if (auto front(chunk->m_front.lock()); z == 0) {
-    back_face = !front || !front->get(x, y, block_depth - 1);
+    block.back_face(!front || !front->get(x, y, block_depth - 1));
   }
   if (auto right(chunk->m_right.lock()); x == block_width - 1) {
-    right_face = !right || !right->get(0, y, z);
+    block.right_face(!right || !right->get(0, y, z));
   }
   if (auto back(chunk->m_back.lock()); z == block_depth - 1) {
-    front_face = !back || !back->get(x, y, 0);
+    block.front_face(!back || !back->get(x, y, 0));
   }
 }
 
 void Chunk::_check_faces_of_block(const glm::ivec3 &pos) {
-  auto &block = get_block(pos.x, pos.y, pos.z);
-  _check_faces(this, pos.x, pos.y, pos.z, block.front_face(), block.back_face(),
-               block.right_face(), block.left_face(), block.top_face(),
-               block.bot_face());
+  _check_faces(this, pos.x, pos.y, pos.z, get_block(pos.x, pos.y, pos.z));
 }
 
 void Chunk::_check_neighboring_faces_of_block(const glm::ivec3 &position) {

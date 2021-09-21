@@ -4,9 +4,7 @@ namespace chunk {
 Vertex::Vertex(float x, float y, float z, float u, float v)
     : position(x, y, z), uv(u, v) {}
 
-Block::Block() : type(block::Type::AIR) {
-  std::fill(m_faces.begin(), m_faces.end(), false);
-}
+Block::Block() : type(block::Type::AIR), m_faces(0) {}
 
 void Block::generate(const block::Server &block_server,
                      std::vector<Vertex> &vertices,
@@ -14,10 +12,8 @@ void Block::generate(const block::Server &block_server,
                      const glm::vec3 &position) const {
   const auto &tex_coords = block_server.get_texture_coordinates(type);
 
-  _create_cube(vertices, indices, position, tex_coords,
-               m_faces[front_face_index], m_faces[back_face_index],
-               m_faces[left_face_index], m_faces[right_face_index],
-               m_faces[top_face_index], m_faces[bot_face_index]);
+  _create_cube(vertices, indices, position, tex_coords, front_face(),
+               back_face(), left_face(), right_face(), top_face(), bot_face());
 }
 
 physics::AABB Block::to_aabb(const glm::vec3 &position) const {
