@@ -59,6 +59,9 @@ public:
            static_cast<float>(block_width);
   }
 
+  // Returns the save::World handle used for this world
+  inline save::World *get_save_world() { return m_save_world.get(); }
+
 private:
   // Determines how far away from a ray a block can be in number of blocks
   static constexpr int raycast_distance = 10;

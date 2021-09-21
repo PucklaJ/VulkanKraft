@@ -22,6 +22,8 @@ public:
   inline glm::vec3 get_eye_position() const {
     return position + glm::vec3(0.0f, eye_height, 0.0f);
   }
+  inline const glm::vec2 &get_rotation() const { return m_rotation; }
+  inline void set_rotation(const glm::vec2 &rotation) { m_rotation = rotation; }
   // Returns the direction which the player is currently facing
   glm::vec3 get_look_direction() const;
 

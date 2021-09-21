@@ -34,6 +34,8 @@ World::World(const std::filesystem::path &folder) : m_folder(folder) {
         m_chunk_file_names.emplace(std::move(chunk_pos), file_name);
       } else if (file_name.filename() == "meta_data") {
         m_meta_data_file_name = file_name;
+      } else if (file_name.filename() == "player_data") {
+        m_player_data_file_name = file_name;
       }
     }
   }
@@ -121,6 +123,39 @@ void World::write_meta_data(const World::MetaData &meta_data) {
   }
 
   file.write(reinterpret_cast<const char *>(&meta_data), sizeof(meta_data));
+}
+
+std::optional<World::PlayerData> World::read_player_data() const {
+  if (m_player_data_file_name.empty()) {
+    return std::nullopt;
+  }
+
+  std::ifstream file;
+  file.open(m_player_data_file_name, std::ios_base::binary);
+  if (file.fail()) {
+    throw core::VulkanKraftException(
+        "failed to read player data file of world save");
+  }
+
+  PlayerData player_data;
+  file.read(reinterpret_cast<char *>(&player_data), sizeof(player_data));
+
+  return player_data;
+}
+
+void World::write_player_data(const World::PlayerData &player_data) {
+  if (m_player_data_file_name.empty()) {
+    m_player_data_file_name = m_folder / "player_data";
+  }
+
+  std::ofstream file;
+  file.open(m_player_data_file_name, std::ios_base::binary);
+  if (file.fail()) {
+    throw core::VulkanKraftException(
+        "failed to write player data file of world save");
+  }
+
+  file.write(reinterpret_cast<const char *>(&player_data), sizeof(player_data));
 }
 
 } // namespace save

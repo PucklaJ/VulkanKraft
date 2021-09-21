@@ -74,10 +74,15 @@ int main(int args, char *argv[]) {
     // Wait until some chunks have been generated
     world.wait_for_generation(settings.render_distance *
                               settings.render_distance);
-
-    // Place the player at the correct height
-    if (const auto player_height(world.get_height(player.position));
-        player_height) {
+    // Set Player Data
+    if (const auto player_data(world.get_save_world()->read_player_data());
+        player_data) {
+      player.position = player_data->position;
+      player.velocity = player_data->velocity;
+      player.set_rotation(player_data->rotation);
+    } else if (const auto player_height(world.get_height(player.position));
+               player_height) {
+      // Place the player at the correct height
       player.position.y = static_cast<float>(*player_height);
     }
 
@@ -196,6 +201,12 @@ int main(int args, char *argv[]) {
         vel_text.render(render_call);
       }
     }
+
+    // Save player data
+    const save::World::PlayerData player_data{player.position, player.velocity,
+                                              player.get_rotation()};
+    world.get_save_world()->write_player_data(player_data);
+
   } catch (const core::VulkanKraftException &e) {
     core::Log::error(e.what());
   }
