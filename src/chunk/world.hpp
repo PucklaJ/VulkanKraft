@@ -1,5 +1,6 @@
 #pragma once
 #include "../physics/ray.hpp"
+#include "../save/world.hpp"
 #include "chunk.hpp"
 #include <map>
 #include <mutex>
@@ -65,6 +66,8 @@ private:
   static constexpr size_t update_wait_fps = 100;
   // Sets the wait time for the wait_for_generation method
   static constexpr size_t generation_wait_fps = update_wait_fps / 4;
+  // Folder where all saved chunks are stored
+  static std::filesystem::path world_save_folder;
 
   // Converts a world position into a chunk position which can be used to
   // retrieve chunks from the m_chunks map. Use only one of these methods if you
@@ -139,13 +142,9 @@ private:
   // A mutex which locks all access to m_center_position
   std::mutex m_center_position_mutex;
 
-  // Stores all blocks of the chunks which are currently not getting rendered
-  std::map<std::pair<int, int>,
-           std::array<uint8_t, block_width * block_height * block_depth>>
-      m_stored_blocks;
-
   // Used to generate a procedural terrain
   world_gen::WorldGeneration m_world_generation;
+  std::unique_ptr<save::World> m_save_world;
 
   const ::core::vulkan::Context &m_context;
   const block::Server &m_block_server;

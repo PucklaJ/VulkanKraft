@@ -132,12 +132,14 @@ target("vulkankraft")
             "src/chunk/*.cpp",
             "src/block/*.cpp",
             "src/world_gen/*.cpp",
-            "src/physics/*.cpp")
+            "src/physics/*.cpp",
+            "src/save/*.cpp")
   add_headerfiles("src/*.hpp",
                   "src/chunk/*.hpp",
                   "src/block/*.hpp",
                   "src/world_gen/*.hpp",
-                  "src/physics/*.hpp")
+                  "src/physics/*.hpp",
+                  "src/save/*.cpp")
 
 target("perlin_noise_test")
   set_enabled(is_mode("debug"))

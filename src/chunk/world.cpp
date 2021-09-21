@@ -12,6 +12,11 @@ World::World(const ::core::vulkan::Context &context,
              const block::Server &block_server)
     : m_context(context), m_block_server(block_server) {
   m_world_generation.seed(time(nullptr));
+
+  world_save_folder =
+      std::filesystem::temp_directory_path() / "vulkankraft_world";
+
+  m_save_world = std::make_unique<save::World>(world_save_folder);
 }
 
 World::~World() {
@@ -244,6 +249,8 @@ void World::clear_and_reseed() {
   m_world_generation.seed(time(nullptr));
 }
 
+std::filesystem::path World::world_save_folder;
+
 bool World::_chunks_to_update_contains(
     const std::vector<std::weak_ptr<Chunk>> &chunks_to_update,
     std::shared_ptr<Chunk> chunk) {
@@ -398,7 +405,7 @@ void World::_update() {
           auto &chunk = m_chunks[pos];
 
           auto stored_blocks(chunk->to_stored_blocks());
-          m_stored_blocks[pos] = stored_blocks;
+          m_save_world->store_chunk(pos, stored_blocks);
 
           m_chunks_to_delete.emplace_back(chunk);
           m_chunks.erase(pos);
@@ -422,10 +429,12 @@ void World::_update() {
       if (m_chunks.empty()) {
         auto chunk = std::make_shared<Chunk>(
             m_context, get_world_position(center_position));
-        if (m_stored_blocks.find(center_position) != m_stored_blocks.end()) {
-          chunk->from_stored_blocks(m_stored_blocks.at(center_position));
+        const auto stored_blocks(m_save_world->load_chunk(center_position));
+        if (stored_blocks) {
+          chunk->from_stored_blocks(*stored_blocks);
         } else {
           chunk->from_world_generation(m_world_generation);
+          m_save_world->store_chunk(center_position, chunk->to_stored_blocks());
         }
 
         m_chunks.emplace(center_position, chunk);
@@ -473,12 +482,13 @@ void World::_update() {
         add_new_chunks = true;
 #endif
         const auto chunk_pos(get_chunk_position(chunk->get_position()));
+        const auto stored_blocks(m_save_world->load_chunk(chunk_pos));
 
-        if (m_stored_blocks.find(chunk_pos) != m_stored_blocks.end()) {
-          auto stored_blocks(m_stored_blocks.at(chunk_pos));
-          chunk->from_stored_blocks(stored_blocks);
+        if (stored_blocks) {
+          chunk->from_stored_blocks(*stored_blocks);
         } else {
           chunk->from_world_generation(m_world_generation);
+          m_save_world->store_chunk(chunk_pos, chunk->to_stored_blocks());
         }
 
         m_chunks.emplace(get_chunk_position(chunk->get_position()), chunk);
