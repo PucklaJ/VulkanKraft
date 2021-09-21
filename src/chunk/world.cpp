@@ -11,12 +11,19 @@ namespace chunk {
 World::World(const ::core::vulkan::Context &context,
              const block::Server &block_server)
     : m_context(context), m_block_server(block_server) {
-  m_world_generation.seed(time(nullptr));
 
   world_save_folder =
       std::filesystem::temp_directory_path() / "vulkankraft_world";
 
   m_save_world = std::make_unique<save::World>(world_save_folder);
+  const auto save_meta_data(m_save_world->read_meta_data());
+  if (save_meta_data) {
+    m_world_generation.seed(save_meta_data->seed);
+  } else {
+    save::World::MetaData meta_data{time(nullptr)};
+    m_save_world->write_meta_data(meta_data);
+    m_world_generation.seed(meta_data.seed);
+  }
 }
 
 World::~World() {

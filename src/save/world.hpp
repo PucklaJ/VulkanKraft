@@ -8,6 +8,10 @@
 namespace save {
 class World {
 public:
+  struct MetaData {
+    size_t seed;
+  };
+
   World(const std::filesystem::path &folder);
 
   std::optional<std::array<uint8_t, chunk::block_width * chunk::block_depth *
@@ -17,10 +21,14 @@ public:
       const std::pair<int, int> &chunk_position,
       const std::array<uint8_t, chunk::block_width * chunk::block_depth *
                                     chunk::block_height> &block_array);
+  std::optional<MetaData> read_meta_data() const;
+  void write_meta_data(const MetaData &meta_data);
 
 private:
   // Stores all file names of all available chunks in the save folder
   std::map<std::pair<int, int>, std::filesystem::path> m_chunk_file_names;
+  // The file name of the file storing meta data about the world
+  std::filesystem::path m_meta_data_file_name;
 
   const std::filesystem::path m_folder;
 };

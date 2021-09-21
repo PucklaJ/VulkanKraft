@@ -32,6 +32,8 @@ World::World(const std::filesystem::path &folder) : m_folder(folder) {
         converter >> chunk_pos.second;
 
         m_chunk_file_names.emplace(std::move(chunk_pos), file_name);
+      } else if (file_name.filename() == "meta_data") {
+        m_meta_data_file_name = file_name;
       }
     }
   }
@@ -85,6 +87,40 @@ void World::store_chunk(
 
   file.write(reinterpret_cast<const char *>(block_array.data()),
              sizeof(block_array));
+}
+
+std::optional<World::MetaData> World::read_meta_data() const {
+  if (m_meta_data_file_name.empty()) {
+    return std::nullopt;
+  }
+
+  std::ifstream file;
+  file.open(m_meta_data_file_name, std::ios_base::binary);
+  if (file.fail()) {
+    throw core::VulkanKraftException(
+        "failed to read meta data file of world save");
+  }
+
+  MetaData meta_data;
+
+  file.read(reinterpret_cast<char *>(&meta_data), sizeof(meta_data));
+
+  return meta_data;
+}
+
+void World::write_meta_data(const World::MetaData &meta_data) {
+  if (m_meta_data_file_name.empty()) {
+    m_meta_data_file_name = m_folder / "meta_data";
+  }
+
+  std::ofstream file;
+  file.open(m_meta_data_file_name, std::ios_base::binary);
+  if (file.fail()) {
+    throw core::VulkanKraftException(
+        "failed to write meta data file of world save");
+  }
+
+  file.write(reinterpret_cast<const char *>(&meta_data), sizeof(meta_data));
 }
 
 } // namespace save
