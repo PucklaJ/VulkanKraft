@@ -17,8 +17,10 @@ public:
   Context(const vulkan::Context &vulkan_context, Window &window,
           Shader &text_shader, text::Font &text_font);
 
-  inline void add_element(std::unique_ptr<Element> element) {
-    m_elements.emplace_back(std::move(element));
+  template <typename T, typename... A> inline auto *add_element(A... args) {
+    auto *element = new T(args...);
+    m_elements.emplace_back(element);
+    return element;
   }
 
   void update();

@@ -30,16 +30,18 @@ int main(int args, char *argv[]) {
     core::Render2D::set_shader(texture_2d_shader);
     core::gui::Context gui_context(context, window, text_shader, text_font);
 
-    gui_context.add_element(std::make_unique<core::gui::Button>(
-        &gui_context, hodler, L"Play", 250, 100,
-        glm::vec2(settings.window_width / 2, settings.window_height / 2)));
+    gui_context
+        .add_element<core::gui::Button>(
+            &gui_context, std::ref(hodler), L"Play", 250, 100,
+            glm::vec2(settings.window_width / 2, settings.window_height / 2))
+        ->on_click = std::bind(core::Log::info, "Play clicked");
 
     core::text::Text play_text(context, text_shader, text_font, L"Play");
 
     while (!window.should_close()) {
       auto delta_timer(timer.begin_frame());
       window.poll_events();
-      // gui_context.update();
+      gui_context.update();
 
       window.reset_keys();
 

@@ -16,6 +16,9 @@ public:
                       const vulkan::RenderCall &render_call) = 0;
 
 protected:
+  static bool _mouse_collides(const Window &window, const glm::vec2 &position,
+                              const glm::uvec2 &size);
+
   Context *m_gui_context;
 };
 } // namespace gui

@@ -15,6 +15,12 @@ bool Window::Mouse::button_just_pressed(int button) const {
           !m_previous_pressed_buttons.at(button));
 }
 
+bool Window::Mouse::button_was_pressed(int button) const {
+  return m_previous_pressed_buttons.find(button) !=
+             m_previous_pressed_buttons.end() &&
+         m_previous_pressed_buttons.at(button);
+}
+
 void Window::Mouse::_on_mouse_button(int button, int action, int mods) {
   m_pressed_buttons[button] = action == GLFW_PRESS || action == GLFW_REPEAT;
 }

@@ -29,6 +29,8 @@ public:
     // Wether the given GLFW mouse button is pressed in this frame but hasn't
     // been in the last frame
     bool button_just_pressed(int button) const;
+    // Wether the given GLFW mouse button was pressed in the last frame
+    bool button_was_pressed(int button) const;
 
   private:
     // A callback for GLFW
