@@ -117,10 +117,12 @@ target("core")
 
   add_files("src/core/*.cpp",
             "src/core/vulkan/*.cpp",
-            "src/core/text/*.cpp")
+            "src/core/text/*.cpp",
+            "src/core/gui/*.cpp")
   add_headerfiles("src/core/*.hpp",
                   "src/core/vulkan/*.hpp",
-                  "src/core/text/*.hpp")
+                  "src/core/text/*.hpp",
+                  "src/core/gui/*.hpp")
 
 target("vulkankraft")
   set_kind("binary")
