@@ -9,6 +9,7 @@ class Context;
 class Element {
 public:
   Element(Context *gui_context) : m_gui_context(gui_context) {}
+  virtual ~Element() = default;
 
   virtual void update(Window &window) = 0;
   virtual void render(const vulkan::Context &vulkan_context,
