@@ -10,6 +10,7 @@ layout(binding = 0) uniform Global { mat4 proj; }
 global;
 
 void main() {
-  gl_Position = global.proj * vec4(in_position, -0.5, 1.0);
+  gl_Position = global.proj * vec4(in_position, 0.0, 1.0);
+  gl_Position.z = 0.0;
   frag_uv = in_uv;
 }

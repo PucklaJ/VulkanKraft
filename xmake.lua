@@ -173,3 +173,12 @@ target("physics_test")
   add_files("src/physics/aabb.cpp",
             "src/physics/physics_test/main.cpp")
   add_headerfiles("src/physics/aabb.hpp")
+
+target("gui_test")
+  set_enabled(is_mode("debug"))
+  set_kind("binary")
+  set_languages("cxx17")
+  add_deps("core")
+  add_packages("glfw", "glm", "stb", "vulkan-hpp")
+
+  add_files("src/core/gui/gui_test/main.cpp")

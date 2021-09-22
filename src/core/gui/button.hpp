@@ -18,14 +18,14 @@ public:
               const vulkan::RenderCall &render_call) override;
 
 private:
-  static Texture _create_white_rectangle(const vulkan::Context &context,
-                                         const uint32_t width,
-                                         const uint32_t height);
+  static Texture _create_grey_rectangle(const vulkan::Context &context,
+                                        const uint32_t width,
+                                        const uint32_t height);
 
   Render2D m_render2d;
   text::Text m_text;
 
-  Texture m_white_texture;
+  Texture m_grey_texture;
 };
 
 } // namespace gui

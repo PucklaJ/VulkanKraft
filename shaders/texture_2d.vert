@@ -17,5 +17,6 @@ model;
 void main() {
   gl_Position =
       global.proj * model.m * vec4(position[gl_VertexIndex], 0.0, 1.0);
+  gl_Position.z = 0.5;
   frag_uv = uv[gl_VertexIndex];
 }
