@@ -3,8 +3,10 @@
 namespace core {
 namespace gui {
 
-Context::Context(const vulkan::Context &vulkan_context, Window &window)
-    : m_vulkan_context(vulkan_context), m_window(window) {}
+Context::Context(const vulkan::Context &vulkan_context, Window &window,
+                 Shader &text_shader, text::Font &text_font)
+    : m_vulkan_context(vulkan_context), m_window(window),
+      m_text_shader(text_shader), m_text_font(text_font) {}
 
 void Context::update() {
   for (const auto &e : m_elements) {

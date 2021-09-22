@@ -27,7 +27,7 @@ int main(int args, char *argv[]) {
         hodler.get_shader(core::ResourceHodler::texture_2d_shader_name);
 
     core::Render2D::set_shader(texture_2d_shader);
-    core::Render2D block_texture_render(block_texture);
+    core::Render2D block_texture_render(&block_texture);
 
     while (!window.should_close()) {
       auto delta_timer(timer.begin_frame());

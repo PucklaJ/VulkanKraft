@@ -21,7 +21,10 @@ public:
                            const uint32_t window_height,
                            const vulkan::RenderCall &render_call);
 
-  Render2D(Texture &texture);
+  Render2D();
+  Render2D(Texture *texture);
+
+  inline void set_texture(Texture *texture) { m_texture = texture; }
 
   // Updates the model matrix
   void set_model_matrix(const glm::vec2 &position = glm::vec2(0.0f, 0.0f),
@@ -34,6 +37,6 @@ private:
 
   glm::mat4 m_model_matrix;
 
-  Texture &m_texture;
+  Texture *m_texture;
 };
 } // namespace core

@@ -12,7 +12,7 @@ Player::Player(const glm::vec3 &position, core::ResourceHodler &hodler,
       m_rotation(0.0f, 0.0f), m_last_mouse_x(0.0f), m_last_mouse_y(0.0f),
       m_last_left_trigger(false), m_last_right_trigger(false),
       m_crosshair(
-          hodler.get_texture(core::ResourceHodler::crosshair_texture_name)) {
+          &hodler.get_texture(core::ResourceHodler::crosshair_texture_name)) {
   physics_server.add_mob(this);
 }
 
