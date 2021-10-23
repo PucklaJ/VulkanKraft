@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <vulkan/vulkan.hpp>
 
 namespace core {
@@ -13,6 +14,9 @@ public:
   static constexpr float far_plane = 1000.0f;
 
   Settings();
+  ~Settings();
+
+  std::filesystem::path settings_folder;
 
   // Multisampling Anti Aliasing Samples
   vk::SampleCountFlagBits msaa_samples;
@@ -27,5 +31,18 @@ public:
   float field_of_view;
   // Defines how far the player will be able to see in chunks
   int render_distance;
+
+  void write_settings_file() const;
+
+private:
+  static constexpr char settings_folder_name[] = ".vulkankraft";
+  static constexpr char settings_file_name[] = "settings.json";
+
+  static constexpr char msaa_samples_key[] = "msaa";
+  static constexpr char max_fps_key[] = "fps";
+  static constexpr char window_width_key[] = "width";
+  static constexpr char window_height_key[] = "height";
+  static constexpr char field_of_view_key[] = "fov";
+  static constexpr char render_distance_key[] = "render_distance";
 };
 } // namespace core

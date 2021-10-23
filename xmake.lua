@@ -1,5 +1,5 @@
 set_project("VulkanKraft")
-add_requires("glfw", "glm", "stb", "vulkan-hpp")
+add_requires("glfw", "glm", "stb", "vulkan-hpp", "nlohmann_json")
 
 rule("shader")
     set_extensions(".vert", ".frag", ".glsl")
@@ -102,7 +102,7 @@ target("core")
   set_kind("static")
   set_languages("cxx17")
   add_deps("resources")
-  add_packages("glfw", "glm", "stb", "vulkan-hpp")
+  add_packages("glfw", "glm", "stb", "vulkan-hpp", "nlohmann_json")
   if is_plat("windows") then
     local vulkan_path = os.getenv("VK_SDK_PATH")
     if vulkan_path == nil then
