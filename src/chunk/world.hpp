@@ -28,9 +28,12 @@ public:
   // Returns what type of block is at the given world position
   block::Type show_block(const glm::ivec3 &position);
   // Cast a ray and return the world position at which the ray is hitting a
-  // block face .... which face of the block is hit by the ray
+  // block
+  // face ....... which face of the block is hit by the ray
+  // distance ... how far the hit position is away from the origin of the ray
   std::optional<glm::ivec3> raycast_block(const physics::Ray &ray,
-                                          physics::Ray::Face &face);
+                                          physics::Ray::Face &face,
+                                          float &distance);
 
   // Render out the chunks
   void render(const ::core::vulkan::RenderCall &render_call);

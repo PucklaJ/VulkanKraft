@@ -71,6 +71,10 @@ private:
   static constexpr int unlock_cursor_keyboard_button = GLFW_KEY_ESCAPE;
   // *****************************************
 
+  // ************ constants ******************
+  static constexpr float max_ground_ray_distance = 0.2f;
+  // *****************************************
+
   // Handles the controller dead zone. If the axis values absolute value is
   // below min, then the returned value will be 0 otherwise it will be the value
   static inline float _abs_dead_zone(const float value, const float min) {
@@ -83,6 +87,11 @@ private:
                      bool &button_place, bool &button_destroy,
                      glm::vec2 &move_direction, glm::vec2 &view);
   // ********************
+
+  // Returns wether the player stands on a block in world
+  // In other words: wether the distance to the nearest block beneath the player
+  // is less than max_ground_ray_distance
+  bool _is_grounded(chunk::World &world) const;
 
   // The current rotation of the head (controlled by the mouse/gamepad)
   glm::vec2 m_rotation;

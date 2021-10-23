@@ -133,7 +133,8 @@ block::Type World::show_block(const glm::ivec3 &position) {
 }
 
 std::optional<glm::ivec3> World::raycast_block(const physics::Ray &ray,
-                                               physics::Ray::Face &face) {
+                                               physics::Ray::Face &face,
+                                               float &distance) {
   std::lock_guard lk(m_chunks_mutex);
 
   // Get chunk of ray
@@ -158,7 +159,7 @@ std::optional<glm::ivec3> World::raycast_block(const physics::Ray &ray,
     ray_chunks.emplace(right->get_back());
   }
 
-  auto t_min{std::numeric_limits<float>::max()};
+  distance = std::numeric_limits<float>::max();
   glm::vec3 chunk_world_pos;
   glm::ivec3 block_world_pos;
   physics::Ray::Face ray_face;
@@ -193,8 +194,8 @@ std::optional<glm::ivec3> World::raycast_block(const physics::Ray &ray,
 
               const auto t{ray.cast(b.to_aabb(block_pos), ray_face)};
 
-              if (t >= 0.0f && t < t_min) {
-                t_min = t;
+              if (t >= 0.0f && t < distance) {
+                distance = t;
 
                 block_world_pos.x = static_cast<int>(block_pos.x);
                 block_world_pos.y = y;
@@ -209,7 +210,7 @@ std::optional<glm::ivec3> World::raycast_block(const physics::Ray &ray,
   }
 
   // If we intersected with any block
-  if (t_min != std::numeric_limits<float>::max()) {
+  if (distance != std::numeric_limits<float>::max()) {
     return block_world_pos;
   }
 

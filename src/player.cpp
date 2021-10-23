@@ -50,7 +50,10 @@ void Player::update(core::Window &window, chunk::World &world) {
   velocity += forward * move_direction.y * move_speed;
   velocity += right_direction * move_direction.x * move_speed;
   // **** handle jump ****
-  velocity.y = button_jump * jump_power + !button_jump * velocity.y;
+  {
+    const auto should_jump{button_jump && _is_grounded(world)};
+    velocity.y = should_jump * jump_power + !should_jump * velocity.y;
+  }
   // *********************
   // **************************
 
@@ -59,7 +62,8 @@ void Player::update(core::Window &window, chunk::World &world) {
     // Create a ray at the eyes and cast it along the look direction
     const physics::Ray ray{get_eye_position(), look_direction};
     physics::Ray::Face face;
-    const auto _block(world.raycast_block(ray, face));
+    float _;
+    const auto _block(world.raycast_block(ray, face, _));
     if (_block) {
       const auto block(*_block);
 
@@ -73,7 +77,8 @@ void Player::update(core::Window &window, chunk::World &world) {
     // Create a ray at the eyes and cast it along the look direction
     const physics::Ray ray{get_eye_position(), look_direction};
     physics::Ray::Face face;
-    const auto _block(world.raycast_block(ray, face));
+    float _;
+    const auto _block(world.raycast_block(ray, face, _));
     if (_block) {
       auto block(*_block);
 
@@ -221,6 +226,31 @@ void Player::_update_input(core::Window &window, bool &button_jump,
     m_last_mouse_y = cur_mouse_y;
     // *****************************
   }
+}
+
+bool Player::_is_grounded(chunk::World &world) const {
+  // Use four rays on each corner of the AABB
+  const auto ground_rays = std::array{
+      physics::Ray{position + glm::vec3(-aabb_width, 0.0f, -aabb_depth),
+                   glm::vec3(0.0f, -1.0f, 0.0f)},
+      physics::Ray{position + glm::vec3(+aabb_width, 0.0f, -aabb_depth),
+                   glm::vec3(0.0f, -1.0f, 0.0f)},
+      physics::Ray{position + glm::vec3(-aabb_width, 0.0f, +aabb_depth),
+                   glm::vec3(0.0f, -1.0f, 0.0f)},
+      physics::Ray{position + glm::vec3(+aabb_width, 0.0f, +aabb_depth),
+                   glm::vec3(0.0f, -1.0f, 0.0f)}};
+
+  physics::Ray::Face _;
+  float distance;
+
+  for (const auto &ground_ray : ground_rays) {
+    const auto hit_block(world.raycast_block(ground_ray, _, distance));
+    if (hit_block && distance < max_ground_ray_distance) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 glm::vec3 Player::get_look_direction() const {
