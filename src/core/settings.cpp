@@ -1,6 +1,7 @@
 #include "settings.hpp"
 #include "exception.hpp"
 #include "log.hpp"
+#include <chrono>
 #include <cstdlib>
 #include <curl/curl.h>
 #include <fstream>
@@ -78,7 +79,8 @@ Settings::Settings()
   }
 
   // handle sdl controller db file
-  if (_download_master_sdl_game_controller_db()) {
+  if (_should_update_controller_db_file() &&
+      _download_master_sdl_game_controller_db()) {
     // overwrite normal controller db file
     const auto controller_db_file_path(get_controller_db_file_name());
 
@@ -188,6 +190,34 @@ size_t Settings::_download_curl_callback(char *ptr, size_t size, size_t nmemb,
   auto *db_file = reinterpret_cast<std::ofstream *>(userdata);
   db_file->write(ptr, nmemb);
   return nmemb;
+}
+
+bool Settings::_should_update_controller_db_file() const {
+  // The file should be updated every week
+  // 7 days * 24 hours * 60 minutes * 60 seconds
+  constexpr int64_t max_file_time = 7 * 24 * 60 * 60;
+
+  const auto controller_db_file_path(get_controller_db_file_name());
+  if (!std::filesystem::exists(controller_db_file_path)) {
+    return true;
+  }
+
+  try {
+    // Get the time from the file
+    const auto write_time(
+        std::filesystem::last_write_time(controller_db_file_path));
+
+    // Compare it to the current time
+    const auto current_time(decltype(write_time)::clock::now());
+    const auto seconds{std::chrono::duration_cast<std::chrono::seconds>(
+        current_time - write_time)};
+
+    return seconds.count() > max_file_time;
+  } catch (const std::filesystem::filesystem_error &) {
+    return true;
+  }
+
+  return false;
 }
 
 } // namespace core

@@ -55,7 +55,10 @@ private:
   // https://github.com/gabomdq/SDL_GameControllerDB
   // returns wether the operation was successfull
   bool _download_master_sdl_game_controller_db() const;
+  // callback for curl (CURLOPT_WRITEFUNCTION)
   static size_t _download_curl_callback(char *ptr, size_t size, size_t nmemb,
                                         void *userdata);
+  // Returns wether the current controller db file is old enough for an update
+  bool _should_update_controller_db_file() const;
 };
 } // namespace core
