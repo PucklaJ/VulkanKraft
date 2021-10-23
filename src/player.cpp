@@ -110,11 +110,11 @@ void Player::update(core::Window &window, chunk::World &world) {
   // *******************************************
 
   // ***** handle cursor lock and release ******
-  if (window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_LEFT)) {
+  if (window.get_mouse().button_just_pressed(lock_cursor_mouse_button)) {
     window.lock_cursor();
   }
 
-  if (window.key_just_pressed(GLFW_KEY_ESCAPE)) {
+  if (window.key_just_pressed(unlock_cursor_keyboard_button)) {
     window.release_cursor();
   }
   // *******************************************
@@ -142,12 +142,12 @@ void Player::_update_input(core::Window &window, bool &button_jump,
 
     // **** handle left stick ******
     if (const auto horizontal_value(
-            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_LEFT_X));
+            window.get_gamepad_axis_value(move_horizontal_gamepad_axis));
         horizontal_value) {
       move_direction.x = _abs_dead_zone(*horizontal_value, axis_dead_zone);
     }
     if (const auto vertical_value(
-            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_LEFT_Y));
+            window.get_gamepad_axis_value(move_vertical_gamepad_axis));
         vertical_value) {
       move_direction.y = _abs_dead_zone(-*vertical_value, axis_dead_zone);
     }
@@ -155,7 +155,7 @@ void Player::_update_input(core::Window &window, bool &button_jump,
 
     // ***** handle trigger input ***
     if (const auto right_trigger(
-            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER));
+            window.get_gamepad_axis_value(block_place_gamepad_axis));
         right_trigger && *right_trigger > trigger_threshold) {
       button_place = !m_last_right_trigger;
       m_last_right_trigger = true;
@@ -165,7 +165,7 @@ void Player::_update_input(core::Window &window, bool &button_jump,
     }
 
     if (const auto left_trigger(
-            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_LEFT_TRIGGER));
+            window.get_gamepad_axis_value(block_destroy_gamepad_axis));
         left_trigger && *left_trigger > trigger_threshold) {
       button_destroy = !m_last_left_trigger;
       m_last_left_trigger = true;
@@ -175,21 +175,20 @@ void Player::_update_input(core::Window &window, bool &button_jump,
     }
     // ******************************
 
-    button_jump = window.gamepad_button_just_pressed(GLFW_GAMEPAD_BUTTON_CROSS);
-    button_down =
-        window.gamepad_button_is_pressed(GLFW_GAMEPAD_BUTTON_RIGHT_THUMB);
+    button_jump = window.gamepad_button_just_pressed(jump_gamepad_button);
+    button_down = window.gamepad_button_is_pressed(sneak_gamepad_button);
 
     constexpr float axis_view_factor = 20.0f;
 
     // ***** handle right stick ******
     if (const auto horizontal_value{
-            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_RIGHT_X)};
+            window.get_gamepad_axis_value(look_horizontal_gamepad_axis)};
         horizontal_value) {
       view.x =
           _abs_dead_zone(*horizontal_value, axis_dead_zone) * axis_view_factor;
     }
     if (const auto vertical_value{
-            window.get_gamepad_axis_value(GLFW_GAMEPAD_AXIS_RIGHT_Y)};
+            window.get_gamepad_axis_value(look_vertical_gamepad_axis)};
         vertical_value) {
       view.y =
           _abs_dead_zone(*vertical_value, axis_dead_zone) * axis_view_factor;
@@ -198,18 +197,18 @@ void Player::_update_input(core::Window &window, bool &button_jump,
 
   } else {
     // Mouse and Keyboard input
-    move_direction.y =
-        window.key_is_pressed(GLFW_KEY_W) - window.key_is_pressed(GLFW_KEY_S);
-    move_direction.x =
-        window.key_is_pressed(GLFW_KEY_D) - window.key_is_pressed(GLFW_KEY_A);
-    button_jump = window.key_just_pressed(GLFW_KEY_I);
-    button_down = window.key_is_pressed(GLFW_KEY_K);
+    move_direction.y = window.key_is_pressed(move_forward_keyboard_button) -
+                       window.key_is_pressed(move_backward_keyboard_button);
+    move_direction.x = window.key_is_pressed(move_right_keyboard_button) -
+                       window.key_is_pressed(move_left_keyboard_button);
+    button_jump = window.key_just_pressed(jump_keyboard_button);
+    button_down = window.key_is_pressed(sneak_keyboard_button);
     button_place =
         window.cursor_is_locked() &&
-        window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_LEFT);
+        window.get_mouse().button_just_pressed(block_place_mouse_button);
     button_destroy =
         window.cursor_is_locked() &&
-        window.get_mouse().button_just_pressed(GLFW_MOUSE_BUTTON_RIGHT);
+        window.get_mouse().button_just_pressed(block_destroy_mouse_button);
 
     // **** handle mouse input *****
     const auto cur_mouse_x = window.get_mouse().screen_position.x;

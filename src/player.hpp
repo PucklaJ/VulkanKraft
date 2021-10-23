@@ -46,6 +46,31 @@ private:
   static constexpr float move_speed = 5.0f;
   static constexpr float jump_power = 5.0f;
 
+  // ********* Buttons and Gamepad ***********
+  static constexpr int move_horizontal_gamepad_axis = GLFW_GAMEPAD_AXIS_LEFT_X;
+  static constexpr int move_vertical_gamepad_axis = GLFW_GAMEPAD_AXIS_LEFT_Y;
+  static constexpr int block_place_gamepad_axis =
+      GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER;
+  static constexpr int block_destroy_gamepad_axis =
+      GLFW_GAMEPAD_AXIS_LEFT_TRIGGER;
+  static constexpr int jump_gamepad_button = GLFW_GAMEPAD_BUTTON_CROSS;
+  static constexpr int sneak_gamepad_button = GLFW_GAMEPAD_BUTTON_RIGHT_THUMB;
+  static constexpr int look_horizontal_gamepad_axis = GLFW_GAMEPAD_AXIS_RIGHT_X;
+  static constexpr int look_vertical_gamepad_axis = GLFW_GAMEPAD_AXIS_RIGHT_Y;
+
+  static constexpr int move_forward_keyboard_button = GLFW_KEY_W;
+  static constexpr int move_backward_keyboard_button = GLFW_KEY_S;
+  static constexpr int move_left_keyboard_button = GLFW_KEY_A;
+  static constexpr int move_right_keyboard_button = GLFW_KEY_D;
+  static constexpr int jump_keyboard_button = GLFW_KEY_SPACE;
+  static constexpr int sneak_keyboard_button = GLFW_KEY_LEFT_SHIFT;
+  static constexpr int block_place_mouse_button = GLFW_MOUSE_BUTTON_LEFT;
+  static constexpr int block_destroy_mouse_button = GLFW_MOUSE_BUTTON_RIGHT;
+
+  static constexpr int lock_cursor_mouse_button = GLFW_MOUSE_BUTTON_LEFT;
+  static constexpr int unlock_cursor_keyboard_button = GLFW_KEY_ESCAPE;
+  // *****************************************
+
   // Handles the controller dead zone. If the axis values absolute value is
   // below min, then the returned value will be 0 otherwise it will be the value
   static inline float _abs_dead_zone(const float value, const float min) {

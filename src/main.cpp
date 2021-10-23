@@ -12,6 +12,10 @@
 #include <iomanip>
 #include <sstream>
 
+static constexpr int fullscreen_keyboard_button = GLFW_KEY_F11;
+static constexpr int reseed_keyboard_button = GLFW_KEY_F8;
+static constexpr int place_player_keyboard_button = GLFW_KEY_F9;
+
 int main(int args, char *argv[]) {
   // Initialise all objects not requireing vulkan directly
   core::Settings settings;
@@ -141,9 +145,9 @@ int main(int args, char *argv[]) {
       }
 
       // Some debug input for testing purposes
-      if (window.key_just_pressed(GLFW_KEY_F8)) {
+      if (window.key_just_pressed(reseed_keyboard_button)) {
         world.clear_and_reseed();
-      } else if (window.key_just_pressed(GLFW_KEY_F9)) {
+      } else if (window.key_just_pressed(place_player_keyboard_button)) {
         // Place player at the correct height at the current position
         if (const auto player_height(world.get_height(player.position));
             player_height) {
@@ -151,7 +155,7 @@ int main(int args, char *argv[]) {
         }
       }
 
-      if (window.key_just_pressed(GLFW_KEY_F11)) {
+      if (window.key_just_pressed(fullscreen_keyboard_button)) {
         window.toggle_fullscreen();
       }
 

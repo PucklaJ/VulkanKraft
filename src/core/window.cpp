@@ -80,12 +80,10 @@ void Window::poll_events() {
   if (m_joystick1 != -1) {
     GLFWgamepadstate gamepad_state;
     if (glfwGetGamepadState(m_joystick1, &gamepad_state)) {
-      for (int b = GLFW_GAMEPAD_BUTTON_A; b <= GLFW_GAMEPAD_BUTTON_DPAD_LEFT;
-           b++) {
+      for (int b = min_gamepad_button; b <= max_gamepad_button; b++) {
         m_pressed_gamepad_buttons[b] = gamepad_state.buttons[b];
       }
-      for (int a = GLFW_GAMEPAD_AXIS_LEFT_X;
-           a <= GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER; a++) {
+      for (int a = min_gamepad_axis; a <= max_gamepad_axis; a++) {
         m_gamepad_axes[a] = gamepad_state.axes[a];
       }
     } else {

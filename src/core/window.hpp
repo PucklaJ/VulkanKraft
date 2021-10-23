@@ -103,6 +103,11 @@ public:
   // ********************
 
 private:
+  static constexpr int min_gamepad_button = GLFW_GAMEPAD_BUTTON_A;
+  static constexpr int max_gamepad_button = GLFW_GAMEPAD_BUTTON_DPAD_LEFT;
+  static constexpr int min_gamepad_axis = GLFW_GAMEPAD_AXIS_LEFT_X;
+  static constexpr int max_gamepad_axis = GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER;
+
   // A callback used for GLFW
   static void _on_key_callback(GLFWwindow *window, int key, int scancode,
                                int action, int mods);
