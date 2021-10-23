@@ -29,6 +29,7 @@ int main(int args, char *argv[]) {
     // Initialise the window
     core::Window window(settings.window_width, settings.window_height,
                         core::Settings::window_title);
+    window.update_controller_db(settings.get_controller_db_file_name());
     // Initialise vulkan
     core::vulkan::Context context(window, settings);
     // Load all resources (textures, fonts, shaders, etc.)

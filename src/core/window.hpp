@@ -2,6 +2,7 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <filesystem>
 #include <functional>
 #include <glm/glm.hpp>
 #include <map>
@@ -101,6 +102,9 @@ public:
 
   std::optional<float> get_gamepad_axis_value(int axis) const;
   // ********************
+
+  // Updates the controller mappings of glfw using the contents of file_name
+  void update_controller_db(const std::filesystem::path &file_name) const;
 
 private:
   static constexpr int min_gamepad_button = GLFW_GAMEPAD_BUTTON_A;

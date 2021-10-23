@@ -33,10 +33,16 @@ public:
   int render_distance;
 
   void write_settings_file() const;
+  inline std::filesystem::path get_controller_db_file_name() const {
+    return settings_folder / controller_db_file_name;
+  }
 
 private:
   static constexpr char settings_folder_name[] = ".vulkankraft";
   static constexpr char settings_file_name[] = "settings.json";
+  static constexpr char controller_db_file_name[] = "controller_db.txt";
+  static constexpr char controller_db_temp_file_name[] =
+      "controller_db.txt.tmp";
 
   static constexpr char msaa_samples_key[] = "msaa";
   static constexpr char max_fps_key[] = "fps";
@@ -44,5 +50,12 @@ private:
   static constexpr char window_height_key[] = "height";
   static constexpr char field_of_view_key[] = "fov";
   static constexpr char render_distance_key[] = "render_distance";
+
+  // Downloads the sdl controller db file from the master branch of
+  // https://github.com/gabomdq/SDL_GameControllerDB
+  // returns wether the operation was successfull
+  bool _download_master_sdl_game_controller_db() const;
+  static size_t _download_curl_callback(char *ptr, size_t size, size_t nmemb,
+                                        void *userdata);
 };
 } // namespace core

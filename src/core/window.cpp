@@ -1,6 +1,7 @@
 #include "window.hpp"
 #include "exception.hpp"
 #include "log.hpp"
+#include <fstream>
 
 namespace core {
 bool Window::Mouse::button_is_pressed(int button) const {
@@ -227,6 +228,29 @@ std::optional<float> Window::get_gamepad_axis_value(int axis) const {
   }
 
   return m_gamepad_axes.at(axis);
+}
+
+void Window::update_controller_db(
+    const std::filesystem::path &file_name) const {
+  std::ifstream file;
+  file.open(file_name, std::ios_base::ate);
+  if (file.fail()) {
+    Log::warning("failed open controller db file for reading");
+    return;
+  }
+
+  const auto file_size{file.tellg()};
+  file.seekg(0);
+  std::string buffer;
+  buffer.resize(file_size);
+  file.read(buffer.data(), file_size);
+  file.close();
+
+  if (glfwUpdateGamepadMappings(buffer.c_str()) != GLFW_TRUE) {
+    Log::warning("failed to update glfw gamepad mappings");
+  } else {
+    Log::info("Successfully updated glfw gamepad mappings");
+  }
 }
 
 void Window::_on_key_callback(GLFWwindow *window, int key, int scancode,

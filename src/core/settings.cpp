@@ -2,6 +2,7 @@
 #include "exception.hpp"
 #include "log.hpp"
 #include <cstdlib>
+#include <curl/curl.h>
 #include <fstream>
 #include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
@@ -75,6 +76,35 @@ Settings::Settings()
       }
     }
   }
+
+  // handle sdl controller db file
+  if (_download_master_sdl_game_controller_db()) {
+    // overwrite normal controller db file
+    const auto controller_db_file_path(get_controller_db_file_name());
+
+    std::ofstream db_file;
+    db_file.open(controller_db_file_path);
+    if (db_file.fail()) {
+      Log::warning("failed to open controller db file for writing");
+    } else {
+      std::ifstream temp_db_file;
+      temp_db_file.open(settings_folder / controller_db_temp_file_name,
+                        std::ios_base::ate);
+      if (temp_db_file.fail()) {
+        Log::warning("failed to open controller db temp file for reading");
+      } else {
+        const auto file_size{temp_db_file.tellg()};
+        temp_db_file.seekg(0);
+        std::vector<char> buffer;
+        buffer.resize(file_size);
+        temp_db_file.read(buffer.data(), file_size);
+        temp_db_file.close();
+
+        db_file.write(buffer.data(), file_size);
+      }
+    }
+  }
+  std::filesystem::remove(settings_folder / controller_db_temp_file_name);
 }
 
 Settings::~Settings() { write_settings_file(); }
@@ -101,6 +131,63 @@ void Settings::write_settings_file() const {
   } catch (const json::exception &e) {
     Log::warning(std::string("failed to write settings file: ") + e.what());
   }
+}
+
+bool Settings::_download_master_sdl_game_controller_db() const {
+  constexpr char url[] = "https://raw.githubusercontent.com/gabomdq/"
+                         "SDL_GameControllerDB/master/gamecontrollerdb.txt";
+  const auto db_file_name(settings_folder / controller_db_temp_file_name);
+
+  curl_global_init(CURL_GLOBAL_ALL);
+
+  try {
+    if (auto *curl = curl_easy_init(); curl) {
+      std::ofstream db_file;
+
+      curl_easy_setopt(curl, CURLOPT_URL, url);
+      curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, _download_curl_callback);
+      curl_easy_setopt(curl, CURLOPT_WRITEDATA,
+                       reinterpret_cast<void *>(&db_file));
+
+      db_file.open(db_file_name);
+      if (db_file.fail()) {
+        curl_easy_cleanup(curl);
+        throw VulkanKraftException(
+            "failed to open controller db temp file for writing");
+      }
+
+      const auto res{curl_easy_perform(curl)};
+      if (res != CURLE_OK) {
+        curl_easy_cleanup(curl);
+        throw VulkanKraftException(std::string("failed to perform curl: ") +
+                                   curl_easy_strerror(res));
+      }
+
+      curl_easy_cleanup(curl);
+    } else {
+      throw VulkanKraftException("failed to initialise curl");
+    }
+  } catch (const VulkanKraftException &e) {
+    Log::warning(
+        std::string("failed to download master sdl controller db file: ") +
+        e.what());
+    curl_global_cleanup();
+    return false;
+  }
+
+  curl_global_cleanup();
+
+  Log::info("Successfully downloaded master sdl controller db file to " +
+            db_file_name.string());
+
+  return true;
+}
+
+size_t Settings::_download_curl_callback(char *ptr, size_t size, size_t nmemb,
+                                         void *userdata) {
+  auto *db_file = reinterpret_cast<std::ofstream *>(userdata);
+  db_file->write(ptr, nmemb);
+  return nmemb;
 }
 
 } // namespace core
