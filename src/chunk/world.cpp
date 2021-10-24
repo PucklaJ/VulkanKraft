@@ -42,10 +42,10 @@ void World::place_block(const glm::ivec3 &position, const block::Type block) {
 
   {
     std::stringstream stream;
-    stream << "Placing block " << std::boolalpha << block << " at ";
+    stream << "Placing block " << block::type_as_str(block) << " at ";
     stream << "(" << position.x << "; " << position.y << "; " << position.z
            << ")";
-    ::core::Log::info(stream.str());
+    core::Log::debug(stream.str());
   }
 
   if (position.y >= block_height) {
@@ -81,10 +81,10 @@ void World::destroy_block(const glm::ivec3 &position) {
 
   {
     std::stringstream stream;
-    stream << "Destroying block  at ";
+    stream << "Destroying block at ";
     stream << "(" << position.x << "; " << position.y << "; " << position.z
            << ")";
-    ::core::Log::info(stream.str());
+    ::core::Log::debug(stream.str());
   }
 
   const auto chunk_pos(get_chunk_position(position));
