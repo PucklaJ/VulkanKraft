@@ -22,7 +22,13 @@ public:
 
 private:
   // The Server does nothing when delta_time is higher than this value
-  static constexpr float max_delta_time = 0.5f;
+  static constexpr float max_delta_time = 1.0f;
+  // The Server divides an iteration into sub iterations when the iteration time
+  // is greater than this value
+  static constexpr float min_delta_time = 0.05f;
+  // Divide each frame into iterations and compute physics multiple times with
+  // smaller delta_time
+  static constexpr int iterations = 5;
 
   void _update(const chunk::World &world, const float delta_time);
   // Checks if the AABB collides with blocks of the world and corrects its

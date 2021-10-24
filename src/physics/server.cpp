@@ -1,6 +1,7 @@
 #include "server.hpp"
 #include "../core/math.hpp"
 #include "moving_object.hpp"
+#include <cmath>
 
 namespace physics {
 
@@ -8,12 +9,22 @@ Server::Server(const float desired_delta_time)
     : m_desired_delta_time(desired_delta_time) {}
 
 void Server::update(const chunk::World &world, const float delta_time) {
-  // TODO: handle too long delta time
-  if (delta_time > max_delta_time) {
+  if (delta_time > max_delta_time)
     return;
-  }
 
-  _update(world, delta_time);
+  const auto iter_time{delta_time / static_cast<float>(iterations)};
+  for (int i = 0; i < iterations; i++) {
+    if (iter_time > min_delta_time) {
+      const auto sub_iterations{floorf(iter_time / min_delta_time)};
+      const auto remain_time{iter_time - min_delta_time * sub_iterations};
+      for (int j = 0; j < static_cast<int>(sub_iterations); j++) {
+        _update(world, min_delta_time);
+      }
+      _update(world, remain_time);
+    } else {
+      _update(world, iter_time);
+    }
+  }
 }
 
 void Server::_update(const chunk::World &world, const float delta_time) {
