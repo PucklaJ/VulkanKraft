@@ -21,7 +21,8 @@ public:
                              const glm::ivec3 &position);
   physics::AABB to_aabb() const;
   void update_faces();
-  void render(const ::core::vulkan::RenderCall &render_call);
+  void render(const ::core::vulkan::RenderCall &render_call,
+              size_t &max_chunk_gen);
   int get_height(glm::ivec3 world_pos) const;
 
   inline void set_front(std::shared_ptr<Chunk> c) { m_front = c; }
@@ -44,10 +45,15 @@ public:
   }
   inline const glm::ivec2 &get_position() const { return m_position; }
 
-  inline bool check_mesh() {
+  inline bool check_mesh(size_t &max_chunk_gen) {
+    if (max_chunk_gen == 0) {
+      return false;
+    }
+
     if (m_vertices_ready) {
       m_mesh.load_buffer();
       m_vertices_ready = false;
+      max_chunk_gen--;
       return true;
     }
     return false;

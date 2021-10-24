@@ -92,8 +92,9 @@ void Chunk::update_faces() {
   }
 }
 
-void Chunk::render(const ::core::vulkan::RenderCall &render_call) {
-  check_mesh();
+void Chunk::render(const ::core::vulkan::RenderCall &render_call,
+                   size_t &max_chunk_gen) {
+  check_mesh(max_chunk_gen);
 
   m_mesh.render(render_call);
 }

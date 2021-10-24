@@ -222,8 +222,9 @@ void World::render(const ::core::vulkan::RenderCall &render_call) {
 
   m_chunks_to_delete.clear();
 
+  size_t max_chunk_gen{10};
   for (auto &[pos, chunk] : m_chunks) {
-    chunk->render(render_call);
+    chunk->render(render_call, max_chunk_gen);
   }
 }
 
@@ -235,11 +236,12 @@ void World::start_update_thread() {
 
 void World::wait_for_generation(const size_t chunk_count) {
   size_t chunks_generated{0};
+  size_t max_chunk_gen{std::numeric_limits<size_t>::max()};
 
   m_chunks_mutex.lock();
   while (chunks_generated < chunk_count) {
     for (auto &[_, chunk] : m_chunks) {
-      chunks_generated += chunk->check_mesh();
+      chunks_generated += chunk->check_mesh(max_chunk_gen);
     }
     m_chunks_mutex.unlock();
     std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<size_t>(
