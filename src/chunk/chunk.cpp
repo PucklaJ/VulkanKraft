@@ -107,10 +107,7 @@ void Chunk::update_faces() {
 }
 
 void Chunk::render(const ::core::vulkan::RenderCall &render_call) {
-  if (m_vertices_ready) {
-    m_mesh.load_buffer();
-    m_vertices_ready = false;
-  }
+  check_mesh();
 
   m_mesh.render(render_call);
 }

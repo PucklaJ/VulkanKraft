@@ -44,6 +44,15 @@ public:
   }
   inline const glm::ivec2 &get_position() const { return m_position; }
 
+  inline bool check_mesh() {
+    if (m_vertices_ready) {
+      m_mesh.load_buffer();
+      m_vertices_ready = false;
+      return true;
+    }
+    return false;
+  }
+
   void
   from_world_generation(const world_gen::WorldGeneration &world_generation);
 

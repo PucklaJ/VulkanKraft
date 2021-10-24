@@ -234,14 +234,22 @@ void World::start_update_thread() {
 }
 
 void World::wait_for_generation(const size_t chunk_count) {
+  size_t chunks_generated{0};
+
   m_chunks_mutex.lock();
-  while (m_chunks.size() < chunk_count) {
+  while (chunks_generated < chunk_count) {
+    for (auto &[_, chunk] : m_chunks) {
+      chunks_generated += chunk->check_mesh();
+    }
     m_chunks_mutex.unlock();
     std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<size_t>(
         1.0f / static_cast<float>(generation_wait_fps) * 1000.0f)));
     m_chunks_mutex.lock();
   }
   m_chunks_mutex.unlock();
+
+  core::Log::info("Generated " + std::to_string(chunks_generated) +
+                  " chunks while waiting");
 }
 
 std::optional<int> World::get_height(const glm::vec3 &position) {
