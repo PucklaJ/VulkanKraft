@@ -28,6 +28,17 @@ InGameScene::InGameScene(const core::vulkan::Context &context,
   m_world.set_center_position(m_player.position);
   m_fog_max_distance = m_world.set_render_distance(settings.render_distance);
   m_world.start_update_thread();
+
+  // Position texts
+  {
+    glm::vec2 current_pos(0.0f, m_fps_text.get_height() + 10);
+    m_position_text.set_position(current_pos);
+    current_pos.y += m_position_text.get_height() + 10;
+    m_look_text.set_position(current_pos);
+    current_pos.y += m_look_text.get_height() + 10;
+    m_vel_text.set_position(current_pos);
+  }
+
   // Wait until some chunks have been generated
   m_world.wait_for_generation(settings.render_distance *
                               settings.render_distance);
