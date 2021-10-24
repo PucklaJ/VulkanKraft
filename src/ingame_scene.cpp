@@ -40,8 +40,8 @@ InGameScene::InGameScene(const core::vulkan::Context &context,
   }
 
   // Wait until some chunks have been generated
-  m_world.wait_for_generation(settings.render_distance *
-                              settings.render_distance);
+  m_world.wait_for_generation(settings.render_distance * 2 *
+                              settings.render_distance * 2);
   // Set Player Data
   if (const auto player_data(m_world.get_save_world()->read_player_data());
       player_data) {
