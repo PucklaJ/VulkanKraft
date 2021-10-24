@@ -7,7 +7,7 @@
 #include "core/text/text.hpp"
 #include "core/vulkan/context.hpp"
 #include "core/window.hpp"
-#include "ingame_scene.hpp"
+#include "main_menu_scene.hpp"
 #include "player.hpp"
 #include <glm/gtx/transform.hpp>
 #include <iomanip>
@@ -44,7 +44,7 @@ int main(int args, char *argv[]) {
     core::Render2D::set_shader(texture_2d_shader);
 
     std::unique_ptr<scene::Scene> current_scene(
-        std::make_unique<InGameScene>(context, hodler, settings));
+        std::make_unique<MainMenuScene>(context, hodler, settings, window));
 
     // The game loop
     while (!window.should_close()) {

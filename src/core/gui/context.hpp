@@ -22,6 +22,10 @@ public:
     m_elements.emplace_back(element);
     return element;
   }
+  template <typename T> inline auto *emplace_element(T *element) {
+    m_elements.emplace_back(element);
+    return element;
+  }
 
   void update();
   void render(const vulkan::RenderCall &render_call);

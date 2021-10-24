@@ -22,7 +22,7 @@ public:
 
 private:
   // The Server does nothing when delta_time is higher than this value
-  static constexpr float max_delta_time = 2.0f;
+  static constexpr float max_delta_time = 0.5f;
 
   void _update(const chunk::World &world, const float delta_time);
   // Checks if the AABB collides with blocks of the world and corrects its

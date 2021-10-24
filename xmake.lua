@@ -127,8 +127,7 @@ target("core")
   add_headerfiles("src/core/*.hpp",
                   "src/core/vulkan/*.hpp",
                   "src/core/text/*.hpp",
-                  "src/core/gui/*.hpp",
-                  "src/scene/*.hpp")
+                  "src/core/gui/*.hpp")
 
 target("vulkankraft")
   set_kind("binary")
@@ -147,7 +146,8 @@ target("vulkankraft")
                   "src/block/*.hpp",
                   "src/world_gen/*.hpp",
                   "src/physics/*.hpp",
-                  "src/save/*.cpp")
+                  "src/save/*.cpp",
+                  "src/scene/*.hpp")
 
 target("perlin_noise_test")
   set_enabled(is_mode("debug"))
