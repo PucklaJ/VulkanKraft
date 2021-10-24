@@ -127,7 +127,8 @@ target("core")
   add_headerfiles("src/core/*.hpp",
                   "src/core/vulkan/*.hpp",
                   "src/core/text/*.hpp",
-                  "src/core/gui/*.hpp")
+                  "src/core/gui/*.hpp",
+                  "src/scene/*.hpp")
 
 target("vulkankraft")
   set_kind("binary")
