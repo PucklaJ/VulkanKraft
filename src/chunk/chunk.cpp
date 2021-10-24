@@ -83,9 +83,6 @@ physics::AABB Chunk::to_aabb() const {
 }
 
 void Chunk::update_faces() {
-#ifndef NDEBUG
-  const auto start_time = std::chrono::high_resolution_clock::now();
-#endif
   for (size_t x = 0; x < block_width; x++) {
     for (size_t y = 0; y < block_height; y++) {
       for (size_t z = 0; z < block_depth; z++) {
@@ -93,17 +90,6 @@ void Chunk::update_faces() {
       }
     }
   }
-
-#ifndef NDEBUG
-  const auto end_time = std::chrono::high_resolution_clock::now();
-  std::stringstream stream;
-  stream << "Update Face Time: "
-         << std::chrono::duration_cast<std::chrono::microseconds>(end_time -
-                                                                  start_time)
-                .count()
-         << " µs";
-  ::core::Log::info(stream.str());
-#endif
 }
 
 void Chunk::render(const ::core::vulkan::RenderCall &render_call) {

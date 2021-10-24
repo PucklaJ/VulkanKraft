@@ -417,37 +417,30 @@ void World::_update() {
     }
 
     if (!chunks_to_remove.empty()) {
-#ifndef NDEBUG
-      const auto start_time = std::chrono::high_resolution_clock::now();
-#endif
-      {
-        std::lock_guard lk(m_chunks_mutex);
-        for (const auto &pos : chunks_to_remove) {
-          auto &chunk = m_chunks[pos];
+      std::lock_guard lk(m_chunks_mutex);
+      for (const auto &pos : chunks_to_remove) {
+        auto &chunk = m_chunks[pos];
 
-          auto stored_blocks(chunk->to_stored_blocks());
-          m_save_world->store_chunk(pos, stored_blocks);
+        auto stored_blocks(chunk->to_stored_blocks());
+        m_save_world->store_chunk(pos, stored_blocks);
 
-          m_chunks_to_delete.emplace_back(chunk);
-          m_chunks.erase(pos);
-        }
+        m_chunks_to_delete.emplace_back(chunk);
+        m_chunks.erase(pos);
       }
-#ifndef NDEBUG
-      const auto end_time = std::chrono::high_resolution_clock::now();
-      std::stringstream stream;
-      stream << "Chunk Remove Time: "
-             << std::chrono::duration_cast<std::chrono::microseconds>(
-                    end_time - start_time)
-                    .count()
-             << " µs";
-      ::core::Log::info(stream.str());
-#endif
     }
+
+#ifndef NDEBUG
+    size_t chunks_added{0};
+#endif
 
     std::vector<std::weak_ptr<Chunk>> chunks_to_update;
     {
       std::lock_guard lk(m_chunks_mutex);
       if (m_chunks.empty()) {
+#ifndef NDEBUG
+        chunks_added++;
+#endif
+
         auto chunk = std::make_shared<Chunk>(
             m_context, get_world_position(center_position));
         const auto stored_blocks(m_save_world->load_chunk(center_position));
@@ -463,11 +456,9 @@ void World::_update() {
       }
     }
 
-#ifndef NDEBUG
-    const auto add_start_time = std::chrono::high_resolution_clock::now();
-#endif
-
     // Loop over all chunks and check if neighbors should be added
+    // NOTE: m_chunks is accessed without locking a mutex. This could lead to
+    // race conditions
     std::vector<std::shared_ptr<Chunk>> chunks_to_add;
     for (const auto &[pos, chunk] : m_chunks) {
       if (!chunk->get_right()) {
@@ -491,17 +482,17 @@ void World::_update() {
             _check_if_add_neighbour(pos, chunk, center_position, 0, 1));
       }
     }
-#ifndef NDEBUG
-    bool add_new_chunks = false;
-#endif
+
     {
       std::lock_guard lk(m_chunks_mutex);
       for (auto &chunk : chunks_to_add) {
         if (!chunk)
           continue;
+
 #ifndef NDEBUG
-        add_new_chunks = true;
+        chunks_added++;
 #endif
+
         const auto chunk_pos(get_chunk_position(chunk->get_position()));
         const auto stored_blocks(m_save_world->load_chunk(chunk_pos));
 
@@ -514,65 +505,34 @@ void World::_update() {
 
         m_chunks.emplace(get_chunk_position(chunk->get_position()), chunk);
         chunks_to_update.emplace_back(chunk);
-        // if (!_chunks_to_update_contains(chunks_to_update,
-        // chunk->get_front()))
-        //   chunks_to_update.emplace_back(chunk->get_front());
-        // if (!_chunks_to_update_contains(chunks_to_update, chunk->get_back()))
-        //   chunks_to_update.emplace_back(chunk->get_back());
-        // if (!_chunks_to_update_contains(chunks_to_update, chunk->get_left()))
-        //   chunks_to_update.emplace_back(chunk->get_left());
-        // if (!_chunks_to_update_contains(chunks_to_update,
-        // chunk->get_right()))
-        //   chunks_to_update.emplace_back(chunk->get_right());
-      }
-    }
-#ifndef NDEBUG
-    if (add_new_chunks) {
-      const auto add_end_time = std::chrono::high_resolution_clock::now();
-      {
-        std::stringstream stream;
-        stream << "Add Chunk Time: "
-               << std::chrono::duration_cast<std::chrono::microseconds>(
-                      add_end_time - add_start_time)
-                      .count()
-               << " µs";
-        ::core::Log::info(stream.str());
       }
     }
 
-    if (!chunks_to_update.empty()) {
-      const auto gen_start_time = std::chrono::high_resolution_clock::now();
-#endif
-
-      chunks_to_add.clear();
-
-      // Update neighbouring chunks
-      for (auto &_chunk : chunks_to_update) {
-        if (auto chunk = _chunk.lock(); chunk) {
-          chunk->needs_face_update();
-          chunk->generate(m_block_server);
-        }
+    // Update neighbouring chunks
+    for (auto &_chunk : chunks_to_update) {
+      if (auto chunk = _chunk.lock(); chunk) {
+        chunk->needs_face_update();
+        chunk->generate(m_block_server);
       }
+    }
 
 #ifndef NDEBUG
+    if (!(chunks_added == 0 && chunks_to_update.empty() &&
+          chunks_to_remove.empty())) {
+      std::lock_guard lk(m_chunks_mutex);
       const auto gen_end_time = std::chrono::high_resolution_clock::now();
       {
         std::stringstream stream;
-        stream << "Gen Chunk Time: "
-               << std::chrono::duration_cast<std::chrono::microseconds>(
-                      gen_end_time - gen_start_time)
-                      .count()
-               << " µs";
-        ::core::Log::info(stream.str());
-      }
-      {
-        std::stringstream stream;
-        stream << "Update Time: "
+        stream << "chunk::World::Update: +" << chunks_added << " -"
+               << chunks_to_remove.size() << " *"
+               << (chunks_to_update.size() - chunks_added) << " ="
+               << m_chunks.size();
+        stream << ' '
                << std::chrono::duration_cast<std::chrono::microseconds>(
                       gen_end_time - update_start_time)
                       .count()
                << " µs";
-        ::core::Log::warning(stream.str());
+        ::core::Log::debug(stream.str());
       }
     }
 #endif

@@ -24,9 +24,6 @@ void Mesh::render(const ::core::vulkan::RenderCall &render_call) {
 
 void Mesh::generate_vertices(const block::Server &block_server, Chunk *chunk,
                              const glm::vec2 &pos) {
-#ifndef NDEBUG
-  const auto start_time(std::chrono::high_resolution_clock::now());
-#endif
   if (m_num_indices != -1) {
     m_vertices.reserve(m_num_indices / Block::indices_per_face *
                        Block::vertices_per_face);
@@ -49,17 +46,6 @@ void Mesh::generate_vertices(const block::Server &block_server, Chunk *chunk,
       }
     }
   }
-
-#ifndef NDEBUG
-  const auto end_time(std::chrono::high_resolution_clock::now());
-  std::stringstream stream;
-  stream << "Mesh VTime: "
-         << std::chrono::duration_cast<std::chrono::microseconds>(end_time -
-                                                                  start_time)
-                .count()
-         << " µs";
-  ::core::Log::info(stream.str());
-#endif
 }
 
 void Mesh::load_buffer() {
