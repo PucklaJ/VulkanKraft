@@ -117,6 +117,8 @@ int Chunk::get_height(glm::ivec3 world_pos) const {
 }
 
 void Chunk::compute_sun_light() {
+  // NOTE: The light shouldn't be set everytime the block is at a border. But
+  // this has been done since it avoids artifacts that would look worse
   for (int x = 0; x < block_width; x++) {
     for (int z = 0; z < block_depth; z++) {
       float light_value{1.0f};
@@ -134,6 +136,7 @@ void Chunk::compute_sun_light() {
           if (auto left(m_left.lock()); left) {
             left->get_block(block_width - 1, y, z).set_right_light(light_value);
           }
+          block.set_left_light(1.0f);
         }
 
         if (x != block_width - 1) {
@@ -142,6 +145,7 @@ void Chunk::compute_sun_light() {
           if (auto right(m_right.lock()); right) {
             right->get_block(0, y, z).set_left_light(light_value);
           }
+          block.set_right_light(1.0f);
         }
 
         if (z != 0) {
@@ -151,6 +155,7 @@ void Chunk::compute_sun_light() {
             front->get_block(x, y, block_depth - 1)
                 .set_front_light(light_value);
           }
+          block.set_back_light(1.0f);
         }
 
         if (z != block_depth - 1) {
@@ -159,6 +164,7 @@ void Chunk::compute_sun_light() {
           if (auto back(m_back.lock()); back) {
             back->get_block(x, y, 0).set_back_light(light_value);
           }
+          block.set_front_light(1.0f);
         }
       }
     }

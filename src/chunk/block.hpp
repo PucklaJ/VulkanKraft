@@ -89,6 +89,8 @@ public:
                 const glm::vec3 &position) const;
   physics::AABB to_aabb(const glm::vec3 &position) const;
 
+  inline operator bool() const { return type != block::Type::AIR; }
+
   block::Type type;
 
 private:
