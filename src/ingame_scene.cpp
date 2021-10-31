@@ -1,8 +1,9 @@
 #include "ingame_scene.hpp"
 #include "glm/gtx/transform.hpp"
+#include "main_menu_scene.hpp"
 
 InGameScene::InGameScene(const core::vulkan::Context &context,
-                         core::ResourceHodler &hodler,
+                         core::ResourceHodler &hodler, core::Window &window,
                          const core::Settings &settings,
                          const glm::mat4 &projection, const bool new_world,
                          const size_t world_seed)
@@ -23,7 +24,8 @@ InGameScene::InGameScene(const core::vulkan::Context &context,
       m_world(context, m_block_server),
       m_chunk_shader(
           hodler.get_shader(core::ResourceHodler::chunk_mesh_shader_name)),
-      m_projection(projection) {
+      m_context(context), m_settings(settings), m_hodler(hodler),
+      m_window(window), m_projection(projection) {
 
   const std::filesystem::path world_save_folder(
       settings.settings_folder / core::Settings::world_save_folder_name /
@@ -74,6 +76,14 @@ InGameScene::~InGameScene() {
 
 std::unique_ptr<scene::Scene> InGameScene::update(core::Window &window,
                                                   const float delta_time) {
+  if (window.key_just_pressed(back_keyboard_button) ||
+      window.gamepad_button_just_pressed(back_gamepad_button)) {
+    window.release_cursor();
+
+    return std::make_unique<MainMenuScene>(m_context, m_hodler, m_settings,
+                                           m_window, m_projection);
+  }
+
   // Generate the texts for every text element
   {
     std::wstringstream fps_stream;

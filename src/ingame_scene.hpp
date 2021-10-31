@@ -12,7 +12,7 @@
 class InGameScene : public scene::Scene {
 public:
   InGameScene(const core::vulkan::Context &context,
-              core::ResourceHodler &resource_hodler,
+              core::ResourceHodler &resource_hodler, core::Window &window,
               const core::Settings &settings, const glm::mat4 &projection,
               const bool new_world = false, const size_t world_seed = 0);
   ~InGameScene();
@@ -25,6 +25,8 @@ public:
 private:
   static constexpr int reseed_keyboard_button = GLFW_KEY_F8;
   static constexpr int place_player_keyboard_button = GLFW_KEY_F9;
+  static constexpr int back_keyboard_button = GLFW_KEY_ESCAPE;
+  static constexpr int back_gamepad_button = GLFW_GAMEPAD_BUTTON_START;
 
   block::Server m_block_server;
   physics::Server m_physics_server;
@@ -41,5 +43,9 @@ private:
 
   float m_fog_max_distance;
   chunk::GlobalUniform m_chunk_global;
+  const core::vulkan::Context &m_context;
+  const core::Settings &m_settings;
+  core::ResourceHodler &m_hodler;
+  core::Window &m_window;
   const glm::mat4 &m_projection;
 };
