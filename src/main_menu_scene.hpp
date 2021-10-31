@@ -20,6 +20,9 @@ public:
               const float delta_time) override;
 
 private:
+  static constexpr int continue_gamepad_button = GLFW_GAMEPAD_BUTTON_CROSS;
+  static constexpr int new_world_gamepad_button = GLFW_GAMEPAD_BUTTON_SQUARE;
+
   core::gui::Context m_gui_context;
   core::gui::Button *m_continue_button;
   core::gui::Button *m_new_world_button;

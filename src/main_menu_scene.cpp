@@ -45,6 +45,15 @@ MainMenuScene::MainMenuScene(const core::vulkan::Context &context,
 std::unique_ptr<scene::Scene> MainMenuScene::update(core::Window &window,
                                                     const float delta_time) {
   m_gui_context.update();
+
+  if (window.is_gamepad_connected()) {
+    if (window.gamepad_button_just_pressed(continue_gamepad_button)) {
+      m_continue_button->on_click();
+    } else if (window.gamepad_button_just_pressed(new_world_gamepad_button)) {
+      m_new_world_button->on_click();
+    }
+  }
+
   return std::move(m_next_scene);
 }
 
