@@ -28,7 +28,9 @@ int main(int args, char *argv[]) {
     auto &text_font = hodler.get_font(core::ResourceHodler::debug_font_name);
 
     core::Render2D::set_shader(texture_2d_shader);
-    core::gui::Context gui_context(context, window, text_shader, text_font);
+    core::text::Text::set_shader(text_shader);
+
+    core::gui::Context gui_context(context, window, text_font);
 
     gui_context
         .add_element<core::gui::Button>(
@@ -36,7 +38,7 @@ int main(int args, char *argv[]) {
             glm::vec2(settings.window_width / 2, settings.window_height / 2))
         ->on_click = std::bind(core::Log::info, "Play clicked");
 
-    core::text::Text play_text(context, text_shader, text_font, L"Play");
+    core::text::Text play_text(context, text_font, L"Play");
 
     while (!window.should_close()) {
       auto delta_timer(timer.begin_frame());

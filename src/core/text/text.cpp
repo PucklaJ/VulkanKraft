@@ -3,10 +3,10 @@
 
 namespace core {
 namespace text {
-Text::Text(const vulkan::Context &context, Shader &shader, Font &font,
+Text::Text(const vulkan::Context &context, Font &font,
            const std::wstring &string, const glm::vec2 &position,
            const float font_size)
-    : m_context(context), m_shader(shader), m_font(font), m_string(string),
+    : m_context(context), m_font(font), m_string(string),
       m_font_size(font_size), m_position(position),
       m_text_texture(_build_texture()) {
   m_buffers.reserve(m_context.get_swap_chain_image_count());
@@ -53,10 +53,12 @@ void Text::render(const vulkan::RenderCall &render_call) {
         render_call.get_swap_chain_image_index());
   }
 
-  m_shader.bind_dynamic_texture(render_call, m_text_texture);
+  m_shader->bind_dynamic_texture(render_call, m_text_texture);
   m_buffers[render_call.get_swap_chain_image_index()].bind(render_call);
   render_call.render_vertices(6);
 }
+
+Shader *Text::m_shader = nullptr;
 
 Texture Text::_build_texture() {
   size_t pixel_width, pixel_height;

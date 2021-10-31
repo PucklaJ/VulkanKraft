@@ -8,8 +8,8 @@ Button::Button(Context *gui_context, const ResourceHodler &resource_hodler,
                const std::wstring &label_text, const uint32_t width,
                const uint32_t height, const glm::vec2 &position)
     : Element(gui_context), m_position(position), m_size(width, height),
-      m_text(gui_context->m_vulkan_context, gui_context->m_text_shader,
-             gui_context->m_text_font, label_text, glm::vec2(), 30.0f),
+      m_text(gui_context->m_vulkan_context, gui_context->m_text_font,
+             label_text, glm::vec2(), 30.0f),
       m_grey_texture(
           _create_grey_rectangle(gui_context->m_vulkan_context, 10, 10)),
       m_greyer_texture(
@@ -47,7 +47,7 @@ void Button::render(const vulkan::Context &vulkan_context,
   Render2D::bind_shader(render_call);
   m_render2d.render(render_call);
 
-  m_gui_context->m_text_shader.bind(render_call);
+  text::Text::bind_shader(render_call);
   m_text.render(render_call);
 }
 

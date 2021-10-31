@@ -19,6 +19,14 @@ public:
   // be used at the same time
   static constexpr uint32_t max_texts = 20;
 
+  // Needs to be called before using any objects of this class
+  // This needs to be the text shader
+  static inline void set_shader(Shader &shader) { m_shader = &shader; }
+  // Binds the text shader
+  static inline void bind_shader(const vulkan::RenderCall &render_call) {
+    m_shader->bind(render_call);
+  }
+
   // Holds all global uniforms used in the vertex shader
   struct GlobalUniform {
     glm::mat4 proj;
@@ -42,9 +50,8 @@ public:
   // font ..... The font which should be used by this text object
   // string ... The initial text which should be displayed
   // position . The initial position
-  Text(const vulkan::Context &context, Shader &shader, Font &font,
-       const std::wstring &string, const glm::vec2 &position = glm::vec2(),
-       const float font_size = 50.0f);
+  Text(const vulkan::Context &context, Font &font, const std::wstring &string,
+       const glm::vec2 &position = glm::vec2(), const float font_size = 50.0f);
 
   void set_string(const std::wstring &string);
   void set_font_size(const float font_size);
@@ -57,6 +64,8 @@ public:
   void render(const vulkan::RenderCall &render_call);
 
 private:
+  static Shader *m_shader;
+
   // Holds the new mesh and which swap image indices still need the update
   struct BufferWrite {
     Mesh mesh;
@@ -69,7 +78,6 @@ private:
   void _build_buffers();
 
   const vulkan::Context &m_context;
-  Shader &m_shader;
 
   Font &m_font;
   std::wstring m_string;

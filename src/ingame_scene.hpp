@@ -37,7 +37,6 @@ private:
   chunk::World m_world;
 
   core::Shader &m_chunk_shader;
-  core::Shader &m_text_shader;
 
   float m_fog_max_distance;
   const float m_fov;

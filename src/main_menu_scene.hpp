@@ -29,5 +29,4 @@ private:
   const core::vulkan::Context &m_context;
   core::ResourceHodler &m_hodler;
   const core::Settings &m_settings;
-  core::Shader &m_text_shader;
 };

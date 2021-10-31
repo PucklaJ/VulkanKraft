@@ -42,6 +42,7 @@ int main(int args, char *argv[]) {
         hodler.get_shader(core::ResourceHodler::texture_2d_shader_name);
 
     core::Render2D::set_shader(texture_2d_shader);
+    core::text::Text::set_shader(text_shader);
 
     std::unique_ptr<scene::Scene> current_scene(
         std::make_unique<MainMenuScene>(context, hodler, settings, window));

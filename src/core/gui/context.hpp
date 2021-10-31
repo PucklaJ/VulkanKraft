@@ -15,7 +15,7 @@ public:
   friend class Button;
 
   Context(const vulkan::Context &vulkan_context, Window &window,
-          Shader &text_shader, text::Font &text_font);
+          text::Font &text_font);
 
   template <typename T, typename... A> inline auto *add_element(A... args) {
     auto *element = new T(args...);
@@ -35,7 +35,6 @@ private:
 
   const vulkan::Context &m_vulkan_context;
   Window &m_window;
-  Shader &m_text_shader;
   text::Font &m_text_font;
 };
 } // namespace gui

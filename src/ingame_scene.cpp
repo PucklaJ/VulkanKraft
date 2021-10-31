@@ -5,24 +5,22 @@ InGameScene::InGameScene(const core::vulkan::Context &context,
                          core::ResourceHodler &hodler,
                          const core::Settings &settings)
     : m_physics_server(1.0f / static_cast<float>(settings.max_fps)),
-      m_fps_text(
-          context, hodler.get_shader(core::ResourceHodler::text_shader_name),
-          hodler.get_font(core::ResourceHodler::debug_font_name), L"60 FPS"),
-      m_position_text(
-          context, hodler.get_shader(core::ResourceHodler::text_shader_name),
-          hodler.get_font(core::ResourceHodler::debug_font_name), L"X\nY\nZ\n"),
+      m_fps_text(context,
+                 hodler.get_font(core::ResourceHodler::debug_font_name),
+                 L"60 FPS"),
+      m_position_text(context,
+                      hodler.get_font(core::ResourceHodler::debug_font_name),
+                      L"X\nY\nZ\n"),
       m_look_text(context,
-                  hodler.get_shader(core::ResourceHodler::text_shader_name),
                   hodler.get_font(core::ResourceHodler::debug_font_name),
                   L"Look\nX\nY\nZ"),
-      m_vel_text(
-          context, hodler.get_shader(core::ResourceHodler::text_shader_name),
-          hodler.get_font(core::ResourceHodler::debug_font_name), L"Velocity"),
+      m_vel_text(context,
+                 hodler.get_font(core::ResourceHodler::debug_font_name),
+                 L"Velocity"),
       m_player(glm::vec3(128.0f, 70.0f, 128.0f), hodler, m_physics_server),
       m_world(context, m_block_server),
       m_chunk_shader(
           hodler.get_shader(core::ResourceHodler::chunk_mesh_shader_name)),
-      m_text_shader(hodler.get_shader(core::ResourceHodler::text_shader_name)),
       m_fov(settings.field_of_view) {
 
   m_world.set_center_position(m_player.position);
@@ -157,7 +155,7 @@ void InGameScene::render(const core::vulkan::RenderCall &render_call,
   m_player.render(render_call);
 
   // Render the text elements
-  m_text_shader.bind(render_call);
+  core::text::Text::bind_shader(render_call);
   m_fps_text.render(render_call);
   m_position_text.render(render_call);
   m_look_text.render(render_call);

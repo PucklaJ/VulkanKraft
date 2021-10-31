@@ -8,15 +8,11 @@ MainMenuScene::MainMenuScene(const core::vulkan::Context &context,
     : m_context(context), m_hodler(resource_hodler), m_settings(settings),
       m_gui_context(
           context, window,
-          resource_hodler.get_shader(core::ResourceHodler::text_shader_name),
           resource_hodler.get_font(core::ResourceHodler::debug_font_name)),
       m_title_text(
           context,
-          resource_hodler.get_shader(core::ResourceHodler::text_shader_name),
           resource_hodler.get_font(core::ResourceHodler::debug_font_name),
-          L"VulkanKraft"),
-      m_text_shader(
-          resource_hodler.get_shader(core::ResourceHodler::text_shader_name)) {
+          L"VulkanKraft") {
 
   glm::vec2 current_pos(settings.window_width / 2,
                         settings.window_height / 2 - 50 - 15);
@@ -49,6 +45,6 @@ void MainMenuScene::render(const core::vulkan::RenderCall &render_call,
                            const float delta_time) {
   m_gui_context.render(render_call);
 
-  m_text_shader.bind(render_call);
+  core::text::Text::bind_shader(render_call);
   m_title_text.render(render_call);
 }
