@@ -7,6 +7,7 @@
 layout(location = 0) in vec2 frag_uv;
 layout(location = 1) in vec3 frag_pos;
 layout(location = 2) in vec3 frag_eye_pos;
+layout(location = 3) in float frag_light_value;
 
 layout(location = 0) out vec4 out_color;
 
@@ -25,6 +26,7 @@ void main() {
                      (pushies.fog_max_distance - fog_min_distance);
   fog_amount = clamp(fog_amount, 0.0, 1.0);
 
-  out_color.rgb = mix(texture_color.rgb, FOG_COLOR, fog_amount);
+  out_color.rgb =
+      mix(texture_color.rgb * frag_light_value, FOG_COLOR, fog_amount);
   out_color.a = 1.0;
 }

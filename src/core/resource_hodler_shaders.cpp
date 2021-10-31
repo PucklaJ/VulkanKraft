@@ -20,6 +20,7 @@ void ResourceHodler::build_chunk_mesh_shader(const vulkan::Context &context,
   auto shader(::core::Shader::Builder()
                   .vertex_attribute<glm::vec3>()
                   .vertex_attribute<glm::vec2>()
+                  .vertex_attribute<glm::f32>()
                   .vertex(shaders::chunk_mesh_vert_spv)
                   .fragment(shaders::chunk_mesh_frag_spv)
                   .uniform_buffer(vk::ShaderStageFlagBits::eVertex, global)

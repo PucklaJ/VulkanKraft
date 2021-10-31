@@ -1,8 +1,8 @@
 #include "block.hpp"
 
 namespace chunk {
-Vertex::Vertex(float x, float y, float z, float u, float v)
-    : position(x, y, z), uv(u, v) {}
+Vertex::Vertex(float x, float y, float z, float u, float v, float _light)
+    : position(x, y, z), uv(u, v), light(_light) {}
 
 Block::Block() : type(block::Type::AIR), m_faces(0) {}
 
@@ -35,14 +35,13 @@ void Block::_create_cube(std::vector<Vertex> &vertices,
     vertices.reserve(vertices.size() + vertices_per_face);
 
     vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + 0.5f,
-                          tex_coords.front.x,
-                          tex_coords.front.w); // 0
+                          tex_coords.front.x, tex_coords.front.w, 1.0f); // 0
     vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + 0.5f,
-                          tex_coords.front.z, tex_coords.front.w); // 1
+                          tex_coords.front.z, tex_coords.front.w, 1.0f); // 1
     vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + 0.5f,
-                          tex_coords.front.z, tex_coords.front.y); // 2
+                          tex_coords.front.z, tex_coords.front.y, 1.0f); // 2
     vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + 0.5f,
-                          tex_coords.front.x, tex_coords.front.y); // 3
+                          tex_coords.front.x, tex_coords.front.y, 1.0f); // 3
 
     indices.reserve(indices.size() + indices_per_face);
     indices.emplace_back(i + 0);
@@ -58,17 +57,13 @@ void Block::_create_cube(std::vector<Vertex> &vertices,
     vertices.reserve(vertices.size() + vertices_per_face);
 
     vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + -0.5f,
-                          tex_coords.back.x,
-                          tex_coords.back.y); // 4
+                          tex_coords.back.x, tex_coords.back.y, 1.0f); // 4
     vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + -0.5f,
-                          tex_coords.back.z,
-                          tex_coords.back.y); // 5
+                          tex_coords.back.z, tex_coords.back.y, 1.0f); // 5
     vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + -0.5f,
-                          tex_coords.back.z,
-                          tex_coords.back.w); // 6
+                          tex_coords.back.z, tex_coords.back.w, 1.0f); // 6
     vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + -0.5f,
-                          tex_coords.back.x,
-                          tex_coords.back.w); // 7
+                          tex_coords.back.x, tex_coords.back.w, 1.0f); // 7
 
     indices.reserve(indices.size() + indices_per_face);
     indices.emplace_back(i + 1);
@@ -84,17 +79,13 @@ void Block::_create_cube(std::vector<Vertex> &vertices,
     vertices.reserve(vertices.size() + vertices_per_face);
 
     vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + -0.5f,
-                          tex_coords.right.x,
-                          tex_coords.right.y); // 10
+                          tex_coords.right.x, tex_coords.right.y, 1.0f); // 10
     vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + 0.5f,
-                          tex_coords.right.z,
-                          tex_coords.right.w); // 13
+                          tex_coords.right.z, tex_coords.right.w, 1.0f); // 13
     vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + -0.5f,
-                          tex_coords.right.z,
-                          tex_coords.right.y); // 16
+                          tex_coords.right.z, tex_coords.right.y, 1.0f); // 16
     vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + 0.5f,
-                          tex_coords.right.x,
-                          tex_coords.right.w); // 17
+                          tex_coords.right.x, tex_coords.right.w, 1.0f); // 17
 
     indices.reserve(indices.size() + indices_per_face);
     indices.emplace_back(i + 1);
@@ -110,18 +101,14 @@ void Block::_create_cube(std::vector<Vertex> &vertices,
     vertices.reserve(vertices.size() + vertices_per_face);
 
     vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + -0.5f,
-                          tex_coords.left.z,
-                          tex_coords.left.y); // 11
+                          tex_coords.left.z, tex_coords.left.y, 1.0f); // 11
     vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + 0.5f,
 
-                          tex_coords.left.x,
-                          tex_coords.left.w); // 12
+                          tex_coords.left.x, tex_coords.left.w, 1.0f); // 12
     vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + -0.5f,
-                          tex_coords.left.x,
-                          tex_coords.left.y); // 18
+                          tex_coords.left.x, tex_coords.left.y, 1.0f); // 18
     vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + 0.5f,
-                          tex_coords.left.z,
-                          tex_coords.left.w); // 19
+                          tex_coords.left.z, tex_coords.left.w, 1.0f); // 19
 
     indices.reserve(indices.size() + indices_per_face);
     indices.emplace_back(i + 2);
@@ -137,14 +124,13 @@ void Block::_create_cube(std::vector<Vertex> &vertices,
     vertices.reserve(vertices.size() + vertices_per_face);
 
     vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + 0.5f, tex_coords.top.x,
-                          tex_coords.top.w); // 8
+                          tex_coords.top.w, 1.0f); // 8
     vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + 0.5f, tex_coords.top.z,
-                          tex_coords.top.w); // 9
+                          tex_coords.top.w, 1.0f); // 9
     vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + -0.5f, tex_coords.top.z,
-                          tex_coords.top.y); // 10
+                          tex_coords.top.y, 1.0f); // 10
     vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + -0.5f,
-                          tex_coords.top.x,
-                          tex_coords.top.y); // 11
+                          tex_coords.top.x, tex_coords.top.y, 1.0f); // 11
 
     indices.reserve(indices.size() + 6);
     indices.emplace_back(i + 0);
@@ -160,16 +146,13 @@ void Block::_create_cube(std::vector<Vertex> &vertices,
     vertices.reserve(vertices.size() + vertices_per_face);
 
     vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + 0.5f,
-                          tex_coords.bot.x,
-                          tex_coords.bot.y); // 12
+                          tex_coords.bot.x, tex_coords.bot.y, 1.0f); // 12
     vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + 0.5f, tex_coords.bot.z,
-                          tex_coords.bot.y); // 13
+                          tex_coords.bot.y, 1.0f); // 13
     vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + -0.5f,
-                          tex_coords.bot.z,
-                          tex_coords.bot.w); // 14
+                          tex_coords.bot.z, tex_coords.bot.w, 1.0f); // 14
     vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + -0.5f,
-                          tex_coords.bot.x,
-                          tex_coords.bot.w); // 15
+                          tex_coords.bot.x, tex_coords.bot.w, 1.0f); // 15
 
     indices.reserve(indices.size() + indices_per_face);
     indices.emplace_back(i + 3);

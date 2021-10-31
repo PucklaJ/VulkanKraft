@@ -14,10 +14,11 @@ constexpr int block_height = 128;
 
 class Vertex {
 public:
-  Vertex(float x, float y, float z, float u, float v);
+  Vertex(float x, float y, float z, float u, float v, float light);
 
   glm::vec3 position;
   glm::vec2 uv;
+  float light;
 };
 struct GlobalUniform {
   glm::mat4 proj_view;
