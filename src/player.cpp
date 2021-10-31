@@ -199,33 +199,44 @@ void Player::_update_input(core::Window &window, bool &button_jump,
           _abs_dead_zone(*vertical_value, axis_dead_zone) * axis_view_factor;
     }
     // ********************************
-
-  } else {
-    // Mouse and Keyboard input
-    move_direction.y = window.key_is_pressed(move_forward_keyboard_button) -
-                       window.key_is_pressed(move_backward_keyboard_button);
-    move_direction.x = window.key_is_pressed(move_right_keyboard_button) -
-                       window.key_is_pressed(move_left_keyboard_button);
-    button_jump = window.key_just_pressed(jump_keyboard_button);
-    button_down = window.key_is_pressed(sneak_keyboard_button);
-    button_place =
-        window.cursor_is_locked() &&
-        window.get_mouse().button_just_pressed(block_place_mouse_button);
-    button_destroy =
-        window.cursor_is_locked() &&
-        window.get_mouse().button_just_pressed(block_destroy_mouse_button);
-
-    // **** handle mouse input *****
-    const auto cur_mouse_x = window.get_mouse().screen_position.x;
-    const auto cur_mouse_y = window.get_mouse().screen_position.y;
-    if (window.cursor_is_locked()) {
-      view.x = cur_mouse_x - m_last_mouse_x;
-      view.y = cur_mouse_y - m_last_mouse_y;
-    }
-    m_last_mouse_x = cur_mouse_x;
-    m_last_mouse_y = cur_mouse_y;
-    // *****************************
   }
+
+  // Mouse and Keyboard input
+  if (const auto y_move{window.key_is_pressed(move_forward_keyboard_button) -
+                        window.key_is_pressed(move_backward_keyboard_button)};
+      y_move != 0) {
+    move_direction.y = y_move;
+  }
+  if (const auto x_move{window.key_is_pressed(move_right_keyboard_button) -
+                        window.key_is_pressed(move_left_keyboard_button)};
+      x_move != 0) {
+    move_direction.x = x_move;
+  }
+  button_jump = button_jump || window.key_just_pressed(jump_keyboard_button);
+  button_down = button_down || window.key_is_pressed(sneak_keyboard_button);
+  button_place =
+      button_place ||
+      (window.cursor_is_locked() &&
+       window.get_mouse().button_just_pressed(block_place_mouse_button));
+  button_destroy =
+      button_destroy ||
+      (window.cursor_is_locked() &&
+       window.get_mouse().button_just_pressed(block_destroy_mouse_button));
+
+  // **** handle mouse input *****
+  const auto cur_mouse_x = window.get_mouse().screen_position.x;
+  const auto cur_mouse_y = window.get_mouse().screen_position.y;
+  if (window.cursor_is_locked()) {
+    if (const auto x_view{cur_mouse_x - m_last_mouse_x}; x_view != 0.0f) {
+      view.x = x_view;
+    }
+    if (const auto y_view{cur_mouse_y - m_last_mouse_y}; y_view != 0.0f) {
+      view.y = y_view;
+    }
+  }
+  m_last_mouse_x = cur_mouse_x;
+  m_last_mouse_y = cur_mouse_y;
+  // *****************************
 }
 
 bool Player::_is_grounded(chunk::World &world) const {
