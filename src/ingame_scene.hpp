@@ -13,7 +13,8 @@ class InGameScene : public scene::Scene {
 public:
   InGameScene(const core::vulkan::Context &context,
               core::ResourceHodler &resource_hodler,
-              const core::Settings &settings, const glm::mat4 &projection);
+              const core::Settings &settings, const glm::mat4 &projection,
+              const bool new_world = false, const size_t world_seed = 0);
   ~InGameScene();
 
   std::unique_ptr<scene::Scene> update(core::Window &window,

@@ -34,6 +34,12 @@ MainMenuScene::MainMenuScene(const core::vulkan::Context &context,
     m_next_scene = std::make_unique<InGameScene>(m_context, m_hodler,
                                                  m_settings, m_projection);
   };
+
+  m_new_world_button->on_click = [&]() {
+    m_next_scene = std::make_unique<InGameScene>(
+        m_context, m_hodler, m_settings, m_projection, true,
+        static_cast<size_t>(time(nullptr)));
+  };
 }
 
 std::unique_ptr<scene::Scene> MainMenuScene::update(core::Window &window,

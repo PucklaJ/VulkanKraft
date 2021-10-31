@@ -21,6 +21,7 @@ public:
         const block::Server &block_server);
   ~World();
 
+  void set_save_folder(const std::filesystem::path &folder, const size_t seed);
   // Place a block of the given type at the given world position
   void place_block(const glm::ivec3 &position, const block::Type block);
   // Destroy the block at the given world position
@@ -72,8 +73,6 @@ private:
   static constexpr size_t update_wait_fps = 100;
   // Sets the wait time for the wait_for_generation method
   static constexpr size_t generation_wait_fps = update_wait_fps / 4;
-  // Folder where all saved chunks are stored
-  static std::filesystem::path world_save_folder;
 
   // Converts a world position into a chunk position which can be used to
   // retrieve chunks from the m_chunks map. Use only one of these methods if you

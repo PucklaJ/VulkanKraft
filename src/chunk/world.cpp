@@ -10,21 +10,7 @@
 namespace chunk {
 World::World(const ::core::vulkan::Context &context,
              const block::Server &block_server)
-    : m_context(context), m_block_server(block_server) {
-
-  world_save_folder =
-      std::filesystem::temp_directory_path() / "vulkankraft_world";
-
-  m_save_world = std::make_unique<save::World>(world_save_folder);
-  const auto save_meta_data(m_save_world->read_meta_data());
-  if (save_meta_data) {
-    m_world_generation.seed(save_meta_data->seed);
-  } else {
-    save::World::MetaData meta_data{static_cast<size_t>(time(nullptr))};
-    m_save_world->write_meta_data(meta_data);
-    m_world_generation.seed(meta_data.seed);
-  }
-}
+    : m_context(context), m_block_server(block_server) {}
 
 World::~World() {
   m_running = false;
@@ -34,6 +20,25 @@ World::~World() {
   // Store all chunks
   for (const auto &[chunk_pos, chunk] : m_chunks) {
     m_save_world->store_chunk(chunk_pos, chunk->to_stored_blocks());
+  }
+}
+
+void World::set_save_folder(const std::filesystem::path &folder,
+                            const size_t seed) {
+  if (m_save_world) {
+    throw core::VulkanKraftException(
+        "tried to call chunk::World::set_save_folder "
+        "with already set save folder");
+  }
+
+  m_save_world = std::make_unique<save::World>(folder);
+  const auto save_meta_data(m_save_world->read_meta_data());
+  if (save_meta_data) {
+    m_world_generation.seed(save_meta_data->seed);
+  } else {
+    save::World::MetaData meta_data{seed};
+    m_save_world->write_meta_data(meta_data);
+    m_world_generation.seed(meta_data.seed);
   }
 }
 
@@ -271,8 +276,6 @@ void World::clear_and_reseed() {
   m_chunks.clear();
   m_world_generation.seed(time(nullptr));
 }
-
-std::filesystem::path World::world_save_folder;
 
 bool World::_chunks_to_update_contains(
     const std::vector<std::weak_ptr<Chunk>> &chunks_to_update,

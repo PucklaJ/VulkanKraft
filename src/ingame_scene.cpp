@@ -4,7 +4,8 @@
 InGameScene::InGameScene(const core::vulkan::Context &context,
                          core::ResourceHodler &hodler,
                          const core::Settings &settings,
-                         const glm::mat4 &projection)
+                         const glm::mat4 &projection, const bool new_world,
+                         const size_t world_seed)
     : m_physics_server(1.0f / static_cast<float>(settings.max_fps)),
       m_fps_text(context,
                  hodler.get_font(core::ResourceHodler::debug_font_name),
@@ -23,6 +24,16 @@ InGameScene::InGameScene(const core::vulkan::Context &context,
       m_chunk_shader(
           hodler.get_shader(core::ResourceHodler::chunk_mesh_shader_name)),
       m_projection(projection) {
+
+  const std::filesystem::path world_save_folder(
+      settings.settings_folder / core::Settings::world_save_folder_name /
+      "test_world");
+
+  if (new_world) {
+    std::filesystem::remove_all(world_save_folder);
+  }
+
+  m_world.set_save_folder(world_save_folder, world_seed);
 
   m_world.set_center_position(m_player.position);
   m_fog_max_distance = m_world.set_render_distance(settings.render_distance);

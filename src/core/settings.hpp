@@ -12,6 +12,9 @@ public:
   static constexpr float near_plane = 0.01f;
   // The far plane of the perspective projection matrix used for all 3D objects
   static constexpr float far_plane = 1000.0f;
+  static constexpr char settings_folder_name[] = ".vulkankraft";
+  static constexpr char world_save_folder_name[] = "worlds";
+  static constexpr char settings_file_name[] = "settings.json";
 
   Settings();
   ~Settings();
@@ -38,8 +41,6 @@ public:
   }
 
 private:
-  static constexpr char settings_folder_name[] = ".vulkankraft";
-  static constexpr char settings_file_name[] = "settings.json";
   static constexpr char controller_db_file_name[] = "controller_db.txt";
   static constexpr char controller_db_temp_file_name[] =
       "controller_db.txt.tmp";
