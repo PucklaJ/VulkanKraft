@@ -8,6 +8,12 @@ enum Type {
   DIRT,
 };
 
+enum Light {
+  MIN = 10,
+  MAX = 255,
+  STEPS = 10,
+};
+
 constexpr const char *type_as_str(const Type t) {
   switch (t) {
   case Type::AIR:

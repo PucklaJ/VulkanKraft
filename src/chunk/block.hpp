@@ -4,6 +4,7 @@
 #include "../physics/aabb.hpp"
 #include <array>
 #include <glm/glm.hpp>
+#include <limits>
 #include <vector>
 
 namespace chunk {
@@ -57,6 +58,11 @@ public:
   constexpr void top_face(const bool value) { _set_face(top_face_bit, value); }
   constexpr void bot_face(const bool value) { _set_face(bot_face_bit, value); }
 
+  inline float light() const {
+    return static_cast<float>(m_light) /
+           static_cast<float>(std::numeric_limits<decltype(m_light)>::max());
+  }
+
   void generate(const block::Server &block_server,
                 std::vector<Vertex> &vertices, std::vector<uint32_t> &indices,
                 const glm::vec3 &position) const;
@@ -76,9 +82,10 @@ private:
   _create_cube(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices,
                const glm::vec3 &position,
                const block::Server::TextureCoordinates &tex_coords,
-               const bool front_face = true, const bool back_face = true,
-               const bool left_face = true, const bool right_face = true,
-               const bool top_face = true, const bool bot_face = true);
+               const float light, const bool front_face = true,
+               const bool back_face = true, const bool left_face = true,
+               const bool right_face = true, const bool top_face = true,
+               const bool bot_face = true);
 
   constexpr bool _get_face(const uint8_t bit) const {
     return (m_faces & bit) == bit;
@@ -88,6 +95,7 @@ private:
   }
 
   uint8_t m_faces;
+  uint8_t m_light;
 };
 
 class BlockArray {

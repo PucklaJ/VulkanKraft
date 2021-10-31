@@ -4,7 +4,8 @@ namespace chunk {
 Vertex::Vertex(float x, float y, float z, float u, float v, float _light)
     : position(x, y, z), uv(u, v), light(_light) {}
 
-Block::Block() : type(block::Type::AIR), m_faces(0) {}
+Block::Block()
+    : type(block::Type::AIR), m_faces(0), m_light(block::Light::MAX) {}
 
 void Block::generate(const block::Server &block_server,
                      std::vector<Vertex> &vertices,
@@ -12,7 +13,7 @@ void Block::generate(const block::Server &block_server,
                      const glm::vec3 &position) const {
   const auto &tex_coords = block_server.get_texture_coordinates(type);
 
-  _create_cube(vertices, indices, position, tex_coords, front_face(),
+  _create_cube(vertices, indices, position, tex_coords, light(), front_face(),
                back_face(), left_face(), right_face(), top_face(), bot_face());
 }
 
@@ -23,9 +24,10 @@ physics::AABB Block::to_aabb(const glm::vec3 &position) const {
 void Block::_create_cube(std::vector<Vertex> &vertices,
                          std::vector<uint32_t> &indices, const glm::vec3 &p,
                          const block::Server::TextureCoordinates &tex_coords,
-                         const bool front_face, const bool back_face,
-                         const bool left_face, const bool right_face,
-                         const bool top_face, const bool bot_face) {
+                         const float light, const bool front_face,
+                         const bool back_face, const bool left_face,
+                         const bool right_face, const bool top_face,
+                         const bool bot_face) {
   if (!(front_face || back_face || left_face || right_face || top_face ||
         bot_face))
     return;
@@ -35,13 +37,13 @@ void Block::_create_cube(std::vector<Vertex> &vertices,
     vertices.reserve(vertices.size() + vertices_per_face);
 
     vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + 0.5f,
-                          tex_coords.front.x, tex_coords.front.w, 1.0f); // 0
+                          tex_coords.front.x, tex_coords.front.w, light); // 0
     vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + 0.5f,
-                          tex_coords.front.z, tex_coords.front.w, 1.0f); // 1
+                          tex_coords.front.z, tex_coords.front.w, light); // 1
     vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + 0.5f,
-                          tex_coords.front.z, tex_coords.front.y, 1.0f); // 2
+                          tex_coords.front.z, tex_coords.front.y, light); // 2
     vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + 0.5f,
-                          tex_coords.front.x, tex_coords.front.y, 1.0f); // 3
+                          tex_coords.front.x, tex_coords.front.y, light); // 3
 
     indices.reserve(indices.size() + indices_per_face);
     indices.emplace_back(i + 0);
@@ -57,13 +59,13 @@ void Block::_create_cube(std::vector<Vertex> &vertices,
     vertices.reserve(vertices.size() + vertices_per_face);
 
     vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + -0.5f,
-                          tex_coords.back.x, tex_coords.back.y, 1.0f); // 4
+                          tex_coords.back.x, tex_coords.back.y, light); // 4
     vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + -0.5f,
-                          tex_coords.back.z, tex_coords.back.y, 1.0f); // 5
+                          tex_coords.back.z, tex_coords.back.y, light); // 5
     vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + -0.5f,
-                          tex_coords.back.z, tex_coords.back.w, 1.0f); // 6
+                          tex_coords.back.z, tex_coords.back.w, light); // 6
     vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + -0.5f,
-                          tex_coords.back.x, tex_coords.back.w, 1.0f); // 7
+                          tex_coords.back.x, tex_coords.back.w, light); // 7
 
     indices.reserve(indices.size() + indices_per_face);
     indices.emplace_back(i + 1);
@@ -79,13 +81,17 @@ void Block::_create_cube(std::vector<Vertex> &vertices,
     vertices.reserve(vertices.size() + vertices_per_face);
 
     vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + -0.5f,
-                          tex_coords.right.x, tex_coords.right.y, 1.0f); // 10
+                          tex_coords.right.x, tex_coords.right.y,
+                          light); // 10
     vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + 0.5f,
-                          tex_coords.right.z, tex_coords.right.w, 1.0f); // 13
+                          tex_coords.right.z, tex_coords.right.w,
+                          light); // 13
     vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + -0.5f,
-                          tex_coords.right.z, tex_coords.right.y, 1.0f); // 16
+                          tex_coords.right.z, tex_coords.right.y,
+                          light); // 16
     vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + 0.5f,
-                          tex_coords.right.x, tex_coords.right.w, 1.0f); // 17
+                          tex_coords.right.x, tex_coords.right.w,
+                          light); // 17
 
     indices.reserve(indices.size() + indices_per_face);
     indices.emplace_back(i + 1);
@@ -101,14 +107,14 @@ void Block::_create_cube(std::vector<Vertex> &vertices,
     vertices.reserve(vertices.size() + vertices_per_face);
 
     vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + -0.5f,
-                          tex_coords.left.z, tex_coords.left.y, 1.0f); // 11
+                          tex_coords.left.z, tex_coords.left.y, light); // 11
     vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + 0.5f,
 
-                          tex_coords.left.x, tex_coords.left.w, 1.0f); // 12
+                          tex_coords.left.x, tex_coords.left.w, light); // 12
     vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + -0.5f,
-                          tex_coords.left.x, tex_coords.left.y, 1.0f); // 18
+                          tex_coords.left.x, tex_coords.left.y, light); // 18
     vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + 0.5f,
-                          tex_coords.left.z, tex_coords.left.w, 1.0f); // 19
+                          tex_coords.left.z, tex_coords.left.w, light); // 19
 
     indices.reserve(indices.size() + indices_per_face);
     indices.emplace_back(i + 2);
@@ -124,13 +130,13 @@ void Block::_create_cube(std::vector<Vertex> &vertices,
     vertices.reserve(vertices.size() + vertices_per_face);
 
     vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + 0.5f, tex_coords.top.x,
-                          tex_coords.top.w, 1.0f); // 8
+                          tex_coords.top.w, light); // 8
     vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + 0.5f, tex_coords.top.z,
-                          tex_coords.top.w, 1.0f); // 9
+                          tex_coords.top.w, light); // 9
     vertices.emplace_back(p.x + 0.5f, p.y + 0.5f, p.z + -0.5f, tex_coords.top.z,
-                          tex_coords.top.y, 1.0f); // 10
+                          tex_coords.top.y, light); // 10
     vertices.emplace_back(p.x + -0.5f, p.y + 0.5f, p.z + -0.5f,
-                          tex_coords.top.x, tex_coords.top.y, 1.0f); // 11
+                          tex_coords.top.x, tex_coords.top.y, light); // 11
 
     indices.reserve(indices.size() + 6);
     indices.emplace_back(i + 0);
@@ -146,13 +152,13 @@ void Block::_create_cube(std::vector<Vertex> &vertices,
     vertices.reserve(vertices.size() + vertices_per_face);
 
     vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + 0.5f,
-                          tex_coords.bot.x, tex_coords.bot.y, 1.0f); // 12
+                          tex_coords.bot.x, tex_coords.bot.y, light); // 12
     vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + 0.5f, tex_coords.bot.z,
-                          tex_coords.bot.y, 1.0f); // 13
+                          tex_coords.bot.y, light); // 13
     vertices.emplace_back(p.x + 0.5f, p.y + -0.5f, p.z + -0.5f,
-                          tex_coords.bot.z, tex_coords.bot.w, 1.0f); // 14
+                          tex_coords.bot.z, tex_coords.bot.w, light); // 14
     vertices.emplace_back(p.x + -0.5f, p.y + -0.5f, p.z + -0.5f,
-                          tex_coords.bot.x, tex_coords.bot.w, 1.0f); // 15
+                          tex_coords.bot.x, tex_coords.bot.w, light); // 15
 
     indices.reserve(indices.size() + indices_per_face);
     indices.emplace_back(i + 3);
