@@ -276,6 +276,7 @@ void Shader::_create_descriptor_pool(const vulkan::Context &context,
   }
 
   vk::DescriptorPoolCreateInfo pi;
+  pi.flags |= vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
   pi.poolSizeCount = static_cast<uint32_t>(pool_sizes.size());
   pi.pPoolSizes = pool_sizes.data();
   pi.maxSets = static_cast<uint32_t>(m_context.get_swap_chain_image_count());

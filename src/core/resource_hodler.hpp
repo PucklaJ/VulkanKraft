@@ -78,12 +78,12 @@ private:
   void _load_all_shaders(const vulkan::Context &context,
                          const Settings &settings);
 
+  // Stores all shaders that have been loaded
+  std::map<std::string, Shader> m_hodled_shaders;
   // Stores all textures that have been loaded
   std::map<std::string, Texture> m_hodled_textures;
   // Store all fonts that have been loaded
   std::map<std::string, text::Font> m_hodled_fonts;
-  // Stores all shaders that have been loaded
-  std::map<std::string, Shader> m_hodled_shaders;
 
   const vulkan::Context &m_context;
 };

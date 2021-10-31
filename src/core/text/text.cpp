@@ -22,9 +22,9 @@ void Text::set_string(const std::wstring &string) {
     return;
 
   m_string = string;
-  auto dynamic_sets(m_text_texture.extract_dynamic_sets());
+  auto [dynamic_sets, dynamic_pool] = m_text_texture.extract_dynamic_sets();
   m_text_texture = _build_texture();
-  m_text_texture.set_dynamic_sets(std::move(dynamic_sets));
+  m_text_texture.set_dynamic_sets(dynamic_sets, dynamic_pool);
   _build_buffers();
 }
 
@@ -33,9 +33,9 @@ void Text::set_font_size(const float font_size) {
     return;
 
   m_font_size = font_size;
-  auto dynamic_sets(m_text_texture.extract_dynamic_sets());
+  auto [dynamic_sets, dynamic_pool] = m_text_texture.extract_dynamic_sets();
   m_text_texture = _build_texture();
-  m_text_texture.set_dynamic_sets(std::move(dynamic_sets));
+  m_text_texture.set_dynamic_sets(dynamic_sets, dynamic_pool);
   _build_buffers();
 }
 

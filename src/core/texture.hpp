@@ -93,13 +93,16 @@ public:
   }
 
   // Move the dynamic sets out of the Texture
-  inline std::vector<vk::DescriptorSet> extract_dynamic_sets() {
-    return std::move(m_dynamic_sets);
+  inline std::pair<std::vector<vk::DescriptorSet>, vk::DescriptorPool>
+  extract_dynamic_sets() {
+    return std::make_pair(std::move(m_dynamic_sets), m_dynamic_pool);
   }
 
   // Set the dynamic sets of the Texture
-  inline void set_dynamic_sets(std::vector<vk::DescriptorSet> sets) {
+  inline void set_dynamic_sets(std::vector<vk::DescriptorSet> sets,
+                               vk::DescriptorPool pool) {
     m_dynamic_sets = std::move(sets);
+    m_dynamic_pool = pool;
     m_dynamic_writes_to_perform.clear();
     for (uint32_t i = 0; i < m_dynamic_sets.size(); i++) {
       m_dynamic_writes_to_perform.emplace(i);
@@ -141,6 +144,7 @@ private:
   vk::Sampler m_sampler;
   // Descriptor sets for the shader
   std::vector<vk::DescriptorSet> m_dynamic_sets;
+  vk::DescriptorPool m_dynamic_pool;
   // What binding point the shader should use
   uint32_t m_dynamic_binding_point;
   // Which descriptor sets should be updated (every element represents a swap

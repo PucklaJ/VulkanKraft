@@ -34,10 +34,12 @@ Texture::Texture(Texture &&rhs)
       m_image_view(std::move(rhs.m_image_view)),
       m_memory(std::move(rhs.m_memory)), m_sampler(std::move(rhs.m_sampler)),
       m_dynamic_sets(std::move(rhs.m_dynamic_sets)),
+      m_dynamic_pool(rhs.m_dynamic_pool),
       m_dynamic_writes_to_perform(std::move(rhs.m_dynamic_writes_to_perform)),
       m_dynamic_binding_point(rhs.m_dynamic_binding_point),
       m_width(rhs.m_width), m_height(rhs.m_height), m_context(rhs.m_context) {
   rhs.m_dynamic_sets.clear();
+  rhs.m_dynamic_pool = VK_NULL_HANDLE;
   rhs.m_dynamic_writes_to_perform.clear();
   rhs.m_image = VK_NULL_HANDLE;
   rhs.m_image_view = VK_NULL_HANDLE;
@@ -54,6 +56,7 @@ Texture &Texture::operator=(Texture &&rhs) {
   m_memory = std::move(rhs.m_memory);
   m_sampler = std::move(rhs.m_sampler);
   m_dynamic_sets = std::move(rhs.m_dynamic_sets);
+  m_dynamic_pool = rhs.m_dynamic_pool;
   m_dynamic_writes_to_perform = std::move(rhs.m_dynamic_writes_to_perform);
   m_dynamic_binding_point = rhs.m_dynamic_binding_point;
   m_width = rhs.m_width;
@@ -64,6 +67,7 @@ Texture &Texture::operator=(Texture &&rhs) {
   rhs.m_memory = VK_NULL_HANDLE;
   rhs.m_sampler = VK_NULL_HANDLE;
   rhs.m_dynamic_sets.clear();
+  rhs.m_dynamic_pool = VK_NULL_HANDLE;
   rhs.m_dynamic_writes_to_perform.clear();
   rhs.m_dynamic_binding_point = -1;
 
@@ -102,8 +106,8 @@ uint32_t Texture::_get_image_size(const uint32_t width, const uint32_t height,
 
 Texture::Texture(const vulkan::Context &context,
                  const Texture::Builder &builder, const void *data)
-    : m_dynamic_binding_point(-1), m_width(builder.m_width),
-      m_height(builder.m_height), m_context(context) {
+    : m_dynamic_binding_point(-1), m_dynamic_pool(VK_NULL_HANDLE),
+      m_width(builder.m_width), m_height(builder.m_height), m_context(context) {
   _create_image(builder, data);
   if (builder.m_mip_levels > 1) {
     _generate_mip_maps(builder);
@@ -408,6 +412,8 @@ void Texture::_create_descriptor_sets(const vk::DescriptorPool &pool,
         e.what());
   }
 
+  m_dynamic_pool = pool;
+
   m_dynamic_writes_to_perform.clear();
   for (uint32_t i = 0; i < m_dynamic_sets.size(); i++) {
     m_dynamic_writes_to_perform.emplace(i);
@@ -442,6 +448,16 @@ void Texture::_destroy() {
     m_context.get_device().destroyImage(m_image);
   if (m_memory)
     m_context.get_device().freeMemory(m_memory);
+
+  if (!m_dynamic_sets.empty()) {
+    try {
+      m_context.get_device().freeDescriptorSets(m_dynamic_pool, m_dynamic_sets);
+    } catch (const std::runtime_error &e) {
+      throw VulkanKraftException(
+          std::string("failed to free dynamic sets of core::Texture: ") +
+          e.what());
+    }
+  }
 }
 
 } // namespace core
