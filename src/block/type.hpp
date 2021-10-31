@@ -9,8 +9,6 @@ enum Type {
 };
 
 enum Light {
-  MIN = 10,
-  MAX = 255,
   STEPS = 10,
 };
 

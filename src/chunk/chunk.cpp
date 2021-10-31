@@ -51,6 +51,7 @@ void Chunk::generate(const block::Server &block_server,
 
 void Chunk::generate_block_change(const block::Server &block_server,
                                   const glm::ivec3 &position) {
+  compute_sun_light();
   _check_neighboring_faces_of_block(position);
 
   if (auto left(m_left.lock()); position.x == 0 && left) {
@@ -113,6 +114,55 @@ int Chunk::get_height(glm::ivec3 world_pos) const {
   }
 
   return height;
+}
+
+void Chunk::compute_sun_light() {
+  for (int x = 0; x < block_width; x++) {
+    for (int z = 0; z < block_depth; z++) {
+      float light_value{1.0f};
+
+      for (int y = block_height - 1; y >= 0; y--) {
+        auto &block = get_block(x, y, z);
+        if (block.type != block::Type::AIR) {
+          block.set_top_light(light_value);
+          light_value = 1.0f / static_cast<float>(0b1111);
+        }
+
+        if (x != 0) {
+          get_block(x - 1, y, z).set_right_light(light_value);
+        } else {
+          if (auto left(m_left.lock()); left) {
+            left->get_block(block_width - 1, y, z).set_right_light(light_value);
+          }
+        }
+
+        if (x != block_width - 1) {
+          get_block(x + 1, y, z).set_left_light(light_value);
+        } else {
+          if (auto right(m_right.lock()); right) {
+            right->get_block(0, y, z).set_left_light(light_value);
+          }
+        }
+
+        if (z != 0) {
+          get_block(x, y, z - 1).set_front_light(light_value);
+        } else {
+          if (auto front(m_front.lock()); front) {
+            front->get_block(x, y, block_depth - 1)
+                .set_front_light(light_value);
+          }
+        }
+
+        if (z != block_depth - 1) {
+          get_block(x, y, z + 1).set_back_light(light_value);
+        } else {
+          if (auto back(m_back.lock()); back) {
+            back->get_block(x, y, 0).set_back_light(light_value);
+          }
+        }
+      }
+    }
+  }
 }
 
 void Chunk::from_world_generation(

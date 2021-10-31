@@ -24,6 +24,7 @@ public:
   void render(const ::core::vulkan::RenderCall &render_call,
               size_t &max_chunk_gen);
   int get_height(glm::ivec3 world_pos) const;
+  void compute_sun_light();
 
   inline void set_front(std::shared_ptr<Chunk> c) { m_front = c; }
   inline void set_back(std::shared_ptr<Chunk> c) { m_back = c; }

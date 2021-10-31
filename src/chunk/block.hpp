@@ -58,9 +58,30 @@ public:
   constexpr void top_face(const bool value) { _set_face(top_face_bit, value); }
   constexpr void bot_face(const bool value) { _set_face(bot_face_bit, value); }
 
-  inline float light() const {
-    return static_cast<float>(m_light) /
-           static_cast<float>(std::numeric_limits<decltype(m_light)>::max());
+  constexpr float front_light() const { return _get_light(front_light_bit); }
+  constexpr float back_light() const { return _get_light(back_light_bit); }
+  constexpr float left_light() const { return _get_light(left_light_bit); }
+  constexpr float right_light() const { return _get_light(right_light_bit); }
+  constexpr float top_light() const { return _get_light(top_light_bit); }
+  constexpr float bot_light() const { return _get_light(bot_light_bit); }
+
+  constexpr void set_front_light(const float value) {
+    _set_light(front_light_bit, value);
+  }
+  constexpr void set_back_light(const float value) {
+    _set_light(back_light_bit, value);
+  }
+  constexpr void set_left_light(const float value) {
+    _set_light(left_light_bit, value);
+  }
+  constexpr void set_right_light(const float value) {
+    _set_light(right_light_bit, value);
+  }
+  constexpr void set_top_light(const float value) {
+    _set_light(top_light_bit, value);
+  }
+  constexpr void set_bot_light(const float value) {
+    _set_light(bot_light_bit, value);
   }
 
   void generate(const block::Server &block_server,
@@ -78,14 +99,24 @@ private:
   static constexpr uint8_t top_face_bit = 1 << 4;
   static constexpr uint8_t bot_face_bit = 1 << 5;
 
+  static constexpr uint8_t light_bits_per_face = 4;
+  static constexpr uint32_t front_light_bit = 0;
+  static constexpr uint32_t back_light_bit = light_bits_per_face;
+  static constexpr uint32_t left_light_bit = light_bits_per_face * 2;
+  static constexpr uint32_t right_light_bit = light_bits_per_face * 3;
+  static constexpr uint32_t top_light_bit = light_bits_per_face * 4;
+  static constexpr uint32_t bot_light_bit = light_bits_per_face * 5;
+
   static void
   _create_cube(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices,
                const glm::vec3 &position,
                const block::Server::TextureCoordinates &tex_coords,
-               const float light, const bool front_face = true,
-               const bool back_face = true, const bool left_face = true,
-               const bool right_face = true, const bool top_face = true,
-               const bool bot_face = true);
+               const float front_light = 1.0f, const float back_light = 1.0f,
+               const float left_light = 1.0f, const float right_light = 1.0f,
+               const float top_light = 1.0f, const float bot_light = 1.0f,
+               const bool front_face = true, const bool back_face = true,
+               const bool left_face = true, const bool right_face = true,
+               const bool top_face = true, const bool bot_face = true);
 
   constexpr bool _get_face(const uint8_t bit) const {
     return (m_faces & bit) == bit;
@@ -94,8 +125,20 @@ private:
     m_faces = m_faces & (~bit * !value + ~0 * value) | (bit * value);
   }
 
+  constexpr float _get_light(const uint32_t bit) const {
+    const auto int_value{(m_light >> bit) & 0b1111};
+    return static_cast<float>(int_value) / static_cast<float>(0b1111);
+  }
+
+  constexpr void _set_light(const uint32_t bit, const float value) {
+    const auto int_value{
+        static_cast<uint32_t>(value * static_cast<float>(0b1111))};
+    m_light &= ~(0b1111 << bit);
+    m_light |= int_value << bit;
+  }
+
   uint8_t m_faces;
-  uint8_t m_light;
+  uint32_t m_light;
 };
 
 class BlockArray {

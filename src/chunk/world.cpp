@@ -517,6 +517,7 @@ void World::_update() {
     for (auto &_chunk : chunks_to_update) {
       if (auto chunk = _chunk.lock(); chunk) {
         chunk->needs_face_update();
+        chunk->compute_sun_light();
         chunk->generate(m_block_server);
       }
     }
