@@ -13,7 +13,7 @@ class InGameScene : public scene::Scene {
 public:
   InGameScene(const core::vulkan::Context &context,
               core::ResourceHodler &resource_hodler,
-              const core::Settings &settings);
+              const core::Settings &settings, const glm::mat4 &projection);
   ~InGameScene();
 
   std::unique_ptr<scene::Scene> update(core::Window &window,
@@ -39,6 +39,6 @@ private:
   core::Shader &m_chunk_shader;
 
   float m_fog_max_distance;
-  const float m_fov;
   chunk::GlobalUniform m_chunk_global;
+  const glm::mat4 &m_projection;
 };

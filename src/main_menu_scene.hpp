@@ -11,7 +11,8 @@ class MainMenuScene : public scene::Scene {
 public:
   MainMenuScene(const core::vulkan::Context &context,
                 core::ResourceHodler &resource_hodler,
-                const core::Settings &settings, core::Window &window);
+                const core::Settings &settings, core::Window &window,
+                const glm::mat4 &projection);
 
   std::unique_ptr<scene::Scene> update(core::Window &window,
                                        const float delta_time) override;
@@ -29,4 +30,5 @@ private:
   const core::vulkan::Context &m_context;
   core::ResourceHodler &m_hodler;
   const core::Settings &m_settings;
+  const glm::mat4 &m_projection;
 };

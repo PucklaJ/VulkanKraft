@@ -21,7 +21,7 @@ int main(int args, char *argv[]) {
   core::FPSTimer timer(settings.max_fps);
   core::text::Text::GlobalUniform text_global;
   // The projection matrix for everything in the 3D space
-  glm::mat4 projection_matrix;
+  glm::mat4 projection;
 
   try {
     // Initialise the window
@@ -44,8 +44,8 @@ int main(int args, char *argv[]) {
     core::Render2D::set_shader(texture_2d_shader);
     core::text::Text::set_shader(text_shader);
 
-    std::unique_ptr<scene::Scene> current_scene(
-        std::make_unique<MainMenuScene>(context, hodler, settings, window));
+    std::unique_ptr<scene::Scene> current_scene(std::make_unique<MainMenuScene>(
+        context, hodler, settings, window, projection));
 
     // The game loop
     while (!window.should_close()) {
@@ -73,6 +73,12 @@ int main(int args, char *argv[]) {
 
         // Update the projection matrices
         const auto [width, height] = window.get_framebuffer_size();
+
+        projection = glm::perspective(
+            settings.field_of_view,
+            static_cast<float>(width) / static_cast<float>(height),
+            core::Settings::near_plane, core::Settings::far_plane);
+        projection[1][1] *= -1.0f;
 
         auto proj_2d(core::Render2D::update_projection_matrix(width, height,
                                                               render_call));

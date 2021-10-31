@@ -3,7 +3,8 @@
 
 InGameScene::InGameScene(const core::vulkan::Context &context,
                          core::ResourceHodler &hodler,
-                         const core::Settings &settings)
+                         const core::Settings &settings,
+                         const glm::mat4 &projection)
     : m_physics_server(1.0f / static_cast<float>(settings.max_fps)),
       m_fps_text(context,
                  hodler.get_font(core::ResourceHodler::debug_font_name),
@@ -21,7 +22,7 @@ InGameScene::InGameScene(const core::vulkan::Context &context,
       m_world(context, m_block_server),
       m_chunk_shader(
           hodler.get_shader(core::ResourceHodler::chunk_mesh_shader_name)),
-      m_fov(settings.field_of_view) {
+      m_projection(projection) {
 
   m_world.set_center_position(m_player.position);
   m_fog_max_distance = m_world.set_render_distance(settings.render_distance);
@@ -125,16 +126,10 @@ std::unique_ptr<scene::Scene> InGameScene::update(core::Window &window,
 
   m_physics_server.update(m_world, delta_time);
 
-  // Update the projection matrices
-  const auto [width, height] = window.get_framebuffer_size();
-  m_chunk_global.proj_view = glm::perspective(
-      m_fov, static_cast<float>(width) / static_cast<float>(height),
-      core::Settings::near_plane, core::Settings::far_plane);
-  m_chunk_global.proj_view[1][1] *= -1.0f;
-
   // Update the uniforms
-  m_chunk_global.proj_view =
-      m_chunk_global.proj_view * m_player.create_view_matrix();
+  // NOTE: This is the projection matrix of the last frame. But this shouldn't
+  // be an issue
+  m_chunk_global.proj_view = m_projection * m_player.create_view_matrix();
   m_chunk_global.eye_pos = m_player.get_eye_position();
 
   return nullptr;

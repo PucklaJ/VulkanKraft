@@ -4,7 +4,7 @@
 MainMenuScene::MainMenuScene(const core::vulkan::Context &context,
                              core::ResourceHodler &resource_hodler,
                              const core::Settings &settings,
-                             core::Window &window)
+                             core::Window &window, const glm::mat4 &projection)
     : m_context(context), m_hodler(resource_hodler), m_settings(settings),
       m_gui_context(
           context, window,
@@ -12,7 +12,8 @@ MainMenuScene::MainMenuScene(const core::vulkan::Context &context,
       m_title_text(
           context,
           resource_hodler.get_font(core::ResourceHodler::debug_font_name),
-          L"VulkanKraft") {
+          L"VulkanKraft"),
+      m_projection(projection) {
 
   glm::vec2 current_pos(settings.window_width / 2,
                         settings.window_height / 2 - 50 - 15);
@@ -30,8 +31,8 @@ MainMenuScene::MainMenuScene(const core::vulkan::Context &context,
   m_title_text.set_position(current_pos);
 
   m_continue_button->on_click = [&]() {
-    m_next_scene =
-        std::make_unique<InGameScene>(m_context, m_hodler, m_settings);
+    m_next_scene = std::make_unique<InGameScene>(m_context, m_hodler,
+                                                 m_settings, m_projection);
   };
 }
 
