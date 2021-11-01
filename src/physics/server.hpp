@@ -40,5 +40,7 @@ private:
   // The update call will seperated into multiple update calls if delta_time is
   // greater than this value
   const float m_desired_delta_time;
+
+  float m_elapsed_time;
 };
 } // namespace physics

@@ -6,10 +6,15 @@
 namespace physics {
 
 Server::Server(const float desired_delta_time)
-    : m_desired_delta_time(desired_delta_time) {}
+    : m_desired_delta_time(desired_delta_time), m_elapsed_time(0.0f) {}
 
 void Server::update(const chunk::World &world, const float delta_time) {
-  if (delta_time > max_delta_time)
+  m_elapsed_time += delta_time;
+
+  // NOTE: The physics are blocked for the first three second to fix the falling
+  // through map on start up. This should be removed when the physics are
+  // improved
+  if (delta_time > max_delta_time || m_elapsed_time < 3.0f)
     return;
 
   const auto iter_time{delta_time / static_cast<float>(iterations)};
