@@ -199,6 +199,11 @@ void Player::_update_input(core::Window &window, bool &button_jump,
           _abs_dead_zone(*vertical_value, axis_dead_zone) * axis_view_factor;
     }
     // ********************************
+  } else {
+    button_jump = false;
+    button_place = false;
+    button_down = false;
+    button_destroy = false;
   }
 
   // Mouse and Keyboard input
