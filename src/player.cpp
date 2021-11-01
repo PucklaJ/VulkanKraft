@@ -36,6 +36,7 @@ void Player::update(core::Window &window, chunk::World &world) {
   // ***** handle camera ***********
   m_rotation.x += -view.x * glm::radians(0.1f);
   m_rotation.y += -view.y * glm::radians(0.1f);
+  m_rotation.y = glm::clamp(m_rotation.y, min_y_rot, max_y_rot);
   // *******************************
 
   // **** handle movement *****

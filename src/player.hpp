@@ -45,6 +45,8 @@ private:
   static constexpr float aabb_depth = 0.7f;
   static constexpr float move_speed = 5.0f;
   static constexpr float jump_power = 5.0f;
+  static constexpr float max_y_rot = glm::radians(89.0f);
+  static constexpr float min_y_rot = glm::radians(-89.0f);
 
   // ********* Buttons and Gamepad ***********
   static constexpr int move_horizontal_gamepad_axis = GLFW_GAMEPAD_AXIS_LEFT_X;
