@@ -1,9 +1,9 @@
 set_project("VulkanKraft")
 add_requires("glfw", "glm", "stb", "vulkan-hpp", "nlohmann_json")
-if is_plat("windows") then
-  add_requires("libcurl", {shared = false})
+if is_plat("windows", "mingw") then
+  add_requires("libcurl", {configs = {shared = false}})
 else
-  add_requires("libcurl", {shared = true})
+  add_requires("libcurl", {configs = {shared = true}})
 end
 
 rule("shader")
@@ -11,9 +11,9 @@ rule("shader")
     on_buildcmd_file(function(target, batchcmds, sourcefile_glsl, opt)
             import("lib.detect.find_tool")
             local glslc = assert(find_tool("glslc"), "glslc not found!")
-            local hpp_gen = path.join("build", target:plat(), target:arch(), "release", "hpp_gen" .. (target:is_plat("windows") and ".exe" or ""))
+            local hpp_gen = path.join("build", os.host(), os.arch(), "release", "hpp_gen" .. (os.host() == "windows" and ".exe" or ""))
             if not os.exists(hpp_gen) then 
-                hpp_gen = path.join("build", target:plat(), target:arch(), "debug", "hpp_gen" .. (target:is_plat("windows") and ".exe" or ""))
+                hpp_gen = path.join("build", os.host(), os.arch(), "debug", "hpp_gen" .. (os.host() == "windows" and ".exe" or ""))
                 assert(os.exists(hpp_gen), "hpp_gen has not been built yet. Run \"xmake build hpp_gen\"")
             end
 
@@ -51,9 +51,9 @@ rule("shader")
 rule("texture")
   set_extensions(".png")
   on_buildcmd_file(function(target, batchcmds, sourcefile_png, opt)
-    local hpp_gen = path.join("build", target:plat(), target:arch(), "release", "hpp_gen" .. (target:is_plat("windows") and ".exe" or ""))
+    local hpp_gen = path.join("build", os.host(), os.arch(), "release", "hpp_gen" .. (os.host() == "windows" and ".exe" or ""))
     if not os.exists(hpp_gen) then 
-        hpp_gen = path.join("build", target:plat(), target:arch(), "debug", "hpp_gen" .. (target:is_plat("windows") and ".exe" or ""))
+        hpp_gen = path.join("build", os.host(), os.arch(), "debug", "hpp_gen" .. (os.host() == "windows" and ".exe" or ""))
         assert(os.exists(hpp_gen), "hpp_gen has not been built yet. Run \"xmake build hpp_gen\"")
     end
 
@@ -66,9 +66,9 @@ rule("texture")
 rule("font")
   set_extensions(".otf", ".ttf")
   on_buildcmd_file(function(target, batchcmds, sourcefile_ttf, opt)
-    local hpp_gen = path.join("build", target:plat(), target:arch(), "release", "hpp_gen" .. (target:is_plat("windows") and ".exe" or ""))
+    local hpp_gen = path.join("build", os.host(), os.arch(), "release", "hpp_gen" .. (os.host() == "windows" and ".exe" or ""))
     if not os.exists(hpp_gen) then 
-        hpp_gen = path.join("build", target:plat(), target:arch(), "debug", "hpp_gen" .. (target:is_plat("windows") and ".exe" or ""))
+        hpp_gen = path.join("build", os.host(), os.arch(), "debug", "hpp_gen" .. (os.host() == "windows" and ".exe" or ""))
         assert(os.exists(hpp_gen), "hpp_gen has not been built yet. Run \"xmake build hpp_gen\"")
     end
 
@@ -116,7 +116,10 @@ target("core")
         add_syslinks(path.join(vulkan_path, "Lib" .. (is_arch("x86") and "32" or ""), "vulkan-1"))
     end
   else
-    add_syslinks("vulkan", "pthread")
+    if is_plat("linux") then
+        add_syslinks("vulkan")
+    end
+    add_syslinks("pthread")
   end
   add_includedirs("resources")
 
