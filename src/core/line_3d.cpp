@@ -30,4 +30,6 @@ void Line3D::render(const vulkan::RenderCall &render_call) {
   render_call.render_vertices(m_num_vertices);
 }
 
+Shader *Line3D::m_shader = nullptr;
+
 } // namespace core

@@ -2,12 +2,14 @@
 
 #include "block/server.hpp"
 #include "chunk/world.hpp"
+#include "core/line_3d.hpp"
 #include "core/resource_hodler.hpp"
 #include "core/settings.hpp"
 #include "core/text/text.hpp"
 #include "physics/server.hpp"
 #include "player.hpp"
 #include "scene/scene.hpp"
+#include <optional>
 
 class InGameScene : public scene::Scene {
 public:
@@ -38,8 +40,11 @@ private:
 
   Player m_player;
   chunk::World m_world;
+  core::Line3D m_selected_block;
+  std::optional<glm::vec3> m_selected_position;
 
   core::Shader &m_chunk_shader;
+  core::Shader &m_line_3d_shader;
 
   float m_fog_max_distance;
   chunk::GlobalUniform m_chunk_global;

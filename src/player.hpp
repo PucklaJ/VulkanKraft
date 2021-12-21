@@ -9,6 +9,7 @@
 #include "physics/moving_object.hpp"
 #include "physics/server.hpp"
 #include <glm/glm.hpp>
+#include <optional>
 
 // The player class representing the character of the user and everything he can
 // do
@@ -35,6 +36,9 @@ public:
 
   // returns the projection matrix used for the crosshair
   void render(const core::vulkan::RenderCall &render_call);
+
+  std::optional<glm::ivec3>
+  get_selected_block_position(chunk::World &world) const;
 
 private:
   // The height of the player in blocks

@@ -24,6 +24,8 @@ InGameScene::InGameScene(const core::vulkan::Context &context,
       m_world(context, m_block_server),
       m_chunk_shader(
           hodler.get_shader(core::ResourceHodler::chunk_mesh_shader_name)),
+      m_line_3d_shader(
+          hodler.get_shader(core::ResourceHodler::line_3d_shader_name)),
       m_context(context), m_settings(settings), m_hodler(hodler),
       m_window(window), m_projection(projection) {
 
@@ -65,6 +67,119 @@ InGameScene::InGameScene(const core::vulkan::Context &context,
     // Place the player at the correct height
     m_player.position.y = static_cast<float>(*player_height);
   }
+
+  // Initialise selected block
+  m_selected_block.begin();
+
+  // FRONT
+  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+
+  // BACK
+  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+
+  // TOP
+  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+
+  // BOT
+  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+
+  // RIGHT
+  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+
+  // LEFT
+  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+
+  m_selected_block.end(context);
 }
 
 InGameScene::~InGameScene() {
@@ -143,6 +258,14 @@ std::unique_ptr<scene::Scene> InGameScene::update(core::Window &window,
   }
 
   m_player.update(window, m_world);
+  {
+    const auto block_pos(m_player.get_selected_block_position(m_world));
+    if (block_pos) {
+      m_selected_position = glm::vec3(block_pos->x, block_pos->y, block_pos->z);
+    } else {
+      m_selected_position.reset();
+    }
+  }
   m_world.set_center_position(m_player.position);
 
   m_physics_server.update(m_world, delta_time);
@@ -159,12 +282,23 @@ std::unique_ptr<scene::Scene> InGameScene::update(core::Window &window,
 void InGameScene::render(const core::vulkan::RenderCall &render_call,
                          const float delta_time) {
   m_chunk_shader.update_uniform_buffer(render_call, m_chunk_global);
+  if (m_selected_position) {
+    m_line_3d_shader.update_uniform_buffer(
+        render_call,
+        m_chunk_global.proj_view * glm::translate(*m_selected_position));
+  }
 
   // Render the world
   m_chunk_shader.bind(render_call);
   // fog max distance
   m_chunk_shader.set_push_constant(render_call, m_fog_max_distance);
   m_world.render(render_call);
+
+  // Render selected block
+  if (m_selected_position) {
+    core::Line3D::bind_shader(render_call);
+    m_selected_block.render(render_call);
+  }
 
   // Render the player
   core::Render2D::bind_shader(render_call);

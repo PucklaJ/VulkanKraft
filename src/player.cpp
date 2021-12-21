@@ -136,6 +136,14 @@ void Player::render(const core::vulkan::RenderCall &render_call) {
   m_crosshair.render(render_call);
 }
 
+std::optional<glm::ivec3>
+Player::get_selected_block_position(chunk::World &world) const {
+  const physics::Ray ray{get_eye_position(), get_look_direction()};
+  physics::Ray::Face face;
+  float _;
+  return world.raycast_block(ray, face, _);
+}
+
 void Player::_update_input(core::Window &window, bool &button_jump,
                            bool &button_down, bool &button_place,
                            bool &button_destroy, glm::vec2 &move_direction,
