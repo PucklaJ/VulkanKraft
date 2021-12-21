@@ -25,7 +25,8 @@ public:
       vk::VertexInputBindingDescription vertex_binding,
       std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
       const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending,
-      const std::vector<vk::PushConstantRange> &push_constant_ranges);
+      const std::vector<vk::PushConstantRange> &push_constant_ranges,
+      const vk::PrimitiveTopology primitive_topology);
   ~GraphicsPipeline();
 
   // Bind the pipeline before executing graphics commands
@@ -47,7 +48,8 @@ private:
       vk::VertexInputBindingDescription vertex_binding,
       std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
       const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending,
-      const std::vector<vk::PushConstantRange> &push_constant_ranges);
+      const std::vector<vk::PushConstantRange> &push_constant_ranges,
+      const vk::PrimitiveTopology primitive_topology);
   void _destroy();
 
   vk::Pipeline m_handle;

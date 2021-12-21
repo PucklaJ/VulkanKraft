@@ -98,6 +98,11 @@ public:
       return *this;
     }
 
+    inline Builder &primitive_topology(const vk::PrimitiveTopology topology) {
+      m_primitive_topology = topology;
+      return *this;
+    }
+
   private:
     // Stores the initial state and for what shader stage the uniform buffer
     // is used
@@ -120,6 +125,7 @@ public:
     bool m_alpha_blending;
     std::vector<vk::PushConstantRange> m_push_constants;
     uint32_t m_current_push_constant_offset;
+    vk::PrimitiveTopology m_primitive_topology;
   };
 
   Shader(Shader &&rhs);

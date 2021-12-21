@@ -6,7 +6,8 @@ namespace core {
 Shader::Builder::Builder()
     : m_texture_count(0),
       m_alpha_blending(false), m_vertex_code{0, 0}, m_fragment_code{0, 0},
-      m_current_push_constant_offset(0) {}
+      m_current_push_constant_offset(0),
+      m_primitive_topology(vk::PrimitiveTopology::eTriangleList) {}
 
 Shader Shader::Builder::build(const vulkan::Context &context,
                               const Settings &settings) {
@@ -241,7 +242,7 @@ void Shader::_create_graphics_pipeline(const vulkan::Context &context,
         context, std::move(all_layouts), std::move(builder.m_vertex_code),
         std::move(builder.m_fragment_code), std::move(bind), std::move(atts),
         settings.msaa_samples, builder.m_alpha_blending,
-        builder.m_push_constants);
+        builder.m_push_constants, builder.m_primitive_topology);
   } catch (const VulkanKraftException &e) {
     throw VulkanKraftException(
         std::string("failed to create graphics pipeline of core::Shader: ") +

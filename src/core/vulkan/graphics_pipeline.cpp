@@ -12,11 +12,13 @@ GraphicsPipeline::GraphicsPipeline(
     vk::VertexInputBindingDescription vertex_binding,
     std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
     const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending,
-    const std::vector<vk::PushConstantRange> &push_constant_ranges)
+    const std::vector<vk::PushConstantRange> &push_constant_ranges,
+    const vk::PrimitiveTopology primitive_topology)
     : m_context(context) {
   _create_handle(std::move(descriptor_set_layouts), vertex_code, fragment_code,
                  std::move(vertex_binding), std::move(vertex_attributes),
-                 msaa_samples, alpha_blending, push_constant_ranges);
+                 msaa_samples, alpha_blending, push_constant_ranges,
+                 primitive_topology);
 }
 
 GraphicsPipeline::~GraphicsPipeline() { _destroy(); }
@@ -46,7 +48,8 @@ void GraphicsPipeline::_create_handle(
     vk::VertexInputBindingDescription vertex_binding,
     std::vector<vk::VertexInputAttributeDescription> vertex_attributes,
     const vk::SampleCountFlagBits msaa_samples, const bool alpha_blending,
-    const std::vector<vk::PushConstantRange> &push_constant_ranges) {
+    const std::vector<vk::PushConstantRange> &push_constant_ranges,
+    const vk::PrimitiveTopology primitive_topology) {
   try {
     m_vertex_module =
         _create_shader_module(m_context.get_device(), vertex_code);
@@ -83,7 +86,7 @@ void GraphicsPipeline::_create_handle(
   vi_i.pVertexAttributeDescriptions = vertex_attributes.data();
 
   vk::PipelineInputAssemblyStateCreateInfo ia_i;
-  ia_i.topology = vk::PrimitiveTopology::eTriangleList;
+  ia_i.topology = primitive_topology;
   ia_i.primitiveRestartEnable = VK_FALSE;
 
   vk::PipelineViewportStateCreateInfo vs_i;
