@@ -484,15 +484,43 @@ void Context::_pick_physical_device(
     throw VulkanKraftException("no GPUs with vulkan support found");
   }
 
+  // Store all physical devices that pass the suitability test
+  std::vector<std::pair<vk::PhysicalDevice, size_t>> suitable_devices;
+
   for (const auto &d : devices) {
     if (_is_device_suitable(d, m_surface, extensions)) {
-      m_physical_device = d;
+      // Assign each suitable device points based on their suitability
+      size_t points{0};
+      const auto props(d.getProperties());
+
+      if (props.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) {
+        points = 100;
+      } else if (props.deviceType == vk::PhysicalDeviceType::eVirtualGpu) {
+        points = 50;
+      } else if (props.deviceType == vk::PhysicalDeviceType::eIntegratedGpu) {
+        points = 10;
+      } else if (props.deviceType == vk::PhysicalDeviceType::eCpu) {
+        points = 1;
+      }
+
+      suitable_devices.emplace_back(d, points);
     }
   }
 
-  if (!m_physical_device) {
+  if (suitable_devices.empty()) {
     throw VulkanKraftException("failed to find a suitable GPU");
   }
+
+  // Choose one of the suitable devices
+  size_t choosen_index{0}, choosen_points{suitable_devices[0].second};
+  for (size_t i = 1; i < suitable_devices.size(); i++) {
+    if (suitable_devices[i].second > choosen_points) {
+      choosen_index = i;
+      choosen_points = suitable_devices[i].second;
+    }
+  }
+
+  m_physical_device = suitable_devices[choosen_index].first;
 
   m_physical_device_info =
       std::make_unique<PhysicalDeviceInfo>(m_physical_device, m_surface);
