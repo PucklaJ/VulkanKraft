@@ -5,6 +5,8 @@
 namespace shaders {
 #include <shaders/chunk_mesh_frag.hpp>
 #include <shaders/chunk_mesh_vert.hpp>
+#include <shaders/line_3d_frag.hpp>
+#include <shaders/line_3d_vert.hpp>
 #include <shaders/text_frag.hpp>
 #include <shaders/text_vert.hpp>
 #include <shaders/texture_2d_frag.hpp>
@@ -67,11 +69,28 @@ void ResourceHodler::build_texture_2d_shader(const vulkan::Context &context,
   m_hodled_shaders.emplace(texture_2d_shader_name, std::move(shader));
 }
 
+void ResourceHodler::build_line_3d_shader(const vulkan::Context &context,
+                                          const Settings &settings) {
+  const glm::mat4 proj(1.0f);
+
+  auto shader(Shader::Builder()
+                  .vertex_attribute<glm::vec3>()
+                  .vertex_attribute<glm::vec3>()
+                  .vertex(shaders::line_3d_vert_spv)
+                  .fragment(shaders::line_3d_frag_spv)
+                  .uniform_buffer(vk::ShaderStageFlagBits::eVertex, proj)
+                  .primitive_topology(vk::PrimitiveTopology::eLineList)
+                  .build(context, settings));
+
+  m_hodled_shaders.emplace(line_3d_shader_name, std::move(shader));
+}
+
 void ResourceHodler::_load_all_shaders(const vulkan::Context &context,
                                        const Settings &settings) {
   // Shaders
   build_chunk_mesh_shader(context, settings);
   build_text_shader(context, settings);
   build_texture_2d_shader(context, settings);
+  build_line_3d_shader(context, settings);
 }
 } // namespace core

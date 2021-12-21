@@ -23,6 +23,7 @@ public:
   static constexpr char chunk_mesh_shader_name[] = "chunk/mesh";
   static constexpr char text_shader_name[] = "text";
   static constexpr char texture_2d_shader_name[] = "texture_2d";
+  static constexpr char line_3d_shader_name[] = "line_3d";
 
   // load_all ...... Wether to load all of the resources
   ResourceHodler(const vulkan::Context &context, const Settings &settings,
@@ -57,6 +58,8 @@ public:
                          const Settings &settings);
   void build_texture_2d_shader(const vulkan::Context &context,
                                const Settings &settings);
+  void build_line_3d_shader(const vulkan::Context &context,
+                            const Settings &settings);
 
   inline Texture &get_texture(std::string name) {
     return m_hodled_textures.at(name);
