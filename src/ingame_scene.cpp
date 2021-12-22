@@ -76,107 +76,41 @@ InGameScene::InGameScene(const core::vulkan::Context &context,
                               glm::vec3(1.0f, 1.0f, 1.0f));
   m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 0.0f),
                               glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
   m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 0.0f),
                               glm::vec3(1.0f, 1.0f, 1.0f));
   m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 0.0f),
                               glm::vec3(1.0f, 1.0f, 1.0f));
   m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+
+  // LEFT
+  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+
+  // TOP
+  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 0.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 1.0f),
+                              glm::vec3(1.0f, 1.0f, 1.0f));
+  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 1.0f),
                               glm::vec3(1.0f, 1.0f, 1.0f));
 
   // BACK
   m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 1.0f),
                               glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
   m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 1.0f),
                               glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-
-  // TOP
-  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
   m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-
-  // BOT
-  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 0.0f),
                               glm::vec3(1.0f, 1.0f, 1.0f));
 
   // RIGHT
-  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
   m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 1.0f),
                               glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(1.0f, 1.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
   m_selected_block.add_vertex(glm::vec3(1.0f, 0.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-
-  // LEFT
-  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 1.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 1.0f, 0.0f),
-                              glm::vec3(1.0f, 1.0f, 1.0f));
-  m_selected_block.add_vertex(glm::vec3(0.0f, 0.0f, 0.0f),
                               glm::vec3(1.0f, 1.0f, 1.0f));
 
   m_selected_block.end(context);

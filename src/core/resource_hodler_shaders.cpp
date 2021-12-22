@@ -79,7 +79,7 @@ void ResourceHodler::build_line_3d_shader(const vulkan::Context &context,
                   .vertex(shaders::line_3d_vert_spv)
                   .fragment(shaders::line_3d_frag_spv)
                   .uniform_buffer(vk::ShaderStageFlagBits::eVertex, proj)
-                  .primitive_topology(vk::PrimitiveTopology::eLineList)
+                  .primitive_topology(vk::PrimitiveTopology::eLineStrip)
                   .push_constant<glm::mat4>(vk::ShaderStageFlagBits::eVertex)
                   .build(context, settings));
 

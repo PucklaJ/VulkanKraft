@@ -7,7 +7,8 @@
 #include <vector>
 
 namespace core {
-// Renders a custom amount of 3D lines with vertex colors
+// Renders a custom amount of 3D lines with vertex colors using LineStrip
+// primitive topology
 class Line3D {
 public:
   class Vertex {
