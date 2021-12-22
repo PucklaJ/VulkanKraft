@@ -127,10 +127,10 @@ std::unique_ptr<scene::Scene> InGameScene::update(core::Window &window,
                                                   const float delta_time) {
   if (window.key_just_pressed(back_keyboard_button) ||
       window.gamepad_button_just_pressed(back_gamepad_button)) {
+    if (!window.cursor_is_locked())
+      return std::make_unique<MainMenuScene>(m_context, m_hodler, m_settings,
+                                             m_window, m_projection);
     window.release_cursor();
-
-    return std::make_unique<MainMenuScene>(m_context, m_hodler, m_settings,
-                                           m_window, m_projection);
   }
 
   // Generate the texts for every text element
