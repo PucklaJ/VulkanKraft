@@ -9,7 +9,9 @@ Inventory::Inventory(core::ResourceHodler &hodler)
           hodler
               .get_texture(core::ResourceHodler::inventory_hotbar_texture_name)
               .get_height() *
-          core::Settings::pixel_scale) {}
+          core::Settings::pixel_scale) {
+  std::fill(begin(), end(), Items::NONE);
+}
 
 void Inventory::update(core::Window &window) {
   const auto [width, height] = window.get_framebuffer_size();
