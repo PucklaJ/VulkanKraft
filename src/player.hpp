@@ -5,6 +5,7 @@
 #include "core/resource_hodler.hpp"
 #include "core/vulkan/render_call.hpp"
 #include "core/window.hpp"
+#include "item/inventory.hpp"
 #include "physics/aabb.hpp"
 #include "physics/moving_object.hpp"
 #include "physics/server.hpp"
@@ -113,4 +114,6 @@ private:
 
   // Used to render the crosshair in the middle of the screen
   core::Render2D m_crosshair;
+
+  item::Inventory m_inventory;
 };

@@ -12,7 +12,8 @@ Player::Player(const glm::vec3 &position, core::ResourceHodler &hodler,
       m_rotation(0.0f, 0.0f), m_last_mouse_x(0.0f), m_last_mouse_y(0.0f),
       m_last_left_trigger(false), m_last_right_trigger(false),
       m_crosshair(
-          &hodler.get_texture(core::ResourceHodler::crosshair_texture_name)) {
+          &hodler.get_texture(core::ResourceHodler::crosshair_texture_name)),
+      m_inventory(hodler) {
   physics_server.add_mob(this);
 }
 
@@ -130,10 +131,13 @@ void Player::update(core::Window &window, chunk::World &world) {
   m_crosshair.set_model_matrix(
       glm::vec2(static_cast<float>(width / 2), static_cast<float>(height / 2)),
       glm::vec2(crosshair_scale, crosshair_scale));
+
+  m_inventory.update(window);
 }
 
 void Player::render(const core::vulkan::RenderCall &render_call) {
   m_crosshair.render(render_call);
+  m_inventory.render(render_call);
 }
 
 std::optional<glm::ivec3>

@@ -15,6 +15,7 @@ public:
   // Names of the differnet textures used to store in the map
   static constexpr char chunk_mesh_texture_name[] = "chunk/mesh";
   static constexpr char crosshair_texture_name[] = "crosshair";
+  static constexpr char inventory_hotbar_texture_name[] = "inventory_hotbar";
 
   // Names of the differnet fonts used to store in the map
   static constexpr char debug_font_name[] = "debug";

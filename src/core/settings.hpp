@@ -15,6 +15,7 @@ public:
   static constexpr char settings_folder_name[] = ".vulkankraft";
   static constexpr char world_save_folder_name[] = "worlds";
   static constexpr char settings_file_name[] = "settings.json";
+  static constexpr float pixel_scale = 2.0f;
 
   Settings();
   ~Settings();
