@@ -3,6 +3,8 @@
 namespace textures {
 #include <textures/block.hpp>
 #include <textures/crosshair.hpp>
+#include <textures/dirt_block_item.hpp>
+#include <textures/grass_block_item.hpp>
 #include <textures/inventory_hotbar.hpp>
 } // namespace textures
 
@@ -17,6 +19,12 @@ void ResourceHodler::_load_all_textures(const vulkan::Context &context,
                [](auto &b) { b.filter(vk::Filter::eNearest); });
   load_texture(context, inventory_hotbar_texture_name,
                textures::inventory_hotbar_png,
+               [](auto &b) { b.filter(vk::Filter::eNearest); });
+  load_texture(context, dirt_block_item_texture_name,
+               textures::dirt_block_item_png,
+               [](auto &b) { b.filter(vk::Filter::eNearest); });
+  load_texture(context, grass_block_item_texture_name,
+               textures::grass_block_item_png,
                [](auto &b) { b.filter(vk::Filter::eNearest); });
 }
 

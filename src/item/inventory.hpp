@@ -5,6 +5,7 @@
 #include "../core/window.hpp"
 #include "items.hpp"
 #include <array>
+#include <glm/glm.hpp>
 
 namespace item {
 // Holds items. 3 rows of 9 and the hotbar
@@ -18,8 +19,13 @@ public:
 private:
   core::Render2D m_hotbar;
   core::Render2D m_inventory_screen;
+  core::Render2D m_item_render;
+
+  glm::vec2 m_hotbar_position;
 
   const uint32_t m_hotbar_height;
+  const uint32_t m_hotbar_width;
+  core::ResourceHodler &m_hodler;
 };
 
 } // namespace item
