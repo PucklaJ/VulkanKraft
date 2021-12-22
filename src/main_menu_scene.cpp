@@ -15,20 +15,12 @@ MainMenuScene::MainMenuScene(const core::vulkan::Context &context,
           L"VulkanKraft"),
       m_projection(projection) {
 
-  glm::vec2 current_pos(settings.window_width / 2,
-                        settings.window_height / 2 - 50 - 15);
   m_continue_button = m_gui_context.add_element<core::gui::Button>(
-      &m_gui_context, std::ref(resource_hodler), L"Continue", 250, 100,
-      current_pos);
-  current_pos.y += 50 + 30 + 50;
+      &m_gui_context, std::ref(resource_hodler), L"Continue", 250, 100);
   m_new_world_button = m_gui_context.add_element<core::gui::Button>(
-      &m_gui_context, std::ref(resource_hodler), L"New World", 250, 100,
-      current_pos);
+      &m_gui_context, std::ref(resource_hodler), L"New World", 250, 100);
 
   m_title_text.set_font_size(100.0f);
-  current_pos.y -= 50 + 30 + 100 + 50 + m_title_text.get_height();
-  current_pos.x -= m_title_text.get_width() / 2;
-  m_title_text.set_position(current_pos);
 
   m_continue_button->on_click = [&]() {
     m_next_scene = std::make_unique<InGameScene>(m_context, m_hodler, window,
@@ -53,6 +45,16 @@ std::unique_ptr<scene::Scene> MainMenuScene::update(core::Window &window,
       m_new_world_button->on_click();
     }
   }
+
+  const auto [width, height] = window.get_framebuffer_size();
+  glm::vec2 current_pos(width / 2, height / 2 - 50 - 15);
+  m_continue_button->set_position(current_pos);
+  current_pos.y += 50 + 30 + 50;
+  m_new_world_button->set_position(current_pos);
+
+  current_pos.y -= 50 + 30 + 100 + 50 + m_title_text.get_height();
+  current_pos.x -= m_title_text.get_width() / 2;
+  m_title_text.set_position(current_pos);
 
   return std::move(m_next_scene);
 }

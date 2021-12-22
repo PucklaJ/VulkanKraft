@@ -51,6 +51,16 @@ void Button::render(const vulkan::Context &vulkan_context,
   m_text.render(render_call);
 }
 
+void Button::set_position(const glm::vec2 &position) {
+  m_position = position;
+  m_render2d.set_model_matrix(m_position, glm::vec2(m_size) / 10.0f);
+  const auto text_width{m_text.get_width()};
+  const auto text_height{m_text.get_height()};
+  m_text.set_position(m_position - glm::vec2(static_cast<float>(text_width),
+                                             static_cast<float>(text_height)) /
+                                       2.0f);
+}
+
 Texture Button::_create_grey_rectangle(const vulkan::Context &context,
                                        const uint32_t width,
                                        const uint32_t height) {

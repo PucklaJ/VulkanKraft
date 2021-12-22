@@ -40,6 +40,9 @@ void Text::set_font_size(const float font_size) {
 }
 
 void Text::set_position(const glm::vec2 &position) {
+  if (m_position == position)
+    return;
+
   m_position = position;
   _build_buffers();
 }

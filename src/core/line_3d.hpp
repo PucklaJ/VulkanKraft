@@ -14,10 +14,10 @@ public:
   class Vertex {
   public:
     Vertex(const glm::vec3 &pos, const glm::vec3 &col)
-        : Position(pos), Color(col) {}
+        : position(pos), color(col) {}
 
-    glm::vec3 Position;
-    glm::vec3 Color;
+    glm::vec3 position;
+    glm::vec3 color;
   };
 
   static inline void set_shader(Shader &shader) { m_shader = &shader; }

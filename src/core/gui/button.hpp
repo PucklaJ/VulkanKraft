@@ -14,11 +14,12 @@ public:
 
   Button(Context *gui_context, const ResourceHodler &resource_hodler,
          const std::wstring &label_text, const uint32_t width,
-         const uint32_t height, const glm::vec2 &position);
+         const uint32_t height, const glm::vec2 &position = glm::vec2());
 
   void update(Window &window) override;
   void render(const vulkan::Context &vulkan_context,
               const vulkan::RenderCall &render_call) override;
+  void set_position(const glm::vec2 &position);
 
   click_callback on_click;
 
@@ -33,7 +34,7 @@ private:
                                        const uint32_t width,
                                        const uint32_t height);
 
-  const glm::vec2 m_position;
+  glm::vec2 m_position;
   const glm::uvec2 m_size;
   Render2D m_render2d;
   text::Text m_text;
