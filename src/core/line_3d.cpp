@@ -1,5 +1,6 @@
 #include "line_3d.hpp"
 #include "exception.hpp"
+#include <glm/gtx/transform.hpp>
 
 namespace core {
 void Line3D::begin() {
@@ -27,7 +28,12 @@ void Line3D::end(const vulkan::Context &context) {
 
 void Line3D::render(const vulkan::RenderCall &render_call) {
   m_vertex_buffer->bind(render_call);
+  m_shader->set_push_constant(render_call, m_model_matrix);
   render_call.render_vertices(m_num_vertices);
+}
+
+void Line3D::set_model_matrix(const glm::vec3 &position) {
+  m_model_matrix = glm::translate(position);
 }
 
 Shader *Line3D::m_shader = nullptr;

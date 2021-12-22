@@ -8,8 +8,10 @@ layout(location = 0) out vec3 frag_color;
 
 layout(binding = 0) uniform Global { mat4 proj; }
 global;
+layout(push_constant) uniform PushConstants { mat4 m; }
+model;
 
 void main() {
-  gl_Position = global.proj * vec4(in_position, 1.0);
+  gl_Position = global.proj * model.m * vec4(in_position, 1.0);
   frag_color = in_color;
 }

@@ -7,6 +7,7 @@
 #include <vector>
 
 namespace core {
+// Renders a custom amount of 3D lines with vertex colors
 class Line3D {
 public:
   class Vertex {
@@ -30,6 +31,7 @@ public:
   }
 
   void render(const vulkan::RenderCall &render_call);
+  void set_model_matrix(const glm::vec3 &position);
 
 private:
   static Shader *m_shader;
@@ -37,5 +39,6 @@ private:
   std::unique_ptr<vulkan::Buffer> m_vertex_buffer;
   std::vector<Vertex> m_current_vertices;
   uint32_t m_num_vertices;
+  glm::mat4 m_model_matrix;
 };
 } // namespace core

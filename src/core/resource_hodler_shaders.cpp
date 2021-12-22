@@ -80,6 +80,7 @@ void ResourceHodler::build_line_3d_shader(const vulkan::Context &context,
                   .fragment(shaders::line_3d_frag_spv)
                   .uniform_buffer(vk::ShaderStageFlagBits::eVertex, proj)
                   .primitive_topology(vk::PrimitiveTopology::eLineList)
+                  .push_constant<glm::mat4>(vk::ShaderStageFlagBits::eVertex)
                   .build(context, settings));
 
   m_hodled_shaders.emplace(line_3d_shader_name, std::move(shader));

@@ -283,9 +283,8 @@ void InGameScene::render(const core::vulkan::RenderCall &render_call,
                          const float delta_time) {
   m_chunk_shader.update_uniform_buffer(render_call, m_chunk_global);
   if (m_selected_position) {
-    m_line_3d_shader.update_uniform_buffer(
-        render_call,
-        m_chunk_global.proj_view * glm::translate(*m_selected_position));
+    m_line_3d_shader.update_uniform_buffer(render_call,
+                                           m_chunk_global.proj_view);
   }
 
   // Render the world
@@ -297,6 +296,7 @@ void InGameScene::render(const core::vulkan::RenderCall &render_call,
   // Render selected block
   if (m_selected_position) {
     core::Line3D::bind_shader(render_call);
+    m_selected_block.set_model_matrix(*m_selected_position);
     m_selected_block.render(render_call);
   }
 
